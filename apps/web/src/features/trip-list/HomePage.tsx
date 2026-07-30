@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, Pencil, Star, X } from 'lucide-react'
-import type { GroupKey, TripSummary } from '@trip-atlas/schema'
+import type { GroupKey, TripSummary } from '@jjj/schema'
 import { useTripList } from '../../data/hooks.ts'
 import { useTripTitle } from '../../data/useTripOverrides.ts'
 import { useFavorites } from '../../data/useFavorites.ts'
@@ -21,10 +21,10 @@ export function HomePage() {
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-12">
       <h1 className="display text-[34px] leading-none tracking-[-0.03em] text-ink sm:text-[40px]">
-        Trip Atlas
+        Just J Journey
       </h1>
       <p className="mt-3 max-w-md text-[14px] leading-relaxed text-graphite">
-        把 Markdown 行程读成时间的形状。
+        把 Markdown 行程读成时间的形状。It's just a J thing.
       </p>
 
       {data.length === 0 && (

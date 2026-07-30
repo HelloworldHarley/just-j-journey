@@ -1,4 +1,4 @@
-import { CATEGORIES, type Day, type GroupKey } from '@trip-atlas/schema'
+import { CATEGORIES, type Day, type GroupKey } from '@jjj/schema'
 
 /**
  * 左侧日程轨。

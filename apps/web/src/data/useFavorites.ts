@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from 'react'
  * 现在存 localStorage；Phase 6 有后端后换成 TripRepository 的一个方法，
  * 接口形状（读一组 id / 切换一个 id）刻意保持一致，届时替换不动调用方。
  */
-const key = (tripId: string) => `trip-atlas:favorites:${tripId}`
+const key = (tripId: string) => `jjj:favorites:${tripId}`
 
 function read(tripId: string): Set<string> {
   try {

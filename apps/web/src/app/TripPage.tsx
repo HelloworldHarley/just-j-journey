@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
-import type { Trip } from '@trip-atlas/schema'
+import type { Trip } from '@jjj/schema'
 import { useTrip } from '../data/hooks.ts'
 import { useTripTitle } from '../data/useTripOverrides.ts'
 import { ListView } from '../features/itinerary/ListView.tsx'

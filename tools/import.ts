@@ -10,8 +10,8 @@
 import { readdirSync, readFileSync, mkdirSync, writeFileSync, existsSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parse, formatDiagnostics } from '@trip-atlas/tripmd'
-import { CATEGORIES, type Day, type TripSummary } from '@trip-atlas/schema'
+import { parse, formatDiagnostics } from '@jjj/tripmd'
+import { CATEGORIES, type Day, type TripSummary } from '@jjj/schema'
 
 /**
  * 一天的构成 —— 个人空间卡片上那根竖条。

@@ -22,7 +22,7 @@ import {
   type Trip,
   type TripEvent,
   type Variant,
-} from '@trip-atlas/schema'
+} from '@jjj/schema'
 import { parse as parseYaml, YAMLParseError } from 'yaml'
 import { DiagnosticBag, suggest, suggestEnum, type Diagnostic } from './diagnostics.ts'
 import { parseCost, splitBody } from './cost.ts'

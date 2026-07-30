@@ -1,4 +1,4 @@
-import type { Cost } from '@trip-atlas/schema'
+import type { Cost } from '@jjj/schema'
 import { normalizeText } from './values.ts'
 
 /**

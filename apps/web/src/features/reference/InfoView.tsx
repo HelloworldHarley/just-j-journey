@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Trip } from '@trip-atlas/schema'
+import type { Trip } from '@jjj/schema'
 import { Markdown } from '../../components/Markdown.tsx'
 import { RailLayout } from '../../components/RailLayout.tsx'
 

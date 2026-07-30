@@ -1,4 +1,4 @@
-import type { Day, Leg, TripEvent } from '@trip-atlas/schema'
+import type { Day, Leg, TripEvent } from '@jjj/schema'
 
 /**
  * 列表视图的行编排。

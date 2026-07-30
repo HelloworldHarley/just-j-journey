@@ -10,7 +10,7 @@ import {
   type Flight,
   type Place,
   type TripEvent,
-} from '@trip-atlas/schema'
+} from '@jjj/schema'
 import { buildTimeline, isConflict, type LegRow } from '../lib/layout.ts'
 import type { Favorites } from '../data/useFavorites.ts'
 import { iconFor } from '../lib/icons.tsx'

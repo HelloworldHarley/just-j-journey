@@ -1,6 +1,6 @@
 # TripMD v1 规范
 
-TripMD 是 Trip Atlas 的**作者格式** —— 一份既能给人读、又能被确定性解析的旅行计划 Markdown。
+TripMD 是 Just J Journey 的**作者格式** —— 一份既能给人读、又能被确定性解析的旅行计划 Markdown。
 
 ## 设计原则
 

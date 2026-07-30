@@ -1,5 +1,5 @@
 import { Plane, Star } from 'lucide-react'
-import { GROUPS, type GroupKey } from '@trip-atlas/schema'
+import { GROUPS, type GroupKey } from '@jjj/schema'
 
 /**
  * 列表筛选。选项来自分组体系本身（全部/玩/吃/其他）+ 两个横切维度（航班/收藏），

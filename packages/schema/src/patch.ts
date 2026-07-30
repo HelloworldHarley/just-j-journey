@@ -6,7 +6,7 @@ import { FlightSchema } from './trip.ts'
  * TripPatch —— 修改行程的唯一入口。
  *
  * UI 编辑模式（保存时批量提交）和未来的 chat agent（propose_patch 工具）
- * 都只能发出这里定义的操作。应用逻辑在 @trip-atlas/tripmd 的 applyPatch：
+ * 都只能发出这里定义的操作。应用逻辑在 @jjj/tripmd 的 applyPatch：
  * 结构化应用 → serialize → re-parse，让解析器成为唯一校验器 ——
  * 手动编辑、agent 修改与文件导入享受完全相同的语义检查。
  *

@@ -1,5 +1,5 @@
 import { Luggage, Plane } from 'lucide-react'
-import type { Flight } from '@trip-atlas/schema'
+import type { Flight } from '@jjj/schema'
 
 /**
  * 航班时间轴 —— 机票产品（Expedia / Google Flights）那套版式：

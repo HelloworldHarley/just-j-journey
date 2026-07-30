@@ -7,7 +7,7 @@ import {
   type Place,
   type Trip,
   type TripEvent,
-} from '@trip-atlas/schema'
+} from '@jjj/schema'
 
 /**
  * RFC 5545 日历导出。
@@ -105,7 +105,7 @@ export function toIcs(trip: Trip, opts: IcsOptions = {}): string {
   const L: string[] = []
   L.push('BEGIN:VCALENDAR')
   push(L, 'VERSION', '2.0')
-  push(L, 'PRODID', '-//Trip Atlas//TripMD v1//EN')
+  push(L, 'PRODID', '-//Just J Journey//TripMD v1//EN')
   push(L, 'CALSCALE', 'GREGORIAN')
   push(L, 'METHOD', 'PUBLISH')
   push(L, 'X-WR-CALNAME', esc(trip.title))
@@ -141,7 +141,7 @@ function eventBlock(
   const cat = CATEGORIES[ev.category]
 
   L.push('BEGIN:VEVENT')
-  push(L, 'UID', `${ev.id}@${trip.id}.trip-atlas`)
+  push(L, 'UID', `${ev.id}@${trip.id}.jjj`)
   push(L, 'DTSTAMP', ctx.dtstamp)
 
   if (ev.timeKind === 'allday') {
@@ -244,7 +244,7 @@ function constraintBlock(
   const def = CONSTRAINTS[c.kind]
 
   L.push('BEGIN:VEVENT')
-  push(L, 'UID', `constraint-${index}@${trip.id}.trip-atlas`)
+  push(L, 'UID', `constraint-${index}@${trip.id}.jjj`)
   push(L, 'DTSTAMP', ctx.dtstamp)
   push(L, `DTSTART;TZID=${ctx.tz}`, localStamp(c.date, c.minute))
   push(L, `DTEND;TZID=${ctx.tz}`, localStamp(c.date, c.minute + 15))

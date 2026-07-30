@@ -1,4 +1,4 @@
-import { TRANSPORTS, type Place, type TransportMode } from '@trip-atlas/schema'
+import { TRANSPORTS, type Place, type TransportMode } from '@jjj/schema'
 
 /**
  * 地图深链。

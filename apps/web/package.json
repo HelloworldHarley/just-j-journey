@@ -1,5 +1,5 @@
 {
-  "name": "@trip-atlas/web",
+  "name": "@jjj/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "@fontsource-variable/archivo": "^5.1.0",
     "@fontsource/ibm-plex-mono": "^5.1.0",
     "@tanstack/react-query": "^5.62.7",
-    "@trip-atlas/schema": "workspace:*",
+    "@jjj/schema": "workspace:*",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

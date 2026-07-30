@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from 'react'
  *
  * 覆盖值与导入的原始数据分开存 —— 重新跑 pnpm data:import 不会冲掉你改的名字。
  */
-const KEY = 'trip-atlas:overrides'
+const KEY = 'jjj:overrides'
 
 interface Overrides {
   [tripId: string]: { title?: string }

@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { createContext, useContext } from 'react'
-import type { Trip, TripSummary } from '@trip-atlas/schema'
+import type { Trip, TripSummary } from '@jjj/schema'
 import type { TripRepository } from './TripRepository.ts'
 
 export const RepositoryContext = createContext<TripRepository | null>(null)

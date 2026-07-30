@@ -1,4 +1,4 @@
-import type { Day, Trip, TripEvent, TripPatchOp } from '@trip-atlas/schema'
+import type { Day, Trip, TripEvent, TripPatchOp } from '@jjj/schema'
 import type { Diagnostic } from './diagnostics.ts'
 import { parse } from './parse.ts'
 import { serialize } from './serialize.ts'

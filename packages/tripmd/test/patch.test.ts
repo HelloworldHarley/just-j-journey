@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { Trip } from '@trip-atlas/schema'
+import type { Trip } from '@jjj/schema'
 import { applyPatch } from '../src/patch.ts'
 import { parse } from '../src/parse.ts'
 

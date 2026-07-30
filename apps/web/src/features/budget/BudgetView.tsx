@@ -5,7 +5,7 @@ import {
   type CategoryKey,
   type GroupKey,
   type Trip,
-} from '@trip-atlas/schema'
+} from '@jjj/schema'
 import { CategoryChip } from '../../components/CategoryChip.tsx'
 import { fmtMoney } from '../../components/DayTimeline.tsx'
 

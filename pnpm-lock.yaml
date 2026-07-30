@@ -8,10 +8,10 @@ importers:
 
   .:
     devDependencies:
-      '@trip-atlas/schema':
+      '@jjj/schema':
         specifier: workspace:*
         version: link:packages/schema
-      '@trip-atlas/tripmd':
+      '@jjj/tripmd':
         specifier: workspace:*
         version: link:packages/tripmd
       tsx:
@@ -32,12 +32,12 @@ importers:
       '@fontsource/ibm-plex-mono':
         specifier: ^5.1.0
         version: 5.3.0
+      '@jjj/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
       '@tanstack/react-query':
         specifier: ^5.62.7
         version: 5.101.4(react@19.2.8)
-      '@trip-atlas/schema':
-        specifier: workspace:*
-        version: link:../../packages/schema
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.8)
@@ -84,7 +84,7 @@ importers:
 
   packages/tripmd:
     dependencies:
-      '@trip-atlas/schema':
+      '@jjj/schema':
         specifier: workspace:*
         version: link:../schema
       yaml:

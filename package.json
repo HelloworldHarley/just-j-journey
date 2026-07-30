@@ -1,20 +1,20 @@
 {
-  "name": "trip-atlas",
+  "name": "just-j-journey",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @trip-atlas/web dev",
-    "build": "pnpm --filter @trip-atlas/web build",
-    "preview": "pnpm --filter @trip-atlas/web preview",
+    "dev": "pnpm --filter @jjj/web dev",
+    "build": "pnpm --filter @jjj/web build",
+    "preview": "pnpm --filter @jjj/web preview",
     "data:import": "tsx tools/import.ts",
     "data:check": "tsx tools/check.ts",
     "typecheck": "tsc -b --pretty",
     "test": "vitest run"
   },
   "devDependencies": {
-    "@trip-atlas/schema": "workspace:*",
-    "@trip-atlas/tripmd": "workspace:*",
+    "@jjj/schema": "workspace:*",
+    "@jjj/tripmd": "workspace:*",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

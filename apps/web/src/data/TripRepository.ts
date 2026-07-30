@@ -1,4 +1,4 @@
-import type { Trip, TripSummary } from '@trip-atlas/schema'
+import type { Trip, TripSummary } from '@jjj/schema'
 
 /**
  * 数据访问的唯一切换点。

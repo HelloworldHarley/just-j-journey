@@ -1,4 +1,4 @@
-import { TripSchema, TripSummarySchema, type Trip, type TripSummary } from '@trip-atlas/schema'
+import { TripSchema, TripSummarySchema, type Trip, type TripSummary } from '@jjj/schema'
 import { TripNotFoundError, type TripRepository } from './TripRepository.ts'
 
 const IndexShape = { trips: TripSummarySchema.array() }

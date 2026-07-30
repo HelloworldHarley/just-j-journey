@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Scissors, Sunset as SunsetIcon } from 'lucide-react'
-import { CONSTRAINTS, formatMinutes, type Day, type Trip } from '@trip-atlas/schema'
+import { CONSTRAINTS, formatMinutes, type Day, type Trip } from '@jjj/schema'
 import { DayTimeline } from '../../components/DayTimeline.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
 import { iconFor } from '../../lib/icons.tsx'
@@ -11,7 +11,7 @@ import { DayRail } from '../../components/DayRail.tsx'
 import { RailLayout } from '../../components/RailLayout.tsx'
 import { useScrollSpy } from '../../lib/useScrollSpy.ts'
 import { FilterBar, type EventFilter } from './FilterBar.tsx'
-import { CATEGORIES } from '@trip-atlas/schema'
+import { CATEGORIES } from '@jjj/schema'
 
 export function ListView({ trip }: { trip: Trip }) {
   const places = useMemo(() => new Map(trip.places.map((p) => [p.id, p])), [trip.places])

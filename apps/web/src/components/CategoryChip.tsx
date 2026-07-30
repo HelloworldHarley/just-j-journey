@@ -1,4 +1,4 @@
-import { CATEGORIES, groupOf, type CategoryKey } from '@trip-atlas/schema'
+import { CATEGORIES, groupOf, type CategoryKey } from '@jjj/schema'
 import { iconFor } from '../lib/icons.tsx'
 
 /**

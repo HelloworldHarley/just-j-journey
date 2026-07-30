@@ -1,5 +1,5 @@
 {
-  "name": "@trip-atlas/tripmd",
+  "name": "@jjj/tripmd",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@trip-atlas/schema": "workspace:*",
+    "@jjj/schema": "workspace:*",
     "yaml": "^2.6.1"
   }
 }

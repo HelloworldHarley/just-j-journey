@@ -4,7 +4,7 @@ import {
   resolvePeriod,
   type PeriodKey,
   type TimeKind,
-} from '@trip-atlas/schema'
+} from '@jjj/schema'
 
 /** 全角 → 半角，顺带收敛空白。LLM 中英混排时全角符号很常见。 */
 export function normalizeText(s: string): string {

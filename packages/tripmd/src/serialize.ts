@@ -1,4 +1,4 @@
-import type { Day, Flight, Leg, Place, Trip, TripEvent } from '@trip-atlas/schema'
+import type { Day, Flight, Leg, Place, Trip, TripEvent } from '@jjj/schema'
 
 /**
  * Trip → 规范 TripMD。parse() 的逆操作。

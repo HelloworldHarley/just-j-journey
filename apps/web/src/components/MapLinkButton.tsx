@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ExternalLink, Navigation, MapPin } from 'lucide-react'
-import type { Place, TransportMode } from '@trip-atlas/schema'
+import type { Place, TransportMode } from '@jjj/schema'
 import {
   PROVIDER_LABEL,
   directionsUrl,

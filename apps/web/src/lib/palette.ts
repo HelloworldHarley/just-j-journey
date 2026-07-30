@@ -1,4 +1,4 @@
-import { GROUPS, GROUP_KEYS, type GroupKey } from '@trip-atlas/schema'
+import { GROUPS, GROUP_KEYS, type GroupKey } from '@jjj/schema'
 
 /**
  * 分组配色的运行时来源。
@@ -8,7 +8,7 @@ import { GROUPS, GROUP_KEYS, type GroupKey } from '@trip-atlas/schema'
  * 调 setGroupColor() 写 localStorage，**不用碰任何组件**。
  */
 
-const STORAGE_KEY = 'trip-atlas:palette'
+const STORAGE_KEY = 'jjj:palette'
 
 export interface GroupColor {
   light: string
