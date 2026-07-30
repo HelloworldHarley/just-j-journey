@@ -118,16 +118,6 @@ function readFlags(bag: DiagnosticBag, line: number, raw: unknown): FlagKey[] {
       if (!out.includes(f)) out.push(f)
       continue
     }
-    // starred / 锚点 曾经是作者字段，现已改为用户在界面上点的「收藏」。
-    // 单独给一条明确提示，否则旧文档会得到一句莫名其妙的"无法识别"。
-    if (/^(starred|star|anchor|highlight|must|锚点)$/i.test(s)) {
-      bag.warn(
-        line,
-        `flag "${s}" 已废弃，已忽略`,
-        '「收藏」改由用户在界面上标记，不再由作者预先指定',
-      )
-      continue
-    }
     const guess = suggestEnum(s, FLAG_KEYS, FLAG_ALIASES)
     bag.warn(
       line,
@@ -454,9 +444,9 @@ export function parse(src: string): ParseResult {
       const rec = asRecord(item)
       if (!rec) continue
       let kindRaw = str(rec['kind']) ?? ''
-      // 抵达/离开不一定坐飞机：arrive/depart 是 flight-arrive/flight-depart 的别名
-      if (kindRaw === 'arrive' || kindRaw === '抵达') kindRaw = 'flight-arrive'
-      if (kindRaw === 'depart' || kindRaw === '离开') kindRaw = 'flight-depart'
+      // 中文容错
+      if (kindRaw === '抵达') kindRaw = 'arrive'
+      if (kindRaw === '离开') kindRaw = 'depart'
       const kind = (CONSTRAINT_KINDS as readonly string[]).includes(kindRaw)
         ? (kindRaw as ConstraintKind)
         : null
@@ -550,9 +540,9 @@ export function parse(src: string): ParseResult {
       // 长途换乘段：`transport:`（单个或列表）；旧写法 `flight:` 仍接受（等价于 mode: flight）。
       // 不限定 category —— 火车抵达的事件可以是 transit，照样挂时间轴卡片。
       // 所有字段都可空：票常常晚于行程定下来，UI 会为缺的字段留「待填」空位。
-      const readTransport = (frec: Rec, defaultMode: 'flight' | null): TripEvent['transports'][number] | null => {
+      const readTransport = (frec: Rec): TripEvent['transports'][number] | null => {
         const modeRaw = str(frec['mode'])
-        let mode = modeRaw ? resolveTransport(modeRaw) : defaultMode
+        let mode = modeRaw ? resolveTransport(modeRaw) : null
         if (modeRaw && !mode) {
           const guess = suggestEnum(modeRaw, TRANSPORT_MODES, TRANSPORT_ALIASES)
           bag.warn(
@@ -594,14 +584,8 @@ export function parse(src: string): ParseResult {
           bag.warn(re.line, `事件「${re.title}」的 transport 列表里有一项不是对象，已忽略`)
           continue
         }
-        const t = readTransport(rec, null)
+        const t = readTransport(rec)
         if (t) transports.push(t)
-      }
-      // 旧写法：flight: {...} —— 单条、mode 固定为 flight
-      const legacyFlight = asRecord(m['flight'])
-      if (legacyFlight) {
-        const t = readTransport(legacyFlight, 'flight')
-        if (t) transports.push({ ...t, mode: 'flight' })
       }
 
       const costRaw = str(m['cost'])

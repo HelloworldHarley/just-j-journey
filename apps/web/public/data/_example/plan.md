@@ -15,11 +15,11 @@ currency: JPY
 ## 硬约束
 
 ```trip-constraints
-- kind: flight-arrive
+- kind: arrive
   at: 2026-11-14 09:20
   label: 抵达关西机场
   note: 出关后坐 HARUKA 到京都站约 80 分钟
-- kind: flight-depart
+- kind: depart
   at: 2026-11-15 19:05
   label: 关西机场起飞
 - kind: deadline
@@ -74,7 +74,7 @@ fallback_order: [锦市场, 清水寺夜间参拜]
 time: "09:20"
 category: flight
 place: 关西国际机场
-flight: {airline: 全日空 ANA, flight_no: NH971 · NH1715, from: PVG T2, to: KIX T1, dep_time: "08:15", arr_time: "09:20", arr_day_offset: 1, duration: 24h05m, baggage: 2 件 23kg, stops: [{airport: HND, wait: 14h30m}]}
+transport: {mode: flight, carrier: 全日空 ANA, number: NH971 · NH1715, from: PVG T2, to: KIX T1, dep_time: "08:15", arr_time: "09:20", arr_day_offset: 1, duration: 24h05m, baggage: 2 件 23kg, stops: [{airport: HND, wait: 14h30m}]}
 to_next: {mode: rail, minutes: 80, label: HARUKA 特急直达京都站}
 ```
 

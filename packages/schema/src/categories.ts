@@ -311,8 +311,8 @@ export function resolveTransport(raw: string): TransportMode | null {
 // ── 硬约束 ──────────────────────────────────────────────────────
 
 export const CONSTRAINT_KINDS = [
-  'flight-arrive',
-  'flight-depart',
+  'arrive',
+  'depart',
   'deadline',
   'checkin',
   'checkout',
@@ -322,8 +322,9 @@ export const CONSTRAINT_KINDS = [
 export type ConstraintKind = (typeof CONSTRAINT_KINDS)[number]
 
 export const CONSTRAINTS: Record<ConstraintKind, { zh: string; icon: string }> = {
-  'flight-arrive': { zh: '抵达', icon: 'PlaneLanding' },
-  'flight-depart': { zh: '离开', icon: 'PlaneTakeoff' },
+  // 抵达/离开与交通方式无关 —— 坐火车/自驾进城同样是 arrive
+  arrive: { zh: '抵达', icon: 'PlaneLanding' },
+  depart: { zh: '离开', icon: 'PlaneTakeoff' },
   deadline: { zh: '截止', icon: 'AlarmClock' },
   checkin: { zh: '入住', icon: 'LogIn' },
   checkout: { zh: '退房', icon: 'LogOut' },

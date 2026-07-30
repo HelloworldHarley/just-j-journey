@@ -36,7 +36,7 @@ currency: JPY                      # 可选
 ## 硬约束
 
 ```trip-constraints
-- kind: flight-arrive
+- kind: arrive
   at: 2026-11-14 09:20
   label: 抵达关西机场
   note: 出关后 HARUKA 到京都站约 80 分钟

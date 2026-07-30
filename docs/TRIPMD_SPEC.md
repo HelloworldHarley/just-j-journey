@@ -78,7 +78,7 @@ currency: USD
 | `flags` | | `warning` `tentative` `optional` `needs-booking` |
 | `cost` | | 自由文本，如 `约 $70/人`。解析器自动抽金额进预算统计：`/人` 乘人数、`× 2` 认乘法、`$250–400` 取中值、带「可选」不计入总额 |
 | `booking` | | `{status: required\|booked\|none, deadline: YYYY-MM-DD, note: ...}` |
-| `transport` | | 长途换乘段（单个对象或**列表**，多人汇合一人一条）：`{traveler, mode: flight/rail/drive/ferry/bus…, carrier, number, from, to, dep_time, arr_time, arr_day_offset, duration, baggage, stops: [{airport, wait}], note}`。任何类别的事件都可挂；`category: flight` 没写块也会渲染待填骨架。旧写法 `flight: {...}` 仍接受（等价 mode: flight） |
+| `transport` | | 长途换乘段（单个对象或**列表**，多人汇合一人一条）：`{traveler, mode: flight/rail/drive/ferry/bus…, carrier, number, from, to, dep_time, arr_time, arr_day_offset, duration, baggage, stops: [{airport, wait}], note}`。任何类别的事件都可挂；`category: flight` 没写块也会渲染待填骨架。|
 | `to_next` | | `{mode, minutes, km, label, note}` —— 到**下一个事件**怎么走 |
 
 ```yaml
@@ -148,7 +148,6 @@ transport: {mode: rail, carrier: Amtrak, number: Cascades 504, from: PDX, to: SE
 - 多目的地行程中间的长途移动（如西雅图 → 波特兰的火车）同样写成一个事件 + `transport` 块。
 - `duration` / `wait` 接受 `11h55m`、`2h`、`45m`、`11 小时 55 分`、`"11:55"`、纯数字（分钟）。
 - 事件本身的 `time` 仍按 TripMD 通用规则写（抵达事件写到达时刻、出发事件写出发时刻），`transport` 块里的时间是给票面时间轴用的。
-- 旧写法 `flight: {airline, flight_no, ...}` 仍被接受，等价于 `transport: {mode: flight, carrier, number, ...}`；写回时会自动归一为新形态。
 
 ### 正文的「首段约定」
 
@@ -251,7 +250,7 @@ weather_note: 约五成概率遇雨
   note: 倒推链 12:40 到航站楼 ← 12:25 SEA 轻轨站 ← 11:45 上车 ← 11:20 还车
 ```
 
-`kind`：`flight-arrive` `flight-depart` `deadline` `checkin` `checkout` `reservation`
+`kind`：`arrive` `depart` `deadline` `checkin` `checkout` `reservation`
 
 ---
 

@@ -14,7 +14,7 @@ currency: USD
 ## 硬约束
 
 ```trip-constraints
-- kind: flight-arrive
+- kind: arrive
   at: 2026-10-01 13:11
   label: 抵达 SEA · 国际航班
   note: 过海关 + 走到轻轨 + 车程 → 到 Astra 约 16:00–16:30。有 Global Entry 约 14:15 出关，否则 14:45–15:00
@@ -26,7 +26,7 @@ currency: USD
   at: 2026-10-05 11:20
   label: 必须还车
   note: 倒推链 12:40 到航站楼 ← 12:25 SEA 轻轨站 ← 11:45 Chinatown-ID 上车 ← 11:20 还车
-- kind: flight-depart
+- kind: depart
   at: 2026-10-05 15:40
   label: 离开 SEA · 国际航班
   note: 12:40 前到航站楼。绝对底线 13:10，但别拿这个当计划
