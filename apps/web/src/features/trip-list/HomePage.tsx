@@ -154,7 +154,7 @@ function TripCard({ trip, muted }: { trip: TripSummary; muted?: boolean }) {
             </span>
           )}
           {favorites.count > 0 && (
-            <span className="inline-flex items-center gap-1 text-[#B8860B]">
+            <span className="tint-faved inline-flex items-center gap-1">
               <Star size={11} className="fill-current" aria-hidden />
               <span className="tnum">{favorites.count}</span>
             </span>

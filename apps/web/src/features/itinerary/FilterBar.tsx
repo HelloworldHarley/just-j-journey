@@ -1,20 +1,27 @@
-import { BedDouble, Route, Star } from 'lucide-react'
-import { GROUPS, type GroupKey } from '@jjj/schema'
+import { BedDouble, Compass, Route, Star, UtensilsCrossed } from 'lucide-react'
+import { GROUPS } from '@jjj/schema'
 
 /**
- * 列表筛选。前三个是过滤（全部/玩/吃），后三个里「住」「行」是**派生视图**——
- * 住宿聚合成连住区间、交通聚合成票务卡，订房/订票 App 的形态，
- * 不再保留按天的流水账。所有选项都来自通用结构，任何行程同一套。
+ * 列表筛选。前三个是过滤（全部/玩/吃），「住」「行」是**派生视图**——
+ * 住宿聚合成连住区间、交通聚合成票务卡，订房/订票 App 的形态。
+ *
+ * 图标颜色走 tint-* 类（CSS 变量）：玩绿、吃桃红、住中性、行蓝、收藏金，
+ * 全部可被将来的用户自定义配色覆盖，组件不用改。
  */
 export type EventFilter = 'all' | 'play' | 'food' | 'stay' | 'move' | 'faved'
 
-const OPTIONS: { key: EventFilter; label: string; icon?: 'bed' | 'route' | 'star'; dot?: GroupKey }[] = [
+const OPTIONS: {
+  key: EventFilter
+  label: string
+  Icon?: typeof Compass
+  tint?: string
+}[] = [
   { key: 'all', label: '全部' },
-  { key: 'play', label: GROUPS.play.zh, dot: 'play' },
-  { key: 'food', label: GROUPS.food.zh, dot: 'food' },
-  { key: 'stay', label: '住', icon: 'bed' },
-  { key: 'move', label: '行', icon: 'route' },
-  { key: 'faved', label: '收藏', icon: 'star' },
+  { key: 'play', label: GROUPS.play.zh, Icon: Compass, tint: 'tint-play' },
+  { key: 'food', label: GROUPS.food.zh, Icon: UtensilsCrossed, tint: 'tint-food' },
+  { key: 'stay', label: '住', Icon: BedDouble, tint: 'tint-stay' },
+  { key: 'move', label: '行', Icon: Route, tint: 'tint-move' },
+  { key: 'faved', label: '收藏', Icon: Star, tint: 'tint-faved' },
 ]
 
 export function FilterBar({
@@ -48,17 +55,13 @@ export function FilterBar({
                               : 'bg-sunken text-graphite hover:text-ink'
                           }`}
             >
-              {o.dot && (
-                <span
+              {o.Icon && (
+                <o.Icon
+                  size={12}
                   aria-hidden
-                  className="h-[7px] w-[7px] rounded-full"
-                  style={{ background: `var(--g-${o.dot})` }}
+                  /* 选中态深底上仍用彩色图标 —— 颜色是这排按钮的记忆点 */
+                  className={`${o.tint} ${o.key === 'faved' && active ? 'fill-current' : ''}`}
                 />
-              )}
-              {o.icon === 'bed' && <BedDouble size={12} aria-hidden />}
-              {o.icon === 'route' && <Route size={12} aria-hidden />}
-              {o.icon === 'star' && (
-                <Star size={12} className={active ? 'fill-current' : ''} aria-hidden />
               )}
               {o.label}
             </button>

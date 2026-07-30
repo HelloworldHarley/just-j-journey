@@ -27,3 +27,17 @@ export const DAY_COLORS = [
 export function dayColor(index: number): string {
   return DAY_COLORS[(index - 1) % DAY_COLORS.length] ?? DAY_COLORS[0]
 }
+
+/**
+ * 界面强调色 —— 分组色之外的可自定义色槽。
+ * 住=中性（保持现状）、行=蓝、收藏=金。与分组色走同一套
+ * CSS 变量注入 + localStorage 覆盖机制，将来设置面板统一管。
+ */
+export const ACCENT_KEYS = ['stay', 'move', 'faved'] as const
+export type AccentKey = (typeof ACCENT_KEYS)[number]
+
+export const ACCENTS: Record<AccentKey, { color: string; colorDark: string }> = {
+  stay: { color: '#6B7684', colorDark: '#9AA5B3' },
+  move: { color: '#2963D6', colorDark: '#84ACF4' },
+  faved: { color: '#B8860B', colorDark: '#E8C05C' },
+}

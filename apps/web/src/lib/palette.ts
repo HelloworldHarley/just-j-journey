@@ -1,25 +1,37 @@
-import { GROUPS, GROUP_KEYS, type GroupKey } from '@jjj/schema'
+import { ACCENTS, ACCENT_KEYS, GROUPS, GROUP_KEYS, type AccentKey, type GroupKey } from '@jjj/schema'
 
 /**
- * 分组配色的运行时来源。
+ * 配色的运行时来源。
  *
- * 组件一律引用 `var(--g-play)` 这类变量，不直接读 GROUPS 的色值。
- * 于是「首页加一个设置按钮让用户自定义配色」这件事，将来只需要
- * 调 setGroupColor() 写 localStorage，**不用碰任何组件**。
+ * 组件一律引用 CSS 变量（--g-play / --a-move …），不直接读色值。
+ * 于是「设置面板让用户自定义配色」将来只需要调 setPaletteColor()
+ * 写 localStorage，**不用碰任何组件**。
+ *
+ * token 两类：分组色（玩/吃/其他，卡片与竖条用）+ 强调色（住/行/收藏，
+ * 筛选栏图标与收藏星用）。同一套机制，同一个覆盖入口。
  */
 
 const STORAGE_KEY = 'jjj:palette'
 
-export interface GroupColor {
+export type PaletteToken = GroupKey | AccentKey
+
+export interface TokenColor {
   light: string
   dark: string
 }
 
-export type Palette = Record<GroupKey, GroupColor>
+export type Palette = Record<PaletteToken, TokenColor>
 
-export const DEFAULT_PALETTE: Palette = Object.fromEntries(
-  GROUP_KEYS.map((g) => [g, { light: GROUPS[g].color, dark: GROUPS[g].colorDark }]),
-) as Palette
+const TOKEN_KEYS: PaletteToken[] = [...GROUP_KEYS, ...ACCENT_KEYS]
+
+export const DEFAULT_PALETTE: Palette = {
+  ...(Object.fromEntries(
+    GROUP_KEYS.map((g) => [g, { light: GROUPS[g].color, dark: GROUPS[g].colorDark }]),
+  ) as Record<GroupKey, TokenColor>),
+  ...(Object.fromEntries(
+    ACCENT_KEYS.map((a) => [a, { light: ACCENTS[a].color, dark: ACCENTS[a].colorDark }]),
+  ) as Record<AccentKey, TokenColor>),
+}
 
 function readOverrides(): Partial<Palette> {
   try {
@@ -33,22 +45,26 @@ function readOverrides(): Partial<Palette> {
 export function currentPalette(): Palette {
   const overrides = readOverrides()
   return Object.fromEntries(
-    GROUP_KEYS.map((g) => [g, overrides[g] ?? DEFAULT_PALETTE[g]]),
+    TOKEN_KEYS.map((t) => [t, overrides[t] ?? DEFAULT_PALETTE[t]]),
   ) as Palette
 }
 
-/** 把配色写成 :root 上的 CSS 变量。深浅色两套都写，由媒体查询挑。 */
+/** 分组用 --g-*，强调用 --a-*。深浅两套都写，由媒体查询挑。 */
+function varName(token: PaletteToken): string {
+  return (GROUP_KEYS as readonly string[]).includes(token) ? `--g-${token}` : `--a-${token}`
+}
+
 export function applyPalette(palette: Palette = currentPalette()): void {
   const root = document.documentElement
-  for (const g of GROUP_KEYS) {
-    root.style.setProperty(`--g-${g}`, palette[g].light)
-    root.style.setProperty(`--g-${g}-dark`, palette[g].dark)
+  for (const t of TOKEN_KEYS) {
+    root.style.setProperty(varName(t), palette[t].light)
+    root.style.setProperty(`${varName(t)}-dark`, palette[t].dark)
   }
 }
 
 /** 预留给将来的设置面板 */
-export function setGroupColor(group: GroupKey, color: GroupColor): void {
-  const next = { ...currentPalette(), [group]: color }
+export function setPaletteColor(token: PaletteToken, color: TokenColor): void {
+  const next = { ...currentPalette(), [token]: color }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   applyPalette(next)
 }

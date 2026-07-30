@@ -341,7 +341,7 @@ function FavoriteButton({
       aria-label={active ? `取消收藏「${title}」` : `收藏「${title}」`}
       title={active ? '取消收藏' : '收藏 —— 修改行程时会重点保留'}
       className={`rounded-full p-1 transition-colors ${
-        active ? 'text-[#E0A82E]' : 'text-graphite/45 hover:text-graphite'
+        active ? 'tint-faved' : 'text-graphite/45 hover:text-graphite'
       }`}
     >
       <Star size={15} className={active ? 'fill-current' : ''} aria-hidden />

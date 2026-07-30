@@ -135,6 +135,24 @@ body {
   border: 1.5px solid color-mix(in srgb, var(--grp) 55%, transparent);
   color: var(--grp);
 }
+/*
+ * 语义色着色类。组件写 .tint-x，色值来自可覆盖的 CSS 变量 ——
+ * 将来用户自定义配色时这些类自动跟随，组件零改动。
+ */
+.tint-play { color: var(--g-play); }
+.tint-food { color: var(--g-food); }
+.tint-stay { color: var(--a-stay); }
+.tint-move { color: var(--a-move); }
+.tint-faved { color: var(--a-faved); }
+
+@media (prefers-color-scheme: dark) {
+  .tint-play { color: var(--g-play-dark); }
+  .tint-food { color: var(--g-food-dark); }
+  .tint-stay { color: var(--a-stay-dark); }
+  .tint-move { color: var(--a-move-dark); }
+  .tint-faved { color: var(--a-faved-dark); }
+}
+
 /* 红色只用在「注意」上 —— 它是唯一表示「会出事」的颜色 */
 .tight-badge {
   background: color-mix(in srgb, var(--tight) 13%, transparent);
