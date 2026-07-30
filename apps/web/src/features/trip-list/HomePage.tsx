@@ -145,6 +145,7 @@ function TripCard({ trip, muted }: { trip: TripSummary; muted?: boolean }) {
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-graphite">
+          {trip.travelers != null && <Stat n={trip.travelers} unit="人" />}
           <Stat n={trip.dayCount} unit="天" />
           <Stat n={trip.eventCount} unit="个安排" />
           {trip.bookingCount > 0 && (

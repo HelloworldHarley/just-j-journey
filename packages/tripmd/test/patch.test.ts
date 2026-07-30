@@ -21,44 +21,65 @@ const day1 = () => trip.days[0]!
 const arrival = () => day1().events.find((e) => e.category === 'flight')!
 const dinner = () => day1().events.find((e) => e.title.includes('晚餐'))!
 
-describe('set_flight', () => {
-  it('填入航班信息并出现在写回文本里', () => {
+describe('set_transports', () => {
+  it('填入多人换乘段并出现在写回文本里', () => {
     const r = applyPatch(trip, [
       {
-        op: 'set_flight',
+        op: 'set_transports',
         eventId: arrival().id,
-        flight: {
-          airline: '达美',
-          flightNo: 'DL281',
-          from: 'PVG T1',
-          to: 'SEA',
-          depTime: '10:15',
-          arrTime: '13:11',
-          arrDayOffset: 0,
-          durationMin: 715,
-          baggage: '2 件 23kg',
-          stops: [{ airport: 'ICN', waitMin: 130 }],
-          note: undefined,
-        },
+        transports: [
+          {
+            traveler: '她',
+            mode: 'flight',
+            carrier: '达美',
+            number: 'DL281',
+            from: 'PVG T1',
+            to: 'SEA',
+            depTime: '10:15',
+            arrTime: '13:11',
+            arrDayOffset: 0,
+            durationMin: 715,
+            baggage: '2 件 23kg',
+            stops: [{ airport: 'ICN', waitMin: 130 }],
+            note: undefined,
+          },
+          {
+            traveler: '我',
+            mode: 'flight',
+            from: 'SNA',
+            to: 'SEA',
+            arrDayOffset: 0,
+            durationMin: null,
+            stops: [],
+          },
+        ],
       },
     ])
     expect(r.ok).toBe(true)
-    const f = r.trip.days[0]!.events.find((e) => e.category === 'flight')!.flight!
-    expect(f.flightNo).toBe('DL281')
-    expect(f.durationMin).toBe(715)
-    expect(f.stops).toEqual([{ airport: 'ICN', waitMin: 130 }])
-    expect(r.markdown).toContain('flight_no: DL281')
+    const ts = r.trip.days[0]!.events.find((e) => e.category === 'flight')!.transports
+    expect(ts).toHaveLength(2)
+    expect(ts[0]!.number).toBe('DL281')
+    expect(ts[0]!.durationMin).toBe(715)
+    expect(ts[0]!.stops).toEqual([{ airport: 'ICN', waitMin: 130 }])
+    expect(ts[1]!.traveler).toBe('我')
+    expect(r.markdown).toContain('number: DL281')
     expect(r.markdown).toContain('duration: "11h55m"')
     // 写回文本再导入，深等 —— 编辑结果与文件真相一致
     expect(parse(r.markdown!).trip).toEqual(r.trip)
   })
 
-  it('非航班事件拒绝', () => {
+  it('非 flight 类别的事件也可以挂换乘段（火车抵达等）', () => {
     const r = applyPatch(trip, [
-      { op: 'set_flight', eventId: dinner().id, flight: { arrDayOffset: 0, durationMin: null, stops: [] } },
+      {
+        op: 'set_transports',
+        eventId: dinner().id,
+        transports: [
+          { mode: 'rail', carrier: 'Amtrak', number: 'Cascades 504', arrDayOffset: 0, durationMin: null, stops: [] },
+        ],
+      },
     ])
-    expect(r.ok).toBe(false)
-    expect(r.trip).toBe(trip) // 原对象原样返回
+    expect(r.ok).toBe(true)
+    expect(r.markdown).toContain('mode: rail')
   })
 })
 

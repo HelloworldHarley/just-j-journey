@@ -453,7 +453,10 @@ export function parse(src: string): ParseResult {
     for (const item of list) {
       const rec = asRecord(item)
       if (!rec) continue
-      const kindRaw = str(rec['kind']) ?? ''
+      let kindRaw = str(rec['kind']) ?? ''
+      // 抵达/离开不一定坐飞机：arrive/depart 是 flight-arrive/flight-depart 的别名
+      if (kindRaw === 'arrive' || kindRaw === '抵达') kindRaw = 'flight-arrive'
+      if (kindRaw === 'depart' || kindRaw === '离开') kindRaw = 'flight-depart'
       const kind = (CONSTRAINT_KINDS as readonly string[]).includes(kindRaw)
         ? (kindRaw as ConstraintKind)
         : null
@@ -544,35 +547,61 @@ export function parse(src: string): ParseResult {
         }
       }
 
-      // flight 详情：只在 category 为 flight 时读取；写在别的事件上给出提示。
-      // 所有字段都可空 —— 机票常常晚于行程定下来，UI 会为缺的字段留「待填」空位。
-      let flight: TripEvent['flight']
-      const frec = asRecord(m['flight'])
-      if (frec) {
-        if (category !== 'flight') {
-          bag.warn(re.line, `事件「${re.title}」带有 flight 块但 category 不是 flight，已忽略`)
-        } else {
-          const stopsRaw = Array.isArray(frec['stops']) ? frec['stops'] : []
-          flight = {
-            airline: str(frec['airline']),
-            flightNo: str(frec['flight_no']) ?? str(frec['flightNo']) ?? str(frec['no']),
-            from: str(frec['from']),
-            to: str(frec['to']),
-            depTime: str(frec['dep_time']) ?? str(frec['depTime']) ?? str(frec['dep']),
-            arrTime: str(frec['arr_time']) ?? str(frec['arrTime']) ?? str(frec['arr']),
-            arrDayOffset: num(frec['arr_day_offset']) ?? num(frec['arrDayOffset']) ?? 0,
-            durationMin: parseDurationMin(frec['duration']),
-            baggage: str(frec['baggage']),
-            stops: stopsRaw
-              .map((sr) => asRecord(sr))
-              .filter((sr): sr is Rec => sr !== null)
-              .map((sr) => ({
-                airport: str(sr['airport']) ?? str(sr['place']),
-                waitMin: parseDurationMin(sr['wait']),
-              })),
-            note: str(frec['note']),
-          }
+      // 长途换乘段：`transport:`（单个或列表）；旧写法 `flight:` 仍接受（等价于 mode: flight）。
+      // 不限定 category —— 火车抵达的事件可以是 transit，照样挂时间轴卡片。
+      // 所有字段都可空：票常常晚于行程定下来，UI 会为缺的字段留「待填」空位。
+      const readTransport = (frec: Rec, defaultMode: 'flight' | null): TripEvent['transports'][number] | null => {
+        const modeRaw = str(frec['mode'])
+        let mode = modeRaw ? resolveTransport(modeRaw) : defaultMode
+        if (modeRaw && !mode) {
+          const guess = suggestEnum(modeRaw, TRANSPORT_MODES, TRANSPORT_ALIASES)
+          bag.warn(
+            re.line,
+            `transport 的 mode "${modeRaw}" 无法识别，按 flight 处理`,
+            guess ? `是否想写 \`${guess}\`？` : undefined,
+          )
+          mode = 'flight'
         }
+        const stopsRaw = Array.isArray(frec['stops']) ? frec['stops'] : []
+        return {
+          traveler: str(frec['traveler']) ?? str(frec['who']),
+          mode: mode ?? 'flight',
+          carrier: str(frec['carrier']) ?? str(frec['airline']),
+          number: str(frec['number']) ?? str(frec['flight_no']) ?? str(frec['flightNo']) ?? str(frec['no']),
+          from: str(frec['from']),
+          to: str(frec['to']),
+          depTime: str(frec['dep_time']) ?? str(frec['depTime']) ?? str(frec['dep']),
+          arrTime: str(frec['arr_time']) ?? str(frec['arrTime']) ?? str(frec['arr']),
+          arrDayOffset: num(frec['arr_day_offset']) ?? num(frec['arrDayOffset']) ?? 0,
+          durationMin: parseDurationMin(frec['duration']),
+          baggage: str(frec['baggage']),
+          stops: stopsRaw
+            .map((sr) => asRecord(sr))
+            .filter((sr): sr is Rec => sr !== null)
+            .map((sr) => ({
+              airport: str(sr['airport']) ?? str(sr['station']) ?? str(sr['place']),
+              waitMin: parseDurationMin(sr['wait']),
+            })),
+          note: str(frec['note']),
+        }
+      }
+
+      const transports: TripEvent['transports'] = []
+      const transportRaw = m['transport'] ?? m['transports']
+      for (const item of Array.isArray(transportRaw) ? transportRaw : transportRaw ? [transportRaw] : []) {
+        const rec = asRecord(item)
+        if (!rec) {
+          bag.warn(re.line, `事件「${re.title}」的 transport 列表里有一项不是对象，已忽略`)
+          continue
+        }
+        const t = readTransport(rec, null)
+        if (t) transports.push(t)
+      }
+      // 旧写法：flight: {...} —— 单条、mode 固定为 flight
+      const legacyFlight = asRecord(m['flight'])
+      if (legacyFlight) {
+        const t = readTransport(legacyFlight, 'flight')
+        if (t) transports.push({ ...t, mode: 'flight' })
       }
 
       const costRaw = str(m['cost'])
@@ -593,7 +622,7 @@ export function parse(src: string): ParseResult {
         flags: readFlags(bag, re.line, m['flags']),
         cost: costRaw ? parseCost(costRaw, num(meta['travelers']) ?? 1, str(meta['currency'])) : undefined,
         booking,
-        flight,
+        transports,
         summary,
         detail,
         variants: re.variants,

@@ -1,21 +1,52 @@
-import { Luggage, Plane } from 'lucide-react'
-import type { Flight } from '@jjj/schema'
+import { Luggage } from 'lucide-react'
+import { TRANSPORTS, type Transport, type TransportMode } from '@jjj/schema'
+import { iconFor } from '../lib/icons.tsx'
 
 /**
- * 航班时间轴 —— 机票产品（Expedia / Google Flights）那套版式：
+ * 长途换乘时间轴 —— 机票产品（Expedia / Google Flights）那套版式，
+ * 但不钉死为航班：mode 决定图标与槽位文案（航班/火车/自驾/轮渡…），线的语言不变：
  *
  *   10:15                 全程 11h55m                13:11 ⁺¹
  *   ●━━━━━━━━━━━━●╌╌╌╌╌╌╌╌╌╌●━━━━━━━━━━━━▶
  *   PVG T1          ICN · 停 2h10m               SEA
  *
- * 实线 = 飞行段，虚线 = 中转停留，段长按时长分配：
- * 中转时长已知按真实比例；未知时飞行段等宽、中转段按名义 1/3 配重。
- * （票面只给全程时长，单段飞行时长本来拿不到 —— 各飞行段均分是诚实的近似。）
+ * 实线 = 行进段，虚线 = 中转/停留，段长按时长分配：
+ * 停留时长已知按真实比例；未知时行进段等宽、停留段按名义 1/3 配重。
  *
- * **每个字段都可以缺。** 机票常常晚于行程定下来 —— 缺的字段渲染成
+ * **多人汇合**：一个事件挂多条 transport（她从 PVG 直飞、我从 SNA 飞），
+ * 逐条堆叠渲染，各自带 traveler 标签。
+ *
+ * **每个字段都可以缺。** 票常常晚于行程定下来 —— 缺的字段渲染成
  * 虚线框「待填」空位，骨架永远完整，之后人工或 Agent 补进 TripMD。
  */
-export function FlightTimeline({ flight }: { flight: Flight }) {
+
+/** 按交通方式定槽位文案 —— 机场/车站/港口不该共用一个词 */
+const MODE_SLOTS: Record<TransportMode, { who: string; from: string; to: string; bag: string | null; stop: string }> = {
+  flight: { who: '航司 · 航班号', from: '出发机场', to: '到达机场', bag: '托运行李', stop: '中转' },
+  rail: { who: '承运 · 车次', from: '出发站', to: '到达站', bag: '行李', stop: '换乘' },
+  monorail: { who: '承运 · 班次', from: '出发站', to: '到达站', bag: null, stop: '换乘' },
+  streetcar: { who: '承运 · 班次', from: '出发站', to: '到达站', bag: null, stop: '换乘' },
+  bus: { who: '客运 · 班次', from: '出发站', to: '到达站', bag: '行李', stop: '经停' },
+  ferry: { who: '船司 · 班次', from: '出发港', to: '到达港', bag: '行李', stop: '经停' },
+  drive: { who: '车辆 / 租车行', from: '出发地', to: '到达地', bag: null, stop: '休息点' },
+  rideshare: { who: '平台 / 车型', from: '出发地', to: '到达地', bag: null, stop: '经停' },
+  bike: { who: '车辆', from: '出发地', to: '到达地', bag: null, stop: '休息点' },
+  walk: { who: '路线', from: '出发地', to: '到达地', bag: null, stop: '休息点' },
+}
+
+export function TransportTimeline({ transports }: { transports: Transport[] }) {
+  return (
+    <div className="mt-2.5 space-y-2">
+      {transports.map((t, i) => (
+        <SingleTransport key={i} t={t} />
+      ))}
+    </div>
+  )
+}
+
+function SingleTransport({ t: flight }: { t: Transport }) {
+  const slots = MODE_SLOTS[flight.mode]
+  const ModeIcon = iconFor(TRANSPORTS[flight.mode].icon)
   const stops = flight.stops
   const legs = stops.length + 1
 
@@ -29,7 +60,7 @@ export function FlightTimeline({ flight }: { flight: Flight }) {
   const flyGrow = flyTotal !== null ? flyTotal / legs : 180
 
   // 线与标签行共用的段序列：fly / wait 交错
-  const segs: { kind: 'fly' | 'wait'; grow: number; stop?: Flight['stops'][number] }[] = []
+  const segs: { kind: 'fly' | 'wait'; grow: number; stop?: Transport['stops'][number] }[] = []
   for (let i = 0; i < legs; i++) {
     segs.push({ kind: 'fly', grow: flyGrow })
     const stop = stops[i]
@@ -37,17 +68,24 @@ export function FlightTimeline({ flight }: { flight: Flight }) {
   }
 
   return (
-    <div className="mt-2.5 rounded-lg bg-[var(--paper-sunken)] px-3.5 pb-3 pt-2.5">
-      {/* 航司 · 航班号 · 行李 —— 可缺的槽位 */}
+    <div className="rounded-lg bg-[var(--paper-sunken)] px-3.5 pb-3 pt-2.5">
+      {/* 谁 · 承运/班次 · 行李 —— 可缺的槽位，文案随交通方式变 */}
       <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11.5px]">
+        {flight.traveler && (
+          <span className="rounded-full bg-ink px-1.5 py-px text-[10px] font-medium leading-tight text-paper">
+            {flight.traveler}
+          </span>
+        )}
         <span className="inline-flex items-center gap-1.5">
-          <Plane size={12} className="shrink-0 text-graphite" aria-hidden />
-          <SlotText value={joinSlot(flight.airline, flight.flightNo)} hint="航司 · 航班号" mono />
+          <ModeIcon size={12} className="shrink-0 text-graphite" aria-hidden />
+          <SlotText value={joinSlot(flight.carrier, flight.number)} hint={slots.who} mono />
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <Luggage size={12} className="shrink-0 text-graphite" aria-hidden />
-          <SlotText value={flight.baggage} hint="托运行李" />
-        </span>
+        {(slots.bag !== null || flight.baggage) && (
+          <span className="inline-flex items-center gap-1.5">
+            <Luggage size={12} className="shrink-0 text-graphite" aria-hidden />
+            <SlotText value={flight.baggage} hint={slots.bag ?? '行李'} />
+          </span>
+        )}
         {flight.note && <span className="text-graphite">{flight.note}</span>}
       </div>
 
@@ -110,7 +148,7 @@ export function FlightTimeline({ flight }: { flight: Flight }) {
                 className="min-w-10 truncate text-center text-[10.5px] leading-4 text-graphite"
                 style={{ flexGrow: s.grow, flexBasis: 0 }}
               >
-                {s.stop?.airport ?? '中转'}
+                {s.stop?.airport ?? slots.stop}
                 {s.stop?.waitMin != null && ` · 停 ${fmtDur(s.stop.waitMin)}`}
               </span>
             )
@@ -123,8 +161,8 @@ export function FlightTimeline({ flight }: { flight: Flight }) {
               }`}
               style={{ flexGrow: s.grow, flexBasis: 0 }}
             >
-              {first && <SlotText value={flight.from} hint="出发机场" />}
-              {last && <SlotText value={flight.to} hint="到达机场" />}
+              {first && <SlotText value={flight.from} hint={slots.from} />}
+              {last && <SlotText value={flight.to} hint={slots.to} />}
             </span>
           )
         })}
@@ -171,7 +209,7 @@ function SlotText({
       className={`whitespace-nowrap rounded border border-dashed border-[var(--fog)] px-1.5 py-px text-graphite/60 ${
         mono ? 'tnum' : ''
       } ${strong ? 'text-[12px]' : 'text-[10.5px]'}`}
-      title="待填 —— 在 plan.md 的 flight 块里补上"
+      title="待填 —— 在 plan.md 的 transport 块里补上"
     >
       {hint}
     </span>

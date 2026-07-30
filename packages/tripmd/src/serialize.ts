@@ -1,4 +1,4 @@
-import type { Day, Flight, Leg, Place, Trip, TripEvent } from '@jjj/schema'
+import type { Day, Leg, Place, Transport, Trip, TripEvent } from '@jjj/schema'
 
 /**
  * Trip → 规范 TripMD。parse() 的逆操作。
@@ -123,11 +123,11 @@ function dayBlock(day: Day): string | null {
   return ['```trip-day', ...L, '```'].join('\n')
 }
 
-function flightValue(f: Flight): string {
+function transportValue(t: Transport): string {
   const stops =
-    f.stops.length > 0
+    t.stops.length > 0
       ? {
-          raw: `[${f.stops
+          raw: `[${t.stops
             .map((s) =>
               flowMap([
                 ['airport', s.airport],
@@ -138,17 +138,20 @@ function flightValue(f: Flight): string {
         }
       : undefined
   return flowMap([
-    ['airline', f.airline],
-    ['flight_no', f.flightNo],
-    ['from', f.from],
-    ['to', f.to],
-    ['dep_time', f.depTime],
-    ['arr_time', f.arrTime],
-    ['arr_day_offset', f.arrDayOffset !== 0 ? f.arrDayOffset : undefined],
-    ['duration', f.durationMin !== null ? fmtDuration(f.durationMin) : undefined],
-    ['baggage', f.baggage],
+    ['traveler', t.traveler],
+    // mode 总是显式写出 —— 规范形态不留默认值歧义，二次往返字节稳定
+    ['mode', t.mode],
+    ['carrier', t.carrier],
+    ['number', t.number],
+    ['from', t.from],
+    ['to', t.to],
+    ['dep_time', t.depTime],
+    ['arr_time', t.arrTime],
+    ['arr_day_offset', t.arrDayOffset !== 0 ? t.arrDayOffset : undefined],
+    ['duration', t.durationMin !== null ? fmtDuration(t.durationMin) : undefined],
+    ['baggage', t.baggage],
     ['stops', stops],
-    ['note', f.note],
+    ['note', t.note],
   ])
 }
 
@@ -169,7 +172,12 @@ function eventBlock(ev: TripEvent, placeById: Map<string, Place>, leg: Leg | und
       ])}`,
     )
   }
-  if (ev.flight) L.push(`flight: ${flightValue(ev.flight)}`)
+  if (ev.transports.length === 1) {
+    L.push(`transport: ${transportValue(ev.transports[0]!)}`)
+  } else if (ev.transports.length > 1) {
+    L.push('transport:')
+    for (const t of ev.transports) L.push(`  - ${transportValue(t)}`)
+  }
   if (leg) {
     const to = leg.to ? placeById.get(leg.to) : undefined
     void to

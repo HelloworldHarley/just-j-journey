@@ -7,20 +7,20 @@ import {
   formatMinutes,
   groupOf,
   type Day,
-  type Flight,
   type Place,
+  type Transport,
   type TripEvent,
 } from '@jjj/schema'
 import { buildTimeline, isConflict, type LegRow } from '../lib/layout.ts'
 import type { Favorites } from '../data/useFavorites.ts'
 import { iconFor } from '../lib/icons.tsx'
 import { CategoryChip, groupVars } from './CategoryChip.tsx'
-import { FlightTimeline } from './FlightTimeline.tsx'
+import { TransportTimeline } from './TransportTimeline.tsx'
 import { MapLinkButton } from './MapLinkButton.tsx'
 import { Markdown } from './Markdown.tsx'
 
-/** 没写 flight 块时的空骨架 —— 所有槽位都显示「待填」 */
-const EMPTY_FLIGHT: Flight = { arrDayOffset: 0, durationMin: null, stops: [] }
+/** flight 事件没写 transport 块时的空骨架 —— 所有槽位都显示「待填」 */
+const EMPTY_TRANSPORT: Transport = { mode: 'flight', arrDayOffset: 0, durationMin: null, stops: [] }
 
 /** 时间列宽度。卡片内外共用，保证通勤条的竖线对得上卡片里的时间列。 */
 const TIME_COL = '3.5rem'
@@ -170,8 +170,13 @@ function EventCard({
           </div>
         )}
 
-        {/* 航班事件永远画完整时间轴 —— 没写 flight 块也画骨架，空位等着填 */}
-        {event.category === 'flight' && <FlightTimeline flight={event.flight ?? EMPTY_FLIGHT} />}
+        {/* 换乘时间轴：有 transport 块就画（任何类别、行程中任何位置）；
+            flight 类别没写块也画空骨架 —— 机票常常最后才买，空位等着填 */}
+        {event.transports.length > 0 ? (
+          <TransportTimeline transports={event.transports} />
+        ) : event.category === 'flight' ? (
+          <TransportTimeline transports={[EMPTY_TRANSPORT]} />
+        ) : null}
 
         {/* 首段常显，其余折叠 —— 第一眼永远是最重要的一句 */}
         {event.summary && <Markdown className="compact mt-2">{event.summary}</Markdown>}

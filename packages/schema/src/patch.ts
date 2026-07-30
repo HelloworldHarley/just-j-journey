@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { CATEGORY_KEYS, FLAG_KEYS } from './categories.ts'
-import { FlightSchema } from './trip.ts'
+import { TransportSchema } from './trip.ts'
 
 /**
  * TripPatch —— 修改行程的唯一入口。
@@ -42,7 +42,11 @@ export const NewEventSchema = z
   .strict()
 
 export const TripPatchOpSchema = z.discriminatedUnion('op', [
-  z.object({ op: z.literal('set_flight'), eventId: z.string().min(1), flight: FlightSchema }),
+  z.object({
+    op: z.literal('set_transports'),
+    eventId: z.string().min(1),
+    transports: z.array(TransportSchema),
+  }),
   z.object({
     op: z.literal('update_event'),
     eventId: z.string().min(1),

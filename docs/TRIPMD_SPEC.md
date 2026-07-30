@@ -78,7 +78,7 @@ currency: USD
 | `flags` | | `warning` `tentative` `optional` `needs-booking` |
 | `cost` | | 自由文本，如 `约 $70/人`。解析器自动抽金额进预算统计：`/人` 乘人数、`× 2` 认乘法、`$250–400` 取中值、带「可选」不计入总额 |
 | `booking` | | `{status: required\|booked\|none, deadline: YYYY-MM-DD, note: ...}` |
-| `flight` | | 仅 `category: flight`，见下方「航班」。**所有子字段可空** —— UI 为缺的字段留「待填」空位 |
+| `transport` | | 长途换乘段（单个对象或**列表**，多人汇合一人一条）：`{traveler, mode: flight/rail/drive/ferry/bus…, carrier, number, from, to, dep_time, arr_time, arr_day_offset, duration, baggage, stops: [{airport, wait}], note}`。任何类别的事件都可挂；`category: flight` 没写块也会渲染待填骨架。旧写法 `flight: {...}` 仍接受（等价 mode: flight） |
 | `to_next` | | `{mode, minutes, km, label, note}` —— 到**下一个事件**怎么走 |
 
 ```yaml
@@ -120,29 +120,35 @@ time: 16:15–17:30
 
 终点早于起点视为跨午夜（`23:30–01:00` = 90 分钟），不报错。
 
-### 航班（`flight` 子块）
+### 长途换乘（`transport` 子块）
 
-UI 渲染成机票式时间轴：左起飞、右降落、实线飞行、虚线中转，段长按时长分配。
+抵达、离开、多目的地之间的长途移动，UI 渲染成机票式时间轴：左出发、右到达、
+实线行进、虚线中转/停留，段长按时长分配。**不限飞机** —— `mode` 决定图标与文案，
+火车/自驾/轮渡/长途大巴同样适用。
 
 ```yaml
-flight:
-  airline: 达美 Delta          # 可空
-  flight_no: DL281             # 可空；多段写 "DL281 · DL167"
-  from: PVG T1                 # 出发机场/航站楼
-  to: SEA                      # 到达机场/航站楼
-  dep_time: "10:15"            # 起飞当地时间
-  arr_time: "13:11"            # 降落当地时间
-  arr_day_offset: 1            # 次日到达写 1（跨太平洋常见），默认 0
-  duration: 11h55m             # 全程含中转。跨时区没法从两端当地时间算，要自己写
-  baggage: 2 件 23kg 托运       # 行李额
-  stops:                       # 中转（直飞省略）
-    - {airport: ICN, wait: 2h10m}
-  note: 值机截止 14:40
+# 单人单段：写一个对象
+transport: {mode: flight, carrier: 达美 Delta, number: DL281, from: PVG T1, to: SEA, dep_time: "10:15", arr_time: "13:11", duration: 11h55m, baggage: 2 件 23kg, stops: [{airport: ICN, wait: 2h10m}]}
+
+# 多人从不同地方汇合：写成列表，一人一条，traveler 区分
+transport:
+  - {traveler: 她, mode: flight, from: PVG, to: SEA, arr_time: "13:11"}
+  - {traveler: 我, mode: flight, from: SNA, to: SEA}
+
+# 火车抵达（事件 category 可以是 transit）
+transport: {mode: rail, carrier: Amtrak, number: Cascades 504, from: PDX, to: SEA King Street}
 ```
 
-- **不知道的字段直接省略，不要编。** 机票常常晚于行程定下来，UI 会画完整骨架并给缺的字段留「待填」空位，之后补进这里即可。
+字段：`traveler`（谁的，多人时）· `mode`（flight/rail/drive/ferry/bus…，默认 flight）·
+`carrier`（航司/铁路/船司/租车行）· `number`（航班号/车次/船班）· `from` / `to` ·
+`dep_time` / `arr_time` · `arr_day_offset`（次日到达写 1）· `duration`（全程含中转）·
+`baggage` · `stops: [{airport, wait}]` · `note`
+
+- **不知道的字段直接省略，不要编。** 票常常晚于行程定下来，UI 会画完整骨架并给缺的字段留「待填」空位，之后补进这里即可。`category: flight` 的事件没写块也画空骨架。
+- 多目的地行程中间的长途移动（如西雅图 → 波特兰的火车）同样写成一个事件 + `transport` 块。
 - `duration` / `wait` 接受 `11h55m`、`2h`、`45m`、`11 小时 55 分`、`"11:55"`、纯数字（分钟）。
-- 事件本身的 `time` 仍按 TripMD 通用规则写（抵达航班写降落时刻、出发航班写起飞时刻），`flight` 块里的时间是给票面时间轴用的。
+- 事件本身的 `time` 仍按 TripMD 通用规则写（抵达事件写到达时刻、出发事件写出发时刻），`transport` 块里的时间是给票面时间轴用的。
+- 旧写法 `flight: {airline, flight_no, ...}` 仍被接受，等价于 `transport: {mode: flight, carrier, number, ...}`；写回时会自动归一为新形态。
 
 ### 正文的「首段约定」
 

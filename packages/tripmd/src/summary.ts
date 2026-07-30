@@ -29,6 +29,7 @@ export function summarize(trip: Trip): TripSummary {
     subtitle: trip.subtitle,
     destination: trip.destination,
     dates: trip.dates,
+    travelers: trip.travelers,
     dayCount: trip.days.length,
     eventCount: trip.days.reduce((n, d) => n + d.events.length, 0),
     bookingCount: trip.days.reduce(

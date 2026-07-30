@@ -72,17 +72,13 @@ export function applyPatch(original: Trip, ops: TripPatchOp[]): PatchResult {
 
   for (const op of ops) {
     switch (op.op) {
-      case 'set_flight': {
+      case 'set_transports': {
         const loc = locate(trip, op.eventId)
         if (!loc) {
-          errors.push(opError(`set_flight: 找不到事件 ${op.eventId}`))
+          errors.push(opError(`set_transports: 找不到事件 ${op.eventId}`))
           break
         }
-        if (loc.event.category !== 'flight') {
-          errors.push(opError(`set_flight: 事件「${loc.event.title}」不是航班（${loc.event.category}）`))
-          break
-        }
-        loc.event.flight = op.flight
+        loc.event.transports = op.transports
         break
       }
 
@@ -140,7 +136,7 @@ export function applyPatch(original: Trip, ops: TripPatchOp[]): PatchResult {
             ? { raw: e.costRaw, amount: null, currency: undefined, optional: false }
             : undefined,
           booking: undefined,
-          flight: undefined,
+          transports: [],
           summary: e.summary,
           detail: '',
           variants: [],

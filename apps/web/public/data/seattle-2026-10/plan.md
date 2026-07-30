@@ -169,18 +169,20 @@ lodging: Astra Hotel
 
 时差日。主线是把行李安顿好，靠日落收尾，别排太满。
 
-### 航班抵达
+### 抵达西雅图 · 汇合
 
 ```trip-event
 time: "13:11"
 category: flight
 place: SEA 机场
 flags: [warning]
-flight: {to: SEA, arr_time: "13:11", note: 国际到达，出关后行李转盘取行李}
+transport:
+  - {traveler: 她, mode: flight, from: PVG, to: SEA, arr_time: "13:11", note: 国际到达，过海关后行李转盘取行李}
+  - {traveler: 我, mode: flight, from: SNA, to: SEA, note: 尔湾出发，票未定}
 to_next: {mode: rail, minutes: 38, label: 1 Line 到 Westlake，再换电车, note: 行李转盘走到轻轨站还要 12 分钟}
 ```
 
-**有 Global Entry 约 14:15 出关，否则 14:45–15:00。**
+以她的国际航班为锚：**有 Global Entry 约 14:15 出关，否则 14:45–15:00。** 我提前到就在到达层等她。
 
 到 Westlake Station 后换 **South Lake Union Streetcar**，在 **Terry & Thomas 站**下车，Astra 就在眼前。
 
@@ -765,16 +767,18 @@ place: SEA 机场
 
 国际航班，3 小时缓冲。*绝对底线 13:10，但别拿这个当计划。*
 
-### 航班起飞
+### 各自起飞
 
 ```trip-event
 time: "15:40"
 category: flight
 place: SEA 机场
-flight: {from: SEA, dep_time: "15:40"}
+transport:
+  - {traveler: 她, mode: flight, from: SEA, to: PVG, dep_time: "15:40", note: 国际航班，12:40 前进航站楼}
+  - {traveler: 我, mode: flight, from: SEA, to: SNA, note: 回尔湾，票未定}
 ```
 
-回家。
+各回各家。她 15:40 国际航班是全天倒推链的锚。
 
 ## 附录 · 出发前必办清单
 

@@ -63,35 +63,43 @@ export const CostSchema = z.object({
   optional: z.boolean().default(false),
 })
 
-/** 中转站。时长未填时 UI 画等宽段并留「待填」空位。 */
-export const FlightStopSchema = z.object({
-  /** 中转机场，如 "ICN" */
+/** 中转站/停靠点。时长未填时 UI 画等宽段并留「待填」空位。 */
+export const TransportStopSchema = z.object({
+  /** 中转机场/换乘站/停靠港，如 "ICN" */
   airport: z.string().optional(),
   /** 停留分钟数；null = 未填 */
   waitMin: z.number().int().positive().nullable().default(null),
 })
 
 /**
- * 航班详情。挂在 category: flight 的事件上。
+ * 长途换乘段 —— 抵达/离开/多目的地间的移动，机票式时间轴渲染。
  *
- * **所有字段可空** —— 行程常常先排好、机票后买。UI 对 flight 事件
- * 永远渲染完整的时间轴骨架，缺的字段显示「待填」空位，
+ * 不钉死为航班：mode 决定它是飞机、火车、自驾还是轮渡，
+ * 卡片视觉相同（左起点右终点、实线行进、虚线停留），只换图标与文案。
+ *
+ * 多人从不同地方出发汇合时，一个事件挂多条 transport，各自带 traveler 标签。
+ *
+ * **所有字段可空** —— 行程常常先排好、票后买。缺的字段渲染「待填」空位，
  * 之后人工补进 TripMD 或由 Agent 填入。
  */
-export const FlightSchema = z.object({
-  /** 航司，如 "全日空 ANA" */
-  airline: z.string().optional(),
-  /** 航班号，如 "NH178"；多段可写 "DL281 · DL167" */
-  flightNo: z.string().optional(),
-  /** 出发机场/航站楼，如 "PVG T2" */
+export const TransportSchema = z.object({
+  /** 谁的行程（多人汇合时区分），如 "她" / "我"。单人可省 */
+  traveler: z.string().optional(),
+  /** 交通方式，决定图标与文案。默认 flight */
+  mode: z.enum(TRANSPORT_MODES).default('flight'),
+  /** 承运方：航司/铁路公司/船司/租车行，如 "全日空 ANA" */
+  carrier: z.string().optional(),
+  /** 班次号：航班号/车次/船班，如 "NH178"；多段可写 "DL281 · DL167" */
+  number: z.string().optional(),
+  /** 出发点：机场/车站/港口/城市，如 "PVG T2" */
   from: z.string().optional(),
-  /** 到达机场/航站楼 */
+  /** 到达点 */
   to: z.string().optional(),
-  /** 起飞当地时间 "10:15" */
+  /** 出发当地时间 "10:15" */
   depTime: z.string().optional(),
-  /** 降落当地时间 "13:11" */
+  /** 到达当地时间 "13:11" */
   arrTime: z.string().optional(),
-  /** 降落在第几天后：0 当天，1 次日（+1）。跨太平洋航线常见 */
+  /** 到达在第几天后：0 当天，1 次日（+1）。跨太平洋航线常见 */
   arrDayOffset: z.number().int().default(0),
   /**
    * 全程时长（分钟，含中转）。跨时区时没法从两端当地时间算出来，
@@ -100,9 +108,9 @@ export const FlightSchema = z.object({
   durationMin: z.number().int().positive().nullable().default(null),
   /** 托运行李额说明，如 "2 件 23kg" / "无托运" */
   baggage: z.string().optional(),
-  /** 中转，按顺序 */
-  stops: z.array(FlightStopSchema).default([]),
-  /** 值机/登机口备注 */
+  /** 中转/停靠，按顺序 */
+  stops: z.array(TransportStopSchema).default([]),
+  /** 值机/检票/提车备注 */
   note: z.string().optional(),
 })
 
@@ -121,7 +129,8 @@ export const EventSchema = z.object({
   flags: z.array(z.enum(FLAG_KEYS)).default([]),
   cost: CostSchema.optional(),
   booking: BookingSchema.optional(),
-  flight: FlightSchema.optional(),
+  /** 长途换乘段（0..n 条，多人汇合时一人一条） */
+  transports: z.array(TransportSchema).default([]),
   /**
    * 正文摘要 —— 第一段。卡片默认只显示这一段。
    * TripMD 的通用书写约定：首段写"一句话说清这是什么/怎么做"，细节放后面。
@@ -212,6 +221,7 @@ export const TripSummarySchema = TripSchema.pick({
   destination: true,
   dates: true,
 }).extend({
+  travelers: z.number().int().positive().optional(),
   dayCount: z.number().int().positive(),
   eventCount: z.number().int().nonnegative(),
   /** 还有几项没订 —— 卡片上唯一一个「需要你行动」的数字 */
@@ -239,8 +249,8 @@ export type Place = z.infer<typeof PlaceSchema>
 export type Variant = z.infer<typeof VariantSchema>
 export type Booking = z.infer<typeof BookingSchema>
 export type Cost = z.infer<typeof CostSchema>
-export type Flight = z.infer<typeof FlightSchema>
-export type FlightStop = z.infer<typeof FlightStopSchema>
+export type Transport = z.infer<typeof TransportSchema>
+export type TransportStop = z.infer<typeof TransportStopSchema>
 export type TripEvent = z.infer<typeof EventSchema>
 export type Leg = z.infer<typeof LegSchema>
 export type Day = z.infer<typeof DaySchema>
