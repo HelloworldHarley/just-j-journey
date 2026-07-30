@@ -1,0 +1,289 @@
+@import 'tailwindcss';
+
+@import '@fontsource-variable/archivo';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
+/*
+ * 设计母题：时刻表。
+ *
+ * 候车牌 / 潮汐表 / 步道指示牌的语言，不是旅行手册的语言。
+ * 这份行程真正紧张的东西是时间 —— 11:20 必须还车、日落 18:48、
+ * 上午被取消还有下午补飞。所以整套视觉服务于一件事：
+ * 让时间的形状看得见。
+ */
+
+:root {
+  --paper: #f7f8f7; /* 微冷白，读作涂布纸而非奶油纸 */
+  --paper-raised: #ffffff;
+  --paper-sunken: #eef1f0;
+  --ink: #12161c; /* 近黑，偏冷，非纯黑 */
+  --ink-soft: #3a424e;
+  --graphite: #5a6472;
+  --fog: #dfe4e3;
+  --hairline: rgb(18 22 28 / 0.09);
+  --shadow: 0 1px 2px rgb(18 22 28 / 0.04), 0 8px 24px -12px rgb(18 22 28 / 0.12);
+  --tight: #c0392b; /* 余量告急 */
+  /* 顶栏高度。硬约束条要 sticky 在它下面，锚点滚动也要让开它 */
+  --nav-h: 3.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0f1216;
+    --paper-raised: #171b21;
+    --paper-sunken: #0a0c0f;
+    --ink: #eceff2;
+    --ink-soft: #aeb8c3;
+    --graphite: #7d8894;
+    --fog: #262c34;
+    --hairline: rgb(236 239 242 / 0.10);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+    --tight: #ff7a6b;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-raised: var(--paper-raised);
+  --color-sunken: var(--paper-sunken);
+  --color-ink: var(--ink);
+  --color-soft: var(--ink-soft);
+  --color-graphite: var(--graphite);
+  --color-fog: var(--fog);
+  --color-tight: var(--tight);
+
+  /* Archivo 打头、CJK 落到系统栈 —— 拉丁字母走导视系统的骨架，中文零字体下载 */
+  --font-display: 'Archivo Variable', -apple-system, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  background: var(--paper);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * 等宽数字是时间脊柱能对齐的前提。
+ * 比例数字下，"11:10" 和 "18:25" 宽度不同，整根脊柱的刻度就会左右晃。
+ */
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* 导视系统感的大字：拉宽字距，全大写 */
+.signage {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * 分组圆片。深浅色各一套色值 —— 深色模式下浅底必须配深色图标才有对比度。
+ * 「其他」组走描边款，视觉上退到背景。
+ */
+/*
+ * 「玩 / 吃」的卡片：极淡的同色底 + 分组色左边条。
+ * 底色只有 5%，不能再重了 —— 正文可读性优先，颜色只负责让卡片在扫读时被认出来。
+ */
+.grp-card {
+  background: color-mix(in srgb, var(--grp) 5%, var(--paper-raised));
+  border-left-color: var(--grp) !important;
+}
+
+.grp-chip {
+  background: var(--grp);
+  color: #fff;
+}
+.grp-chip-outline {
+  border: 1.5px solid color-mix(in srgb, var(--grp) 55%, transparent);
+  color: var(--grp);
+}
+/* 红色只用在「注意」上 —— 它是唯一表示「会出事」的颜色 */
+.tight-badge {
+  background: color-mix(in srgb, var(--tight) 13%, transparent);
+  color: var(--tight);
+}
+/* 待办用琥珀：需要行动，但不是危险 */
+.todo-badge {
+  background: color-mix(in srgb, #b8802a 15%, transparent);
+  color: #8a5f18;
+}
+@media (prefers-color-scheme: dark) {
+  .todo-badge {
+    background: color-mix(in srgb, #e0ac5c 18%, transparent);
+    color: #e0ac5c;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .grp-card {
+    background: color-mix(in srgb, var(--grp-dark) 9%, var(--paper-raised));
+    border-left-color: var(--grp-dark) !important;
+  }
+  .grp-chip {
+    background: var(--grp-dark);
+    color: #0f1216;
+  }
+  .grp-chip-outline {
+    border-color: color-mix(in srgb, var(--grp-dark) 55%, transparent);
+    color: var(--grp-dark);
+  }
+}
+
+/* 宽内容（表格、代码块）在自己的容器里横向滚动，页面本身永不横向滚动 */
+.prose-trip {
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.72;
+}
+
+/*
+ * 事件正文用小一号。资料页是长文阅读，14px 合适；
+ * 事件卡片里正文若和标题一样重，扫读时抓不住「这件事叫什么」。
+ */
+.prose-trip.compact {
+  font-size: 13.5px;
+  line-height: 1.68;
+}
+.prose-trip > * + * {
+  margin-top: 0.7em;
+}
+.prose-trip strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.prose-trip em {
+  color: var(--graphite);
+  font-style: normal;
+  font-size: 0.94em;
+}
+.prose-trip a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.prose-trip ul,
+.prose-trip ol {
+  padding-left: 1.15em;
+}
+.prose-trip ul {
+  list-style: none;
+}
+.prose-trip ul > li {
+  position: relative;
+}
+.prose-trip ul > li::before {
+  content: '';
+  position: absolute;
+  left: -0.85em;
+  top: 0.72em;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--graphite);
+}
+.prose-trip ol {
+  list-style: decimal;
+}
+.prose-trip li + li {
+  margin-top: 0.3em;
+}
+.prose-trip h1,
+.prose-trip h2,
+.prose-trip h3,
+.prose-trip h4 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-weight: 650;
+  margin-top: 1.6em;
+  letter-spacing: -0.01em;
+}
+.prose-trip h3 {
+  font-size: 1.02em;
+}
+.prose-trip h4 {
+  font-size: 0.96em;
+}
+.prose-trip code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--paper-sunken);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+.prose-trip blockquote {
+  border-left: 2px solid var(--fog);
+  padding-left: 0.9em;
+  color: var(--graphite);
+}
+.prose-trip hr {
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  margin: 1.6em 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  margin-inline: -2px;
+  padding-inline: 2px;
+}
+.prose-trip table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+  min-width: 26rem;
+}
+.prose-trip th {
+  font-family: var(--font-display);
+  font-weight: 650;
+  color: var(--ink);
+  text-align: left;
+  white-space: nowrap;
+}
+.prose-trip th,
+.prose-trip td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 0.5em 0.85em 0.5em 0;
+  vertical-align: top;
+}
+.prose-trip tbody tr:last-child td {
+  border-bottom: 0;
+}
