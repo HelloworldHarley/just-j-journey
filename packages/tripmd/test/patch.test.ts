@@ -10,7 +10,7 @@ import { parse } from '../src/parse.ts'
  * 五种 op 都要过：前两种是当前 UI 用的，后三种是增删移与 agent 的预留接口。
  */
 
-const md = readFileSync(join(__dirname, '../../../data/seattle-2026-10/plan.md'), 'utf8')
+const md = readFileSync(join(__dirname, '../../../apps/web/public/data/seattle-2026-10/plan.md'), 'utf8')
 
 let trip: Trip
 beforeEach(() => {

@@ -35,6 +35,9 @@ importers:
       '@jjj/schema':
         specifier: workspace:*
         version: link:../../packages/schema
+      '@jjj/tripmd':
+        specifier: workspace:*
+        version: link:../../packages/tripmd
       '@tanstack/react-query':
         specifier: ^5.62.7
         version: 5.101.4(react@19.2.8)

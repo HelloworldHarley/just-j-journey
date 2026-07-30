@@ -288,12 +288,12 @@ icon: 💰
 
 ## 校验
 
-`pnpm data:import` 输出带行号的诊断。**错误**阻止生成，**警告**不阻止。
+`pnpm data:check` 输出带行号的诊断。**错误**阻止生成，**警告**不阻止。
 
 ```
-data/seattle/plan.md:44  错误  category "sightseing" 无效
+seattle/plan.md:44  错误  category "sightseing" 无效
                                是否想写 `sight`？
-data/seattle/plan.md:64  警告  地点 "Kery Park" 未在 `trip-places` 中声明
+seattle/plan.md:64  警告  地点 "Kery Park" 未在 `trip-places` 中声明
                                是否指 "Kerry Park"？名称需完全一致
 ```
 
@@ -335,6 +335,6 @@ import(export(import(md)))  深等于  import(md)
 
 ## 完整示例
 
-见 [`data/_example/plan.md`](../data/_example/plan.md)（两天，覆盖每一种块）和 [`data/seattle-2026-10/plan.md`](../data/seattle-2026-10/plan.md)（5 天 38 事件，压力测试）。
+见 [`apps/web/public/data/_example/plan.md`](../apps/web/public/data/_example/plan.md)（两天，覆盖每一种块）和 [`apps/web/public/data/seattle-2026-10/plan.md`](../apps/web/public/data/seattle-2026-10/plan.md)（5 天 38 事件，压力测试）。
 
 生成新行程请用 [`AUTHORING_PROMPT.md`](./AUTHORING_PROMPT.md)。

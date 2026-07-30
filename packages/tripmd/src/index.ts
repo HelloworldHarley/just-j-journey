@@ -1,6 +1,7 @@
 export { parse, type ParseResult } from './parse.ts'
 export { serialize } from './serialize.ts'
 export { applyPatch, type PatchResult } from './patch.ts'
+export { summarize } from './summary.ts'
 export {
   DiagnosticBag,
   formatDiagnostics,

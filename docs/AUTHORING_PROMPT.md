@@ -2,7 +2,7 @@
 
 把下面分隔线之间的**全部内容**粘给 Claude / GPT / Gemini，末尾附上你的行程需求。
 
-产出存成 `data/<trip-id>/plan.md`，然后 `pnpm data:import`。
+产出存成 `apps/web/public/data/<trip-id>/plan.md`，然后 `pnpm data:check`。
 
 ---
 

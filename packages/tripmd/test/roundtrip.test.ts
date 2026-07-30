@@ -16,7 +16,7 @@ import { serialize } from '../src/serialize.ts'
 const FIXTURES = ['seattle-2026-10', '_example'] as const
 
 const load = (dir: string) =>
-  readFileSync(join(__dirname, '../../../data', dir, 'plan.md'), 'utf8')
+  readFileSync(join(__dirname, '../../../apps/web/public/data', dir, 'plan.md'), 'utf8')
 
 describe('语义幂等', () => {
   for (const dir of FIXTURES) {

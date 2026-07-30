@@ -5,6 +5,3 @@ dist/
 .env
 .env.local
 .wrangler/
-
-# 由 plan.md 派生的构建产物（pnpm data:import 重新生成）
-apps/web/public/data/

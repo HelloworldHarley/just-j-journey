@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './styles/index.css'
 import { RepositoryContext } from './data/hooks.ts'
-import { StaticTripRepository } from './data/StaticTripRepository.ts'
+import { MarkdownTripRepository } from './data/MarkdownTripRepository.ts'
 import { HomePage } from './features/trip-list/HomePage.tsx'
 import { BudgetRoute, InfoRoute, ListRoute, TripPage } from './app/TripPage.tsx'
 import { Problem } from './components/States.tsx'
@@ -14,8 +14,8 @@ import { applyPalette } from './lib/palette.ts'
 applyPalette()
 
 // 数据源在这里注入，全应用只有这一处知道数据从哪来。
-// Phase 6 接后端时，把这一行换成 HttpTripRepository，视图代码一行不改。
-const repository = new StaticTripRepository()
+// 单工件：浏览器直接吃 plan.md。Phase 6 接后端时换 HttpTripRepository，视图零改动。
+const repository = new MarkdownTripRepository()
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5 * 60_000, retry: 1, refetchOnWindowFocus: false } },

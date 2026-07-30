@@ -7,7 +7,6 @@
     "dev": "pnpm --filter @jjj/web dev",
     "build": "pnpm --filter @jjj/web build",
     "preview": "pnpm --filter @jjj/web preview",
-    "data:import": "tsx tools/import.ts",
     "data:check": "tsx tools/check.ts",
     "typecheck": "tsc -b --pretty",
     "test": "vitest run"
