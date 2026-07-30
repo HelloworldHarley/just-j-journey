@@ -1,18 +1,19 @@
-import { Plane, Star } from 'lucide-react'
+import { BedDouble, Route, Star } from 'lucide-react'
 import { GROUPS, type GroupKey } from '@jjj/schema'
 
 /**
- * 列表筛选。选项来自分组体系本身（全部/玩/吃/其他）+ 两个横切维度（航班/收藏），
- * 不是为某份行程定制的 —— 任何 TripMD 导入的行程都是同一套。
+ * 列表筛选。前三个是过滤（全部/玩/吃），后三个里「住」「行」是**派生视图**——
+ * 住宿聚合成连住区间、交通聚合成票务卡，订房/订票 App 的形态，
+ * 不再保留按天的流水账。所有选项都来自通用结构，任何行程同一套。
  */
-export type EventFilter = 'all' | GroupKey | 'flight' | 'faved'
+export type EventFilter = 'all' | 'play' | 'food' | 'stay' | 'move' | 'faved'
 
-const OPTIONS: { key: EventFilter; label: string; icon?: 'plane' | 'star'; dot?: GroupKey }[] = [
+const OPTIONS: { key: EventFilter; label: string; icon?: 'bed' | 'route' | 'star'; dot?: GroupKey }[] = [
   { key: 'all', label: '全部' },
   { key: 'play', label: GROUPS.play.zh, dot: 'play' },
   { key: 'food', label: GROUPS.food.zh, dot: 'food' },
-  { key: 'other', label: GROUPS.other.zh, dot: 'other' },
-  { key: 'flight', label: '航班', icon: 'plane' },
+  { key: 'stay', label: '住', icon: 'bed' },
+  { key: 'move', label: '行', icon: 'route' },
   { key: 'faved', label: '收藏', icon: 'star' },
 ]
 
@@ -51,13 +52,11 @@ export function FilterBar({
                 <span
                   aria-hidden
                   className="h-[7px] w-[7px] rounded-full"
-                  style={{
-                    background: `var(--g-${o.dot})`,
-                    opacity: o.dot === 'other' && !active ? 0.5 : 1,
-                  }}
+                  style={{ background: `var(--g-${o.dot})` }}
                 />
               )}
-              {o.icon === 'plane' && <Plane size={12} aria-hidden />}
+              {o.icon === 'bed' && <BedDouble size={12} aria-hidden />}
+              {o.icon === 'route' && <Route size={12} aria-hidden />}
               {o.icon === 'star' && (
                 <Star size={12} className={active ? 'fill-current' : ''} aria-hidden />
               )}

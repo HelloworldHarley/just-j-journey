@@ -11,6 +11,8 @@ import { DayRail } from '../../components/DayRail.tsx'
 import { RailLayout } from '../../components/RailLayout.tsx'
 import { useScrollSpy } from '../../lib/useScrollSpy.ts'
 import { FilterBar, type EventFilter } from './FilterBar.tsx'
+import { StayView } from './StayView.tsx'
+import { TransportView } from './TransportView.tsx'
 import { CATEGORIES } from '@jjj/schema'
 
 export function ListView({ trip }: { trip: Trip }) {
@@ -24,14 +26,13 @@ export function ListView({ trip }: { trip: Trip }) {
   // 只隐藏不匹配的事件卡片 —— 这样时间上下文不丢，跳天导航也照常工作。
   const matches = (e: Trip['days'][number]['events'][number]): boolean => {
     switch (filter) {
-      case 'all':
-        return true
-      case 'flight':
-        return e.category === 'flight'
       case 'faved':
         return favorites.has(e.id)
-      default:
+      case 'play':
+      case 'food':
         return CATEGORIES[e.category].group === filter
+      default:
+        return true
     }
   }
 
@@ -47,36 +48,44 @@ export function ListView({ trip }: { trip: Trip }) {
     <div className="pb-24">
       <FilterBar value={filter} onChange={setFilter} />
 
-      <RailLayout
-        rail={
-          <DayRail
-            days={trip.days}
-            activeIndex={spy.active}
-            todayDate={today}
-            onJump={spy.jumpTo}
-          />
-        }
-      >
-        {trip.days.map((day, i) => (
-          <section key={day.index} ref={spy.register(i)} className="scroll-mt-[6.5rem] pt-11">
-            <DayHeader
-              day={day}
-              isToday={day.date === today}
-              constraints={trip.constraints.filter((c) => c.date === day.date)}
+      {filter === 'stay' || filter === 'move' ? (
+        /* 「住」「行」是派生视图 —— 聚合区间/票务卡，不保留按天流水账 */
+        <div className="mx-auto max-w-3xl px-4">
+          {filter === 'stay' ? <StayView trip={trip} /> : <TransportView trip={trip} />}
+        </div>
+      ) : (
+        <RailLayout
+          rail={
+            <DayRail
+              days={trip.days}
+              activeIndex={spy.active}
+              todayDate={today}
+              onJump={spy.jumpTo}
             />
-            {filter === 'all' && day.intro && <Markdown className="mb-5">{day.intro}</Markdown>}
-            <DayTimeline
-              day={filter === 'all' ? day : { ...day, events: day.events.filter(matches), legs: [] }}
-              places={places}
-              favorites={favorites}
-            />
-            {filter !== 'all' && day.events.filter(matches).length === 0 && (
-              <p className="py-3 text-[12.5px] text-graphite">这天没有匹配的安排。</p>
-            )}
-            {filter === 'all' && day.fallbackOrder.length > 0 && <FallbackNote day={day} />}
-          </section>
-        ))}
-      </RailLayout>
+          }
+        >
+          {trip.days.map((day, i) => (
+            <section key={day.index} ref={spy.register(i)} className="scroll-mt-[6.5rem] pt-11">
+              <DayHeader
+                day={day}
+                isToday={day.date === today}
+                constraints={trip.constraints.filter((c) => c.date === day.date)}
+              />
+              {filter === 'all' && day.intro && <Markdown className="mb-5">{day.intro}</Markdown>}
+              <DayTimeline
+                day={filter === 'all' ? day : { ...day, events: day.events.filter(matches), legs: [] }}
+                places={places}
+                favorites={favorites}
+                connectors={filter === 'all'}
+              />
+              {filter !== 'all' && day.events.filter(matches).length === 0 && (
+                <p className="py-3 text-[12.5px] text-graphite">这天没有匹配的安排。</p>
+              )}
+              {filter === 'all' && day.fallbackOrder.length > 0 && <FallbackNote day={day} />}
+            </section>
+          ))}
+        </RailLayout>
+      )}
     </div>
   )
 }

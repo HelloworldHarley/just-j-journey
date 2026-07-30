@@ -29,12 +29,26 @@ export function DayTimeline({
   day,
   places,
   favorites,
+  connectors = true,
 }: {
   day: Day
   places: Map<string, Place>
   favorites: Favorites
+  /** 筛选态（玩/吃/收藏）只看卡片本身 —— 通勤和空档在断章取义的子集里没有意义 */
+  connectors?: boolean
 }) {
   const rows = buildTimeline(day)
+  if (!connectors) {
+    return (
+      <div className="space-y-3">
+        {rows
+          .filter((r) => r.kind === 'event')
+          .map((row) => (
+            <EventCard key={row.key} event={row.event} places={places} favorites={favorites} />
+          ))}
+      </div>
+    )
+  }
   return (
     <div>
       {rows.map((row) =>

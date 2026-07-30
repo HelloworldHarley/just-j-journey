@@ -89,6 +89,23 @@ function constraintsBlock(trip: Trip): string | null {
   return L.join('\n')
 }
 
+function rentalsBlock(trip: Trip, placeById: Map<string, Place>): string | null {
+  if (trip.rentals.length === 0) return null
+  const L = ['## 租车', '', '```trip-rentals']
+  for (const r of trip.rentals) {
+    L.push(`- what: ${scalar(r.what)}`)
+    L.push(`  from: ${scalar(r.from.raw)}`)
+    L.push(`  to: ${scalar(r.to.raw)}`)
+    const pickup = r.pickupPlaceId ? placeById.get(r.pickupPlaceId) : undefined
+    const dropoff = r.dropoffPlaceId ? placeById.get(r.dropoffPlaceId) : undefined
+    if (pickup) L.push(`  pickup: ${scalar(pickup.name)}`)
+    if (dropoff) L.push(`  dropoff: ${scalar(dropoff.name)}`)
+    if (r.note) L.push(`  note: ${scalar(r.note)}`)
+  }
+  L.push('```')
+  return L.join('\n')
+}
+
 function placesBlock(trip: Trip): string | null {
   if (trip.places.length === 0) return null
   const L = ['## 地点表', '', '```trip-places']
@@ -204,6 +221,7 @@ export function serialize(trip: Trip): string {
   chunks.push(frontmatter(trip))
   chunks.push(`# ${trip.title}`)
   chunks.push(constraintsBlock(trip))
+  chunks.push(rentalsBlock(trip, placeById))
   chunks.push(placesBlock(trip))
 
   for (const day of trip.days) {

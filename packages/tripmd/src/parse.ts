@@ -186,6 +186,7 @@ export function parse(src: string): ParseResult {
   const rawDays: RawDay[] = []
   const rawRefs: RawRef[] = []
   const constraintFences: { line: number; value: unknown }[] = []
+  const rentalFences: { line: number; value: unknown }[] = []
   const placeFences: { line: number; value: unknown }[] = []
 
   type Ctx =
@@ -245,6 +246,9 @@ export function parse(src: string): ParseResult {
       switch (t.info) {
         case 'trip-constraints':
           constraintFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-constraints') })
+          continue
+        case 'trip-rentals':
+          rentalFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-rentals') })
           continue
         case 'trip-places':
           placeFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-places') })
@@ -471,6 +475,52 @@ export function parse(src: string): ParseResult {
         continue
       }
       constraints.push({ kind, at: atRaw, date: dt.date, minute: dt.minute, label, note: str(rec['note']) })
+    }
+  }
+
+  // ── 长租（租车等） ──
+  const rentals: Trip['rentals'] = []
+  for (const fence of rentalFences) {
+    const list = fence.value
+    if (list === null) continue
+    if (!Array.isArray(list)) {
+      bag.error(fence.line, '`trip-rentals` 必须是一个列表', '每项以 `- what: ...` 开头')
+      continue
+    }
+    for (const item of list) {
+      const rec = asRecord(item)
+      if (!rec) continue
+      const what = str(rec['what']) ?? str(rec['item'])
+      if (!what) {
+        bag.error(fence.line, '`trip-rentals` 里有一项缺少 `what`（租的是什么）')
+        continue
+      }
+      const fromRaw = str(rec['from']) ?? ''
+      const toRaw = str(rec['to']) ?? ''
+      const from = parseDateTime(fromRaw)
+      const to = parseDateTime(toRaw)
+      if (!from || !to) {
+        bag.error(
+          fence.line,
+          `租赁「${what}」的 ${!from ? 'from' : 'to'} "${!from ? fromRaw : toRaw}" 无法解析`,
+          '格式为 `2026-10-02 11:30`',
+        )
+        continue
+      }
+      if (to.date < from.date || (to.date === from.date && to.minute <= from.minute)) {
+        bag.error(fence.line, `租赁「${what}」的归还时刻不晚于取用时刻`)
+        continue
+      }
+      const pickup = str(rec['pickup'])
+      const dropoff = str(rec['dropoff'])
+      rentals.push({
+        what,
+        from: { raw: fromRaw, ...from },
+        to: { raw: toRaw, ...to },
+        pickupPlaceId: pickup ? resolvePlaceRef(pickup, fence.line, 'logistics') : null,
+        dropoffPlaceId: dropoff ? resolvePlaceRef(dropoff, fence.line, 'logistics') : null,
+        note: str(rec['note']),
+      })
     }
   }
 
@@ -744,6 +794,7 @@ export function parse(src: string): ParseResult {
     travelers: num(meta['travelers']),
     currency: str(meta['currency']),
     constraints,
+    rentals,
     places: [...places.values()],
     days,
     reference: refs,

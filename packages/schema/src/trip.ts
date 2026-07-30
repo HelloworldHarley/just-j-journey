@@ -192,6 +192,31 @@ export const ConstraintSchema = z.object({
   note: z.string().optional(),
 })
 
+/** "YYYY-MM-DD HH:MM" 拆解后的时刻，raw 原样保留供导出 */
+const MomentSchema = z.object({
+  raw: z.string(),
+  date: z.string().regex(iso),
+  minute: z.number().int().min(0),
+})
+
+/**
+ * 长租 —— 有明确取还时刻、跨越多天的租赁资产：租车、随身 WiFi、滑雪装备。
+ *
+ * 它不是事件（不属于某一天的时间轴，虽然取/还动作可以另写成 logistics 事件），
+ * 而是一段横跨行程的区间 —— 「行」视图里渲染成订车 App 那种 从…到… 的卡片。
+ * 费用仍写在取车那个事件的 cost 上，预算统计单一来源不变。
+ */
+export const RentalSchema = z.object({
+  /** 租的是什么，如 "保时捷 Macan" */
+  what: z.string().min(1),
+  from: MomentSchema,
+  to: MomentSchema,
+  /** 取/还地点（placeId），按名引用地点表 */
+  pickupPlaceId: z.string().nullable(),
+  dropoffPlaceId: z.string().nullable(),
+  note: z.string().optional(),
+})
+
 export const ReferenceSchema = z.object({
   id: z.string().min(1),
   icon: z.string().optional(),
@@ -209,6 +234,7 @@ export const TripSchema = z.object({
   travelers: z.number().int().positive().optional(),
   currency: z.string().optional(),
   constraints: z.array(ConstraintSchema).default([]),
+  rentals: z.array(RentalSchema).default([]),
   places: z.array(PlaceSchema).default([]),
   days: z.array(DaySchema),
   reference: z.array(ReferenceSchema).default([]),
@@ -255,6 +281,7 @@ export type TripEvent = z.infer<typeof EventSchema>
 export type Leg = z.infer<typeof LegSchema>
 export type Day = z.infer<typeof DaySchema>
 export type Constraint = z.infer<typeof ConstraintSchema>
+export type Rental = z.infer<typeof RentalSchema>
 export type Reference = z.infer<typeof ReferenceSchema>
 export type Trip = z.infer<typeof TripSchema>
 export type TripSummary = z.infer<typeof TripSummarySchema>
