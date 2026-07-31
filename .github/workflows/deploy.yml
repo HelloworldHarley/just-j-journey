@@ -1,0 +1,57 @@
+# 推 main → 校验 TripMD → 构建 → 发布到 GitHub Pages。
+# 首次使用需在仓库 Settings → Pages 把 Source 设为 "GitHub Actions"。
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只跑一个部署，后来的顶掉排队中的
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # 版本读 package.json 的 packageManager
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate TripMD fixtures
+        run: pnpm data:check
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm --filter web build
+        env:
+          # 项目页挂在 https://<user>.github.io/<repo>/ 下
+          BASE_PATH: /${{ github.event.repository.name }}/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
