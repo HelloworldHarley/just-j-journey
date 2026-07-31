@@ -95,12 +95,21 @@ export const TransportSchema = z.object({
   from: z.string().optional(),
   /** 到达点 */
   to: z.string().optional(),
+  /**
+   * 出发日期 "YYYY-MM-DD"。缺省按事件当天推算 ——
+   * 抵达型事件的航班其实前一天起飞时（西行跨日期变更线）才需要显式写
+   */
+  depDate: z.string().optional(),
   /** 出发当地时间 "10:15" */
   depTime: z.string().optional(),
   /** 到达当地时间 "13:11" */
   arrTime: z.string().optional(),
+  /** 到达日期 "YYYY-MM-DD"。缺省 = 出发日期 + arr_day_offset */
+  arrDate: z.string().optional(),
   /** 到达在第几天后：0 当天，1 次日（+1）。跨太平洋航线常见 */
   arrDayOffset: z.number().int().default(0),
+  /** 票价，自由文本如 "$189"。null 渲染「待填」预算槽位 */
+  price: z.string().optional(),
   /**
    * 全程时长（分钟，含中转）。跨时区时没法从两端当地时间算出来，
    * 必须由作者提供；null = 未填，线段按等宽画
@@ -111,6 +120,24 @@ export const TransportSchema = z.object({
   /** 中转/停靠，按顺序 */
   stops: z.array(TransportStopSchema).default([]),
   /** 值机/检票/提车备注 */
+  note: z.string().optional(),
+})
+
+/**
+ * 住宿信息块 —— 挂在入住事件上，订房 App 卡片的字段。
+ * **所有字段可空**：知道就提前填，不知道渲染「待填」空位，之后人工或 Agent 补。
+ */
+export const StayInfoSchema = z.object({
+  /** 订在哪：万豪 / 希尔顿 / Airbnb / Booking… */
+  platform: z.string().optional(),
+  /** 星级 */
+  stars: z.number().int().positive().optional(),
+  /** 房型，如 "大床房" / "双床房" */
+  room: z.string().optional(),
+  /** 停车：含 / 不含 / "$30 每晚" 这类自由文本 */
+  parking: z.string().optional(),
+  /** 早餐：含 / 不含 */
+  breakfast: z.string().optional(),
   note: z.string().optional(),
 })
 
@@ -129,6 +156,8 @@ export const EventSchema = z.object({
   flags: z.array(z.enum(FLAG_KEYS)).default([]),
   cost: CostSchema.optional(),
   booking: BookingSchema.optional(),
+  /** 住宿信息（平台/星级/房型/停车/早餐），通常写在入住事件上 */
+  stay: StayInfoSchema.optional(),
   /** 长途换乘段（0..n 条，多人汇合时一人一条） */
   transports: z.array(TransportSchema).default([]),
   /**
@@ -138,6 +167,11 @@ export const EventSchema = z.object({
   summary: z.string().default(''),
   /** 首段之外的正文，卡片里折叠 */
   detail: z.string().default(''),
+  /**
+   * 注意条目 —— 结构化的「有坑」提醒（截止、防盗、必带装备…）。
+   * 与散文正文分开存，卡片里渲染成与「如果」同款的条目行。
+   */
+  notes: z.array(z.string()).default([]),
   variants: z.array(VariantSchema).default([]),
 })
 
@@ -175,7 +209,6 @@ export const DaySchema = z.object({
     .optional(),
   /** 「赶不上时的砍站顺序」 */
   fallbackOrder: z.array(z.string()).default([]),
-  weatherNote: z.string().optional(),
   /** 当天导语（h2 与第一个 h3 之间的自由 Markdown） */
   intro: z.string().default(''),
   events: z.array(EventSchema),
@@ -209,6 +242,10 @@ const MomentSchema = z.object({
 export const RentalSchema = z.object({
   /** 租的是什么，如 "保时捷 Macan" */
   what: z.string().min(1),
+  /** 租车平台/租车行：Turo / Hertz / 车主直租… */
+  platform: z.string().optional(),
+  /** 总里程限制，自由文本，如 "全程约 310 英里" */
+  mileage: z.string().optional(),
   from: MomentSchema,
   to: MomentSchema,
   /** 取/还地点（placeId），按名引用地点表 */
@@ -274,6 +311,7 @@ export type Coord = z.infer<typeof CoordSchema>
 export type Place = z.infer<typeof PlaceSchema>
 export type Variant = z.infer<typeof VariantSchema>
 export type Booking = z.infer<typeof BookingSchema>
+export type StayInfo = z.infer<typeof StayInfoSchema>
 export type Cost = z.infer<typeof CostSchema>
 export type Transport = z.infer<typeof TransportSchema>
 export type TransportStop = z.infer<typeof TransportStopSchema>

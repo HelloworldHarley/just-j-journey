@@ -1,21 +1,44 @@
 /**
  * 类别系统 · 两层分组 + 一层正交状态
  *
- *   第一层 分组 (Group)    → 决定颜色。只有三个：玩 / 吃 / 其他
- *   第二层 类别 (Category) → 决定图标。11 个细类，挂在三个组下
+ *   第一层 族 (Kind)       → 决定颜色与筛选归属。五个：玩 / 吃 / 住 / 行 / 事务
+ *   第二层 类型 (Category) → 决定图标与两字标签。18 个类型，挂在五族下
  *   正交层 状态 (Flag)     → 决定边框与角标，不占用颜色
  *
- * 为什么颜色只给三个而不是给每个细类：
- * 九个色相平级排在一屏里，谁都不突出，等于没有分类。
- * 收到三个之后，扫一眼颜色就知道「今天几件玩的、几顿饭、多少在赶路」——
- * Day 4 整列青绿说明一整天都在玩，Day 1 灰青灰橙说明是个折腾日。
- * 细分靠图标承载，信息一点没丢。
+ * 为什么颜色只给到族而不给每个类型：
+ * 十八个色相平级排在一屏里，谁都不突出，等于没有分类。
+ * 收到五个之后，扫一眼颜色就知道「今天几件玩的、几顿饭、多少在赶路」。
+ * 细分靠图标与两字类型标签承载，信息一点没丢。
  *
  * icon 存 lucide 图标名而非组件 —— 本包不依赖 React。
  */
 
 export const GROUP_KEYS = ['play', 'food', 'other'] as const
 export type GroupKey = (typeof GROUP_KEYS)[number]
+
+// ── 族：颜色与筛选的单位 ────────────────────────────────────────
+
+export const KIND_KEYS = ['play', 'food', 'stay', 'move', 'misc'] as const
+export type KindKey = (typeof KIND_KEYS)[number]
+
+export interface KindDef {
+  zh: string
+  hint: string
+  /**
+   * 前端注入的 CSS 变量名（配套还有 `-dark` 后缀）。
+   * null = 无色 —— 事务用透明底，不跟玩吃住行抢注意力。
+   * 玩/吃取自 GROUPS，住/行取自 ACCENTS，全部可被用户自定义覆盖。
+   */
+  cssVar: string | null
+}
+
+export const KINDS: Record<KindKey, KindDef> = {
+  play: { zh: '玩', hint: '你专程为它来的事', cssVar: '--g-play' },
+  food: { zh: '吃', hint: '一日三餐的骨架', cssVar: '--g-food' },
+  stay: { zh: '住', hint: '落脚的地方', cssVar: '--a-stay' },
+  move: { zh: '行', hint: '位移：航班 / 火车 / 自驾…', cssVar: '--a-move' },
+  misc: { zh: '事务', hint: '提还车、补货、寄存这类杂务', cssVar: null },
+}
 
 export interface GroupDef {
   zh: string
@@ -71,48 +94,78 @@ export const CATEGORY_KEYS = [
   // 吃
   'food',
   'cafe',
+  'snack',
   'bar',
-  // 其他
+  // 住
+  'hotel',
+  'homestay',
+  // 行
   'flight',
+  'rail',
+  'hsr',
+  'ferry',
+  'drive',
+  'bus',
   'transit',
-  'lodging',
+  // 事务
   'logistics',
 ] as const
 
 export type CategoryKey = (typeof CATEGORY_KEYS)[number]
 
 export interface CategoryDef {
+  /** 两字类型标签，卡片第一行 [图标][类型][名称] 里的那个类型 */
   zh: string
-  group: GroupKey
-  /** lucide-react 图标名 */
+  kind: KindKey
+  /** lucide-react 图标名，与类型一一对应 */
   icon: string
 }
 
 export const CATEGORIES: Record<CategoryKey, CategoryDef> = {
-  sight: { zh: '景点', group: 'play', icon: 'Landmark' },
-  outdoor: { zh: '户外', group: 'play', icon: 'Mountain' },
-  viewpoint: { zh: '观景', group: 'play', icon: 'Sunset' },
-  experience: { zh: '体验', group: 'play', icon: 'Ticket' },
+  sight: { zh: '景点', kind: 'play', icon: 'Landmark' },
+  outdoor: { zh: '户外', kind: 'play', icon: 'Mountain' },
+  viewpoint: { zh: '观景', kind: 'play', icon: 'Sunset' },
+  experience: { zh: '体验', kind: 'play', icon: 'Ticket' },
 
-  food: { zh: '正餐', group: 'food', icon: 'UtensilsCrossed' },
-  cafe: { zh: '咖啡小吃', group: 'food', icon: 'Coffee' },
-  bar: { zh: '酒吧', group: 'food', icon: 'Wine' },
+  food: { zh: '餐厅', kind: 'food', icon: 'UtensilsCrossed' },
+  cafe: { zh: '咖啡', kind: 'food', icon: 'Coffee' },
+  snack: { zh: '小吃', kind: 'food', icon: 'CakeSlice' },
+  bar: { zh: '酒吧', kind: 'food', icon: 'Wine' },
 
-  flight: { zh: '航班', group: 'other', icon: 'Plane' },
-  transit: { zh: '交通', group: 'other', icon: 'TrainFront' },
-  lodging: { zh: '住宿', group: 'other', icon: 'BedDouble' },
-  logistics: { zh: '事务', group: 'other', icon: 'KeyRound' },
+  hotel: { zh: '酒店', kind: 'stay', icon: 'Hotel' },
+  homestay: { zh: '民宿', kind: 'stay', icon: 'House' },
+
+  flight: { zh: '航班', kind: 'move', icon: 'Plane' },
+  rail: { zh: '火车', kind: 'move', icon: 'TrainFront' },
+  hsr: { zh: '高铁', kind: 'move', icon: 'TrainFrontTunnel' },
+  ferry: { zh: '航运', kind: 'move', icon: 'Ship' },
+  drive: { zh: '自驾', kind: 'move', icon: 'CarFront' },
+  bus: { zh: '巴士', kind: 'move', icon: 'Bus' },
+  transit: { zh: '通勤', kind: 'move', icon: 'TramFront' },
+
+  logistics: { zh: '事务', kind: 'misc', icon: 'ClipboardList' },
 }
 
-/** 分组 → 该组下的细类，给图例和筛选用 */
-export const CATEGORIES_BY_GROUP: Record<GroupKey, CategoryKey[]> = {
-  play: CATEGORY_KEYS.filter((k) => CATEGORIES[k].group === 'play'),
-  food: CATEGORY_KEYS.filter((k) => CATEGORIES[k].group === 'food'),
-  other: CATEGORY_KEYS.filter((k) => CATEGORIES[k].group === 'other'),
+/** 族 → 该族下的类型，给图例和筛选用 */
+export const CATEGORIES_BY_KIND: Record<KindKey, CategoryKey[]> = {
+  play: CATEGORY_KEYS.filter((k) => CATEGORIES[k].kind === 'play'),
+  food: CATEGORY_KEYS.filter((k) => CATEGORIES[k].kind === 'food'),
+  stay: CATEGORY_KEYS.filter((k) => CATEGORIES[k].kind === 'stay'),
+  move: CATEGORY_KEYS.filter((k) => CATEGORIES[k].kind === 'move'),
+  misc: CATEGORY_KEYS.filter((k) => CATEGORIES[k].kind === 'misc'),
 }
 
-export function groupOf(category: CategoryKey): GroupDef {
-  return GROUPS[CATEGORIES[category].group]
+export function kindOf(category: CategoryKey): KindKey {
+  return CATEGORIES[category].kind
+}
+
+/**
+ * 族 → 三分组（玩/吃/其他）。预算聚合、首页竖条、日程轨这些
+ * 「构成占比」视图仍用三分 —— 五种颜色的堆叠条反而读不出来。
+ */
+export function groupKeyOf(category: CategoryKey): GroupKey {
+  const k = CATEGORIES[category].kind
+  return k === 'play' || k === 'food' ? k : 'other'
 }
 
 /**
@@ -142,7 +195,7 @@ export const CATEGORY_ALIASES: Record<string, CategoryKey> = {
   sunset: 'viewpoint',
   sunrise: 'viewpoint',
   overlook: 'viewpoint',
-  drive: 'viewpoint', // 风景自驾路段本身就是观景
+  scenicdrive: 'viewpoint', // 风景自驾路段本身就是观景；通勤性质的自驾用 drive
   // → experience
   tour: 'experience',
   activity: 'experience',
@@ -159,36 +212,77 @@ export const CATEGORY_ALIASES: Record<string, CategoryKey> = {
   market: 'food',
   // → cafe
   coffee: 'cafe',
-  dessert: 'cafe',
-  snack: 'cafe',
   bakery: 'cafe',
   teahouse: 'cafe',
+  brunch: 'cafe',
+  // → snack
+  dessert: 'snack',
+  streetfood: 'snack',
+  icecream: 'snack',
+  boba: 'snack',
   // → bar
   drinks: 'bar',
   pub: 'bar',
   lounge: 'bar',
   nightlife: 'bar',
+  // → hotel
+  lodging: 'hotel',
+  accommodation: 'hotel',
+  stay: 'hotel',
+  checkin: 'hotel',
+  checkout: 'hotel',
+  resort: 'hotel',
+  inn: 'hotel',
+  motel: 'hotel',
+  // → homestay
+  airbnb: 'homestay',
+  bnb: 'homestay',
+  guesthouse: 'homestay',
+  cabin: 'homestay',
+  hostel: 'homestay',
+  ryokan: 'homestay',
+  minshuku: 'homestay',
   // → flight
   plane: 'flight',
   air: 'flight',
+  airplane: 'flight',
+  // → rail
+  train: 'rail',
+  railway: 'rail',
+  amtrak: 'rail',
+  // → hsr
+  highspeedrail: 'hsr',
+  bullettrain: 'hsr',
+  bullet: 'hsr',
+  shinkansen: 'hsr',
+  // → ferry
+  boat: 'ferry',
+  ship: 'ferry',
+  cruise: 'ferry',
+  // → drive
+  selfdrive: 'drive',
+  car: 'drive',
+  roadtrip: 'drive',
+  rental: 'drive',
+  carrental: 'drive',
+  // → bus
+  coach: 'bus',
+  shuttle: 'bus',
   // → transit
   transport: 'transit',
   transportation: 'transit',
   commute: 'transit',
-  train: 'transit',
-  bus: 'transit',
-  // → lodging
-  hotel: 'lodging',
-  accommodation: 'lodging',
-  stay: 'lodging',
-  checkin: 'lodging',
-  checkout: 'lodging',
+  subway: 'transit',
+  metro: 'transit',
+  lightrail: 'transit',
+  monorail: 'transit',
+  tram: 'transit',
   // → logistics
   admin: 'logistics',
   errand: 'logistics',
   shopping: 'logistics',
-  rental: 'logistics',
   packing: 'logistics',
+  laundry: 'logistics',
 }
 
 /** 解析用户/LLM 写的类别值。返回 null 表示无法识别。 */

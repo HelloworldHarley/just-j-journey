@@ -1,4 +1,4 @@
-import { CATEGORIES, type Day, type GroupKey } from '@jjj/schema'
+import { groupKeyOf, type Day, type GroupKey } from '@jjj/schema'
 
 /**
  * 左侧日程轨。
@@ -97,7 +97,7 @@ export function DayRail({
 function CompositionBar({ day, dim }: { day: Day; dim: boolean }) {
   const acc: Record<GroupKey, number> = { play: 0, food: 0, other: 0 }
   for (const e of day.events) {
-    acc[CATEGORIES[e.category].group] += Math.max(e.endMin - e.startMin, 15)
+    acc[groupKeyOf(e.category)] += Math.max(e.endMin - e.startMin, 15)
   }
   const total = acc.play + acc.food + acc.other || 1
 

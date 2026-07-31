@@ -515,6 +515,8 @@ export function parse(src: string): ParseResult {
       const dropoff = str(rec['dropoff'])
       rentals.push({
         what,
+        platform: str(rec['platform']) ?? str(rec['company']),
+        mileage: str(rec['mileage']) ?? str(rec['miles']),
         from: { raw: fromRaw, ...from },
         to: { raw: toRaw, ...to },
         pickupPlaceId: pickup ? resolvePlaceRef(pickup, fence.line, 'logistics') : null,
@@ -574,6 +576,20 @@ export function parse(src: string): ParseResult {
       const placeName = str(m['place'])
       const pid = placeName ? resolvePlaceRef(placeName, re.line, category) : null
 
+      // 住宿信息块：`stay:` map。全部可空 —— 缺的字段 UI 留「待填」空位
+      let stay: TripEvent['stay']
+      const srec = asRecord(m['stay'])
+      if (srec) {
+        stay = {
+          platform: str(srec['platform']) ?? str(srec['brand']),
+          stars: num(srec['stars']) ?? num(srec['star']),
+          room: str(srec['room']),
+          parking: str(srec['parking']),
+          breakfast: str(srec['breakfast']),
+          note: str(srec['note']),
+        }
+      }
+
       let booking: TripEvent['booking']
       const brec = asRecord(m['booking'])
       if (brec) {
@@ -610,9 +626,12 @@ export function parse(src: string): ParseResult {
           number: str(frec['number']) ?? str(frec['flight_no']) ?? str(frec['flightNo']) ?? str(frec['no']),
           from: str(frec['from']),
           to: str(frec['to']),
+          depDate: str(frec['dep_date']) ?? str(frec['depDate']),
           depTime: str(frec['dep_time']) ?? str(frec['depTime']) ?? str(frec['dep']),
           arrTime: str(frec['arr_time']) ?? str(frec['arrTime']) ?? str(frec['arr']),
+          arrDate: str(frec['arr_date']) ?? str(frec['arrDate']),
           arrDayOffset: num(frec['arr_day_offset']) ?? num(frec['arrDayOffset']) ?? 0,
+          price: str(frec['price']) ?? str(frec['fare']),
           durationMin: parseDurationMin(frec['duration']),
           baggage: str(frec['baggage']),
           stops: stopsRaw
@@ -641,6 +660,12 @@ export function parse(src: string): ParseResult {
       const costRaw = str(m['cost'])
       const { summary, detail } = splitBody(re.body)
 
+      // 注意条目：`notes:` 字符串列表（单条字符串也接受）。别名 warnings。
+      const notesRaw = m['notes'] ?? m['warnings']
+      const notes = (Array.isArray(notesRaw) ? notesRaw : notesRaw !== undefined ? [notesRaw] : [])
+        .map((x) => str(x))
+        .filter((s): s is string => s !== undefined)
+
       // id 不含标题 —— 编辑功能里「改名」是常规操作，改名不该换 id
       // （换 id 会丢收藏、断开草稿 ops 的引用）。天号+位置足够稳定。
       const evId = stableId(`d${rd.index}e`, `${rd.index}|${i}`)
@@ -656,9 +681,11 @@ export function parse(src: string): ParseResult {
         flags: readFlags(bag, re.line, m['flags']),
         cost: costRaw ? parseCost(costRaw, num(meta['travelers']) ?? 1, str(meta['currency'])) : undefined,
         booking,
+        stay,
         transports,
         summary,
         detail,
+        notes,
         variants: re.variants,
       })
 
@@ -749,7 +776,7 @@ export function parse(src: string): ParseResult {
       sunset: str(dmeta['sunset']),
       lodging: lodgingName
         ? {
-            placeId: places.get(placeKey(lodgingName))?.id ?? resolvePlaceRef(lodgingName, rd.line, 'lodging'),
+            placeId: places.get(placeKey(lodgingName))?.id ?? resolvePlaceRef(lodgingName, rd.line, 'hotel'),
             name: lodgingName,
             note: str(dmeta['lodging_note']),
           }
@@ -757,7 +784,6 @@ export function parse(src: string): ParseResult {
       fallbackOrder: Array.isArray(dmeta['fallback_order'])
         ? (dmeta['fallback_order'] as unknown[]).map((x) => String(x).trim()).filter(Boolean)
         : [],
-      weatherNote: str(dmeta['weather_note']),
       intro: rd.intro,
       events,
       legs,

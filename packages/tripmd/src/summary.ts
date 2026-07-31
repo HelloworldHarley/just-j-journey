@@ -1,4 +1,4 @@
-import { CATEGORIES, type Day, type Trip, type TripSummary } from '@jjj/schema'
+import { groupKeyOf, type Day, type Trip, type TripSummary } from '@jjj/schema'
 
 /**
  * Trip → 首页卡片摘要。
@@ -12,7 +12,7 @@ function dayShapeOf(day: Day): TripSummary['dayShape'][number] {
   const acc = { play: 0, food: 0, other: 0 }
   for (const e of day.events) {
     // 时间点事件（时长 0）给一个名义值，否则它在条里完全不可见
-    acc[CATEGORIES[e.category].group] += Math.max(e.endMin - e.startMin, 15)
+    acc[groupKeyOf(e.category)] += Math.max(e.endMin - e.startMin, 15)
   }
   const span =
     day.events.length === 0

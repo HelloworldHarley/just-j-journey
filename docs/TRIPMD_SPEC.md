@@ -73,11 +73,13 @@ currency: USD
 | 字段 | 必需 | 说明 |
 |---|:--:|---|
 | `time` | ✓ | 见下方「时间」 |
-| `category` | ✓ | 9 个枚举值之一 |
+| `category` | ✓ | 18 个枚举值之一，见下方「类别」 |
 | `place` | | 地点名。须与地点表一致。缺省则该事件不上地图 |
 | `flags` | | `warning` `tentative` `optional` `needs-booking` |
 | `cost` | | 自由文本，如 `约 $70/人`。解析器自动抽金额进预算统计：`/人` 乘人数、`× 2` 认乘法、`$250–400` 取中值、带「可选」不计入总额 |
 | `booking` | | `{status: required\|booked\|none, deadline: YYYY-MM-DD, note: ...}` |
+| `stay` | | **住宿信息块**，写在入住事件上：`{platform: 万豪/希尔顿/Airbnb…, stars: 4, room: 大床房, parking: 含/不含, breakfast: 含/不含, note}`。全部可空 —— 知道就填，不知道 UI 留「待填」空位 |
+| `notes` | | **注意条目**，字符串列表。截止、防盗、必带装备、营业时间坑…… 一条一个坑，UI 渲染成与「如果」同款的红色「注意」条目行。有坑写这里，不要埋在正文散文里 |
 | `transport` | | 长途换乘段（单个对象或**列表**，多人汇合一人一条）：`{traveler, mode: flight/rail/drive/ferry/bus…, carrier, number, from, to, dep_time, arr_time, arr_day_offset, duration, baggage, stops: [{airport, wait}], note}`。任何类别的事件都可挂；`category: flight` 没写块也会渲染待填骨架。|
 | `to_next` | | `{mode, minutes, km, label, note}` —— 到**下一个事件**怎么走 |
 
@@ -141,40 +143,67 @@ transport: {mode: rail, carrier: Amtrak, number: Cascades 504, from: PDX, to: SE
 
 字段：`traveler`（谁的，多人时）· `mode`（flight/rail/drive/ferry/bus…，默认 flight）·
 `carrier`（航司/铁路/船司/租车行）· `number`（航班号/车次/船班）· `from` / `to` ·
-`dep_time` / `arr_time` · `arr_day_offset`（次日到达写 1）· `duration`（全程含中转）·
-`baggage` · `stops: [{airport, wait}]` · `note`
+`dep_time` / `arr_time` · `arr_day_offset`（次日到达写 1）· `dep_date` / `arr_date`
+（一般不用写 —— 缺省按事件当天为出发日推算、到达日加 arr_day_offset；只有抵达型事件的
+航班其实前一天起飞时才需要显式写 `dep_date`）· `duration`（全程含中转）·
+`baggage` · `price`（票价，如 `$189`；没订留空，UI 渲染「预算 待填」槽位）·
+`stops: [{airport, wait}]` · `note`
+
+> **预算统计的唯一来源是事件的 `cost`。** `price` 只是票面展示（多人一人一张票）；
+> 票订好后把合计金额写进事件 `cost`，预算页才会计入 —— 两处都写时以 `cost` 为准，不会重复计。
 
 - **不知道的字段直接省略，不要编。** 票常常晚于行程定下来，UI 会画完整骨架并给缺的字段留「待填」空位，之后补进这里即可。`category: flight` 的事件没写块也画空骨架。
 - 多目的地行程中间的长途移动（如西雅图 → 波特兰的火车）同样写成一个事件 + `transport` 块。
 - `duration` / `wait` 接受 `11h55m`、`2h`、`45m`、`11 小时 55 分`、`"11:55"`、纯数字（分钟）。
 - 事件本身的 `time` 仍按 TripMD 通用规则写（抵达事件写到达时刻、出发事件写出发时刻），`transport` 块里的时间是给票面时间轴用的。
 
-### 正文的「首段约定」
+### 正文的「首段约定」与注意条目
 
-事件正文的**第一段**（第一个空行之前）是摘要，卡片上常显；其余内容折叠在「详情」里。
-第一段用一句话说清最关键的事，展开细节放后面。
+事件正文的**第一段**（第一个空行之前）是简要介绍；其余内容折叠在「全文」里。
+第一段用一句话说清「这是什么、为什么值得」——**不写怎么去**（通勤是上一个事件 `to_next` 的事）。
 
-### 类别（三组十一类）
+**坑不写进散文，写进 `notes` 条目**，一条一个坑并说明理由：
 
-分组决定颜色（玩=绿 / 吃=桃红 / 其他=灰），细类决定图标。
+```yaml
+notes:
+  - 必须自带午餐：Paradise 以外整条线没有任何吃饭的地方
+  - "11:20 硬截止"          # 数字开头的字符串要加引号
+```
 
-| 组 | key | 中文 | 用于 |
+UI 把它们渲染成红色「注意」条目行，和 `#### 变体` 的「如果」条目行同一族。
+
+### 类别（五族十八类）
+
+族决定颜色与筛选归属（玩=绿 / 吃=桃红 / 住=中性 / 行=蓝 / 事务=透明），类型决定图标和卡片上的两字标签。
+
+| 族 | key | 类型 | 用于 |
 |---|---|---|---|
 | 玩 | `sight` | 景点 | 博物馆、地标、建筑 |
 | 玩 | `outdoor` | 户外 | 徒步、公园、湖泊、步道 |
 | 玩 | `viewpoint` | 观景 | 观景台、日落机位、**风景自驾路段** |
 | 玩 | `experience` | 体验 | 需买票的活动：缆车、游船、观光飞行 |
-| 吃 | `food` | 正餐 | 正餐、市场小吃 |
-| 吃 | `cafe` | 咖啡小吃 | 咖啡、甜点、茶室 |
+| 吃 | `food` | 餐厅 | 正餐、市场 |
+| 吃 | `cafe` | 咖啡 | 咖啡、茶室、brunch |
+| 吃 | `snack` | 小吃 | 甜点、街头小吃、冰淇淋 |
 | 吃 | `bar` | 酒吧 | 酒吧、屋顶酒廊、夜生活 |
-| 其他 | `flight` | 航班 | 起降 |
-| 其他 | `transit` | 交通 | 轨道、公交、单轨、电车、渡轮 |
-| 其他 | `lodging` | 住宿 | 入住、退房、酒店 |
-| 其他 | `logistics` | 事务 | 提车还车、补货、寄存、装车、进航站楼 |
+| 住 | `hotel` | 酒店 | 品牌酒店、度假村 |
+| 住 | `homestay` | 民宿 | Airbnb、木屋、町屋、旅馆 |
+| 行 | `flight` | 航班 | 起降 |
+| 行 | `rail` | 火车 | 城际铁路、Amtrak |
+| 行 | `hsr` | 高铁 | 高铁、新干线 |
+| 行 | `ferry` | 航运 | 轮渡、游轮 |
+| 行 | `drive` | 自驾 | 长途自驾段、**提车还车** |
+| 行 | `bus` | 巴士 | 长途大巴、机场巴士 |
+| 行 | `transit` | 通勤 | 仅限值得单独成卡的长程通勤 |
+| 事务 | `logistics` | 事务 | 补货、寄存、装车、进航站楼 |
 
-大小写不敏感。接受别名：`hotel`→`lodging`、`restaurant`→`food`、`attraction`/`museum`→`sight`、`tour`/`activity`→`experience`、`hike`/`trail`/`park`→`outdoor`、`scenic`/`sunset`→`viewpoint`、`shopping`/`rental`→`logistics`、`train`/`metro`→`transit`。
+> **「行」只收长途。** 市内的地铁/公交/打车这类短途通勤**不要写成事件**，
+> 写进上一个事件的 `to_next` —— 它们是行程的黏合剂，不是行程本身。
+> 如果一段乘车本身就是体验（观景列车、跨海渡轮看日落），按「玩」分类（`viewpoint`/`experience`）。
 
-> `transit` 和 `logistics` 在 UI 里是中性灰色 —— 通勤和杂务不该抢眼。
+大小写不敏感。接受别名：`lodging`/`hotel` 旧写法→`hotel`、`cabin`/`airbnb`→`homestay`、`train`→`rail`、`shinkansen`/`bullet`→`hsr`、`boat`/`cruise`→`ferry`、`car`/`rental`→`drive`、`subway`/`metro`/`monorail`→`transit`、`restaurant`→`food`、`dessert`→`snack`、`attraction`/`museum`→`sight`、`tour`/`activity`→`experience`、`hike`/`trail`/`park`→`outdoor`、`scenic`/`sunset`→`viewpoint`、`shopping`→`logistics`。
+
+> 住/行的颜色（中性/蓝）与玩/吃一样走可覆盖的 CSS 变量，将来用户可自定义；`logistics` 透明底 —— 杂务不该抢眼。
 
 ### 交通方式（`to_next.mode`）
 
@@ -190,10 +219,10 @@ transport: {mode: rail, carrier: Amtrak, number: Cascades 504, from: PDX, to: SE
 
 | flag | 含义 | UI |
 |---|---|---|
-| `warning` | 有坑，读正文 | 红色「注意」标签 |
-| `tentative` | 还没定下来 | 虚线边框 + 「待定」 |
-| `optional` | 赶不上可砍 | 「可砍」标签 |
-| `needs-booking` | 出发前必办 | 琥珀「待订」标签 |
+| `warning` | 有坑（具体的坑写进 `notes`） | 标题旁红色警示角 |
+| `tentative` | 还没定下来 | 标题旁「待定」角标 |
+| `optional` | 赶不上可砍 | 卡片左边条变虚线，**不写文字** |
+| `needs-booking` | 出发前必办 | 琥珀「待订」/ 预订模块 |
 
 > 没有 `starred`：「收藏」由用户在界面上点，不由作者预先指定 ——
 > 否则 Agent 读回的"用户收藏"只是它自己上次的建议。
@@ -226,14 +255,16 @@ transport: {mode: rail, carrier: Amtrak, number: Cascades 504, from: PDX, to: SE
 全部可选。
 
 ```yaml
-theme: Seattle Center → 单轨穿 MoPOP → 海滨日落
+theme: 落地西雅图 Citywalk 感受市区   # 直白的当天主题，别用箭头串景点名
 sunrise: "07:05"
 sunset: "18:52"
 lodging: Astra Hotel                          # 引用地点表
 lodging_note: 50K 券 + 补 5,000 点
 fallback_order: [煤气厂公园, 日本花园, 苏扎罗图书馆]   # 赶不上时的砍站顺序
-weather_note: 约五成概率遇雨
 ```
+
+> 没有 `weather_note` 这类杂项字段 —— 天气/季节风险写进**受影响事件**的 `notes`
+>（配上应对方案更好），全天性质的背景写进当天导语。
 
 标题格式 `## Day 1 · 2026-10-01`。也接受 `## Day 1`（日期按 `start` 推算，但会警告）和 `## 第 1 天`。
 
@@ -263,11 +294,13 @@ weather_note: 约五成概率遇雨
 
 ```yaml
 - what: 保时捷 Macan            # 必需：租的是什么
+  platform: Turo                # 租车平台/租车行，可空（UI 留「待填」）
   from: "2026-10-02 11:30"      # 必需：取用时刻
   to: "2026-10-05 11:20"        # 必需：归还时刻
   pickup: 唐人街提车点            # 取用地点，按名引用地点表
   dropoff: 唐人街提车点           # 归还地点
-  note: 3 天 · 加 91+ 号油
+  mileage: 全程约 310 英里        # 总里程限制，可空
+  note: 加 91+ 号油
 ```
 
 ---
@@ -290,6 +323,10 @@ icon: 💰
 ```
 
 附录内部的小标题请用 `###` 或更深 —— `##` 会被当作新分区的开始。
+
+> **预算类附录归预算页。** `id: budget`（或标题含「预算」）的附录渲染在预算视图底部、
+> 自动统计的下面，不出现在资料页。所以别在里面重抄逐项金额表 —— 统计是算出来的；
+> 附录只写数字之外的判断：点数策略、砍价顺序、风险变量、统计覆盖不到的隐性支出。
 
 ---
 

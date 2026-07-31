@@ -94,12 +94,14 @@ function rentalsBlock(trip: Trip, placeById: Map<string, Place>): string | null 
   const L = ['## 租车', '', '```trip-rentals']
   for (const r of trip.rentals) {
     L.push(`- what: ${scalar(r.what)}`)
+    if (r.platform) L.push(`  platform: ${scalar(r.platform)}`)
     L.push(`  from: ${scalar(r.from.raw)}`)
     L.push(`  to: ${scalar(r.to.raw)}`)
     const pickup = r.pickupPlaceId ? placeById.get(r.pickupPlaceId) : undefined
     const dropoff = r.dropoffPlaceId ? placeById.get(r.dropoffPlaceId) : undefined
     if (pickup) L.push(`  pickup: ${scalar(pickup.name)}`)
     if (dropoff) L.push(`  dropoff: ${scalar(dropoff.name)}`)
+    if (r.mileage) L.push(`  mileage: ${scalar(r.mileage)}`)
     if (r.note) L.push(`  note: ${scalar(r.note)}`)
   }
   L.push('```')
@@ -135,7 +137,6 @@ function dayBlock(day: Day): string | null {
   if (day.fallbackOrder.length > 0) {
     L.push(`fallback_order: [${day.fallbackOrder.map(scalar).join(', ')}]`)
   }
-  if (day.weatherNote) L.push(`weather_note: ${scalar(day.weatherNote)}`)
   if (L.length === 0) return null
   return ['```trip-day', ...L, '```'].join('\n')
 }
@@ -162,11 +163,14 @@ function transportValue(t: Transport): string {
     ['number', t.number],
     ['from', t.from],
     ['to', t.to],
+    ['dep_date', t.depDate],
     ['dep_time', t.depTime],
     ['arr_time', t.arrTime],
+    ['arr_date', t.arrDate],
     ['arr_day_offset', t.arrDayOffset !== 0 ? t.arrDayOffset : undefined],
     ['duration', t.durationMin !== null ? fmtDuration(t.durationMin) : undefined],
     ['baggage', t.baggage],
+    ['price', t.price],
     ['stops', stops],
     ['note', t.note],
   ])
@@ -188,6 +192,22 @@ function eventBlock(ev: TripEvent, placeById: Map<string, Place>, leg: Leg | und
         ['note', ev.booking.note],
       ])}`,
     )
+  }
+  if (ev.stay) {
+    L.push(
+      `stay: ${flowMap([
+        ['platform', ev.stay.platform],
+        ['stars', ev.stay.stars],
+        ['room', ev.stay.room],
+        ['parking', ev.stay.parking],
+        ['breakfast', ev.stay.breakfast],
+        ['note', ev.stay.note],
+      ])}`,
+    )
+  }
+  if (ev.notes.length > 0) {
+    L.push('notes:')
+    for (const n of ev.notes) L.push(`  - ${scalar(n)}`)
   }
   if (ev.transports.length === 1) {
     L.push(`transport: ${transportValue(ev.transports[0]!)}`)

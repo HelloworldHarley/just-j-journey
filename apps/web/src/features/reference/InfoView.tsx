@@ -2,17 +2,20 @@ import { useState } from 'react'
 import type { Trip } from '@jjj/schema'
 import { Markdown } from '../../components/Markdown.tsx'
 import { RailLayout } from '../../components/RailLayout.tsx'
+import { isBudgetRef } from '../../lib/derive.ts'
 
 /**
- * 资料页：预算、打包、住宿备选、雨天预案、出发前清单…
+ * 资料页：打包、住宿备选、雨天预案、出发前清单…
  *
  * 这些内容不属于任何一天，硬塞进时间轴会破坏日程的连续性；
  * 但它们占了原始行程近三分之一的篇幅，不能丢。所以单开一页。
+ * 预算类附录不在这里 —— 它们渲染在预算页底部，和自动统计放在一起。
  */
 export function InfoView({ trip }: { trip: Trip }) {
-  const [active, setActive] = useState(trip.reference[0]?.id ?? '')
+  const refs = trip.reference.filter((r) => !isBudgetRef(r))
+  const [active, setActive] = useState(refs[0]?.id ?? '')
 
-  if (trip.reference.length === 0) {
+  if (refs.length === 0) {
     return (
       <p className="mx-auto max-w-3xl px-4 py-16 text-[13px] text-graphite">
         这份行程没有附录。在 plan.md 里用 <code>## 附录 · 标题</code> 添加。
@@ -20,16 +23,16 @@ export function InfoView({ trip }: { trip: Trip }) {
     )
   }
 
-  const current = trip.reference.find((r) => r.id === active) ?? trip.reference[0]
+  const current = refs.find((r) => r.id === active) ?? refs[0]
 
   return (
-    <RailLayout rail={<SectionRail refs={trip.reference} active={current?.id} onPick={setActive} />}>
+    <RailLayout rail={<SectionRail refs={refs} active={current?.id} onPick={setActive} />}>
       {/* 窄屏没有左侧轨，退化成一排横向 chip */}
       <nav
         className="-mx-4 mb-5 flex gap-1.5 overflow-x-auto px-4 pb-1 pt-5
                    [scrollbar-width:none] xl:hidden [&::-webkit-scrollbar]:hidden"
       >
-        {trip.reference.map((r) => (
+        {refs.map((r) => (
           <button
             key={r.id}
             type="button"

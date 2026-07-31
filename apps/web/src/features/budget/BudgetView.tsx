@@ -2,12 +2,16 @@ import { useMemo } from 'react'
 import {
   CATEGORIES,
   GROUPS,
+  KINDS,
+  groupKeyOf,
   type CategoryKey,
   type GroupKey,
   type Trip,
 } from '@jjj/schema'
 import { CategoryChip } from '../../components/CategoryChip.tsx'
 import { fmtMoney } from '../../components/DayTimeline.tsx'
+import { Markdown } from '../../components/Markdown.tsx'
+import { isBudgetRef } from '../../lib/derive.ts'
 
 /**
  * 预算页 —— 从事件的结构化 cost 现算，不依赖作者单独维护一张预算表。
@@ -19,13 +23,23 @@ import { fmtMoney } from '../../components/DayTimeline.tsx'
  */
 export function BudgetView({ trip }: { trip: Trip }) {
   const model = useMemo(() => build(trip), [trip])
+  // 预算类附录（点数策略、砍价顺序、风险变量）在这页底部，不在资料页
+  const budgetRefs = trip.reference.filter(isBudgetRef)
 
-  if (model.items.length === 0) {
+  if (model.items.length === 0 && budgetRefs.length === 0) {
     return (
       <p className="mx-auto max-w-3xl px-4 py-16 text-[13px] text-graphite">
         这份行程的事件里没有可统计的费用。在 trip-event 的 <code>cost</code> 字段写上金额
         （如 <code>约 $70/人</code>）即可自动进入统计。
       </p>
+    )
+  }
+
+  if (model.items.length === 0) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 pb-24 pt-8">
+        <BudgetRefs refs={budgetRefs} />
+      </div>
     )
   }
 
@@ -94,9 +108,10 @@ export function BudgetView({ trip }: { trip: Trip }) {
                 <div
                   className="h-full rounded-r-[3px]"
                   style={{
+                    /* 条色跟类型的族走：玩绿吃粉、住灰行蓝，事务退到半透明灰 */
                     width: `${(row.amount / model.maxCategory) * 100}%`,
-                    background: `var(--g-${CATEGORIES[row.category].group})`,
-                    opacity: CATEGORIES[row.category].group === 'other' ? 0.45 : 1,
+                    background: `var(${KINDS[CATEGORIES[row.category].kind].cssVar ?? '--g-other'})`,
+                    opacity: CATEGORIES[row.category].kind === 'misc' ? 0.45 : 1,
                   }}
                 />
               </div>
@@ -172,7 +187,13 @@ export function BudgetView({ trip }: { trip: Trip }) {
                     {it.raw}
                   </td>
                   <td className="tnum py-2 text-right whitespace-nowrap text-ink">
-                    {fmtMoney(it.amount, model.currency)}
+                    {it.amount != null ? (
+                      fmtMoney(it.amount, model.currency)
+                    ) : (
+                      <span className="text-graphite" title="原文里没识别出金额，不计入统计">
+                        —
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -181,10 +202,34 @@ export function BudgetView({ trip }: { trip: Trip }) {
         </div>
         <p className="mt-3 text-[11.5px] leading-relaxed text-graphite">
           金额从各事件的 cost 文本自动提取：/人 已乘人数（{trip.travelers ?? 1} 人），区间取中值。
-          标注「可选」的不计入总额。以原文为准。
+          标注「可选」的不计入总额；没识别出金额的显示 —，也不计入。以原文为准。
         </p>
       </section>
+
+      <BudgetRefs refs={budgetRefs} />
     </div>
+  )
+}
+
+/** 作者写的预算附录（点数策略、砍价顺序、风险变量）—— 数字之外的判断放统计下面 */
+function BudgetRefs({ refs }: { refs: Trip['reference'] }) {
+  if (refs.length === 0) return null
+  return (
+    <>
+      {refs.map((r) => (
+        <section key={r.id} className="mt-12">
+          <h2 className="signage mb-3 text-[11px] text-graphite">
+            {r.icon && (
+              <span aria-hidden className="mr-1.5">
+                {r.icon}
+              </span>
+            )}
+            {r.title}
+          </h2>
+          <Markdown>{r.markdown}</Markdown>
+        </section>
+      ))}
+    </>
   )
 }
 
@@ -197,7 +242,8 @@ interface Item {
   title: string
   category: CategoryKey
   raw: string
-  amount: number
+  /** null = 原文里没识别出金额 —— 仍进明细（显示 —），不进统计 */
+  amount: number | null
   currency?: string
   optional: boolean
 }
@@ -206,7 +252,8 @@ function build(trip: Trip) {
   const items: Item[] = []
   for (const day of trip.days) {
     for (const e of day.events) {
-      if (e.cost?.amount == null) continue
+      // 有 cost 就进明细 —— 列表卡片上看得见的费用，预算页一条都不静默丢
+      if (!e.cost) continue
       items.push({
         id: e.id,
         day: day.index,
@@ -221,14 +268,14 @@ function build(trip: Trip) {
     }
   }
 
-  const counted = items.filter((i) => !i.optional)
+  const counted = items.filter((i): i is Item & { amount: number } => !i.optional && i.amount != null)
   const total = counted.reduce((n, i) => n + i.amount, 0)
-  const optionalTotal = items.filter((i) => i.optional).reduce((n, i) => n + i.amount, 0)
+  const optionalTotal = items.reduce((n, i) => n + (i.optional ? (i.amount ?? 0) : 0), 0)
 
   const byGroup: Record<GroupKey, number> = { play: 0, food: 0, other: 0 }
   const catMap = new Map<CategoryKey, number>()
   for (const i of counted) {
-    byGroup[CATEGORIES[i.category].group] += i.amount
+    byGroup[groupKeyOf(i.category)] += i.amount
     catMap.set(i.category, (catMap.get(i.category) ?? 0) + i.amount)
   }
   const byCategory = [...catMap.entries()]
@@ -238,7 +285,7 @@ function build(trip: Trip) {
   const byDay = trip.days.map((d) => {
     const rows = counted.filter((i) => i.day === d.index)
     const g: Record<GroupKey, number> = { play: 0, food: 0, other: 0 }
-    for (const i of rows) g[CATEGORIES[i.category].group] += i.amount
+    for (const i of rows) g[groupKeyOf(i.category)] += i.amount
     return { index: d.index, date: d.date, byGroup: g, total: rows.reduce((n, i) => n + i.amount, 0) }
   })
 

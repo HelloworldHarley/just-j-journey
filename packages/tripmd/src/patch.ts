@@ -139,6 +139,7 @@ export function applyPatch(original: Trip, ops: TripPatchOp[]): PatchResult {
           transports: [],
           summary: e.summary,
           detail: '',
+          notes: [],
           variants: [],
         }
         day.events.splice(at, 0, created)

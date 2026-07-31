@@ -54,13 +54,14 @@ currency: JPY
 - name: 京都四条 UNIZO
   en: Hotel Unizo Kyoto Shijo
   coord: 35.0035, 135.7663
-  category: lodging
+  category: hotel
 ```
 
 ## Day 1 · 2026-11-14
 
 ```trip-day
-theme: 落地 → 千本鸟居 → 锦市场
+theme: 落地京都，稻荷神社逛到锦市场
+sunrise: "06:26"
 sunset: "16:52"
 lodging: 京都四条 UNIZO
 fallback_order: [锦市场, 清水寺夜间参拜]
@@ -117,10 +118,23 @@ cost: 约 ¥3000/人
 
 边走边吃。**注意大多数摊位 17:00 前后就收摊**，别拖到太晚。
 
+### 入住 UNIZO
+
+```trip-event
+time: "19:30"
+category: hotel
+place: 京都四条 UNIZO
+stay: {platform: Booking, stars: 3, room: 双床房, parking: 不含, breakfast: 不含}
+cost: ¥14,000
+```
+
+四条河原町的正中心，从锦市场走回来 5 分钟。
+
 ## Day 2 · 2026-11-15
 
 ```trip-day
-theme: 清水寺 → 返程
+theme: 清水寺晨游，午后返程
+sunrise: "06:27"
 sunset: "16:51"
 ```
 
@@ -143,10 +157,12 @@ time: "15:30"
 category: logistics
 place: 京都站
 flags: [warning]
+notes:
+  - "16:00 必须上车。HARUKA 每 30 分钟一班，错过一班就只剩 2.5 小时缓冲"
 to_next: {mode: rail, minutes: 80, label: HARUKA 回关西机场}
 ```
 
-⚠️ 16:00 必须上车。HARUKA 每 30 分钟一班，错过一班就只剩 2.5 小时缓冲。
+取行李，买点站内便当路上吃。
 
 ### 关西机场起飞
 

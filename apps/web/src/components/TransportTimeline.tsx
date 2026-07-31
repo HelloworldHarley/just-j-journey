@@ -34,18 +34,36 @@ const MODE_SLOTS: Record<TransportMode, { who: string; from: string; to: string;
   walk: { who: '路线', from: '出发地', to: '到达地', bag: null, stop: '休息点' },
 }
 
-export function TransportTimeline({ transports }: { transports: Transport[] }) {
+export function TransportTimeline({
+  transports,
+  date,
+}: {
+  transports: Transport[]
+  /** 事件所在天的日期 —— dep_date/arr_date 缺省时的推算锚点 */
+  date?: string
+}) {
   return (
     <div className="mt-2.5 space-y-2">
       {transports.map((t, i) => (
-        <SingleTransport key={i} t={t} />
+        <SingleTransport key={i} t={t} date={date} />
       ))}
     </div>
   )
 }
 
-function SingleTransport({ t: flight }: { t: Transport }) {
+const md8 = (iso: string) => iso.slice(5).replace('-', '/')
+
+function plusDays(iso: string, d: number): string {
+  const t = new Date(`${iso}T00:00:00Z`)
+  t.setUTCDate(t.getUTCDate() + d)
+  return t.toISOString().slice(0, 10)
+}
+
+function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
   const slots = MODE_SLOTS[flight.mode]
+  // 日期：没写就按事件当天为出发日推算，到达日再加 arr_day_offset
+  const depDate = flight.depDate ?? date
+  const arrDate = flight.arrDate ?? (depDate ? plusDays(depDate, flight.arrDayOffset) : undefined)
   const ModeIcon = iconFor(TRANSPORTS[flight.mode].icon)
   const stops = flight.stops
   const legs = stops.length + 1
@@ -87,24 +105,31 @@ function SingleTransport({ t: flight }: { t: Transport }) {
           </span>
         )}
         {flight.note && <span className="text-graphite">{flight.note}</span>}
+        {/* 票价钉右上角：订好了是金色金额，没订是等着填的预算槽 */}
+        <span className="ml-auto inline-flex items-center gap-1.5">
+          {flight.price ? (
+            <span className="tnum text-[13px] font-semibold tint-faved">{flight.price}</span>
+          ) : (
+            <>
+              <span className="text-graphite">预算</span>
+              <SlotText value={undefined} hint="待填" />
+            </>
+          )}
+        </span>
       </div>
 
-      {/* 时间行 */}
+      {/* 时间行：左「日期 时间」→ 右「时间 日期」，日期小一号 */}
       <div className="mt-2.5 flex items-baseline justify-between gap-2">
-        <SlotText value={flight.depTime} hint="--:--" mono strong />
+        <span className="flex min-w-0 items-baseline gap-1.5">
+          {depDate && <span className="tnum text-[11px] text-graphite">{md8(depDate)}</span>}
+          <SlotText value={flight.depTime} hint="--:--" mono strong />
+        </span>
         <span className="tnum shrink-0 text-[11px] text-graphite">
           {flight.durationMin !== null ? `全程 ${fmtDur(flight.durationMin)}` : '全程 —'}
         </span>
-        <span className="inline-flex items-baseline gap-0.5">
+        <span className="flex min-w-0 items-baseline gap-1.5">
           <SlotText value={flight.arrTime} hint="--:--" mono strong />
-          {flight.arrDayOffset > 0 && (
-            <sup
-              className="tnum text-[10px] text-[var(--tight)]"
-              title={`${flight.arrDayOffset} 天后到达`}
-            >
-              +{flight.arrDayOffset}
-            </sup>
-          )}
+          {arrDate && <span className="tnum text-[11px] text-graphite">{md8(arrDate)}</span>}
         </span>
       </div>
 
@@ -171,7 +196,7 @@ function SingleTransport({ t: flight }: { t: Transport }) {
   )
 }
 
-function Dot({ small }: { small?: boolean }) {
+export function Dot({ small }: { small?: boolean }) {
   return (
     <span
       className={`shrink-0 rounded-full border-[1.5px] border-ink/50 bg-paper ${
@@ -182,7 +207,7 @@ function Dot({ small }: { small?: boolean }) {
 }
 
 /** 值缺失时渲染「待填」空位：虚线框 + 提示词，一眼可见这里等着填 */
-function SlotText({
+export function SlotText({
   value,
   hint,
   mono,
