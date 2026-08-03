@@ -633,12 +633,23 @@ export function parse(src: string): ParseResult {
           arrDayOffset: num(frec['arr_day_offset']) ?? num(frec['arrDayOffset']) ?? 0,
           price: str(frec['price']) ?? str(frec['fare']),
           durationMin: parseDurationMin(frec['duration']),
+          cabin: str(frec['cabin']) ?? str(frec['class']) ?? str(frec['seat']),
           baggage: str(frec['baggage']),
+          throughCheck:
+            str(frec['through_check']) ?? str(frec['throughCheck']) ?? str(frec['baggage_through']),
+          refund: str(frec['refund']) ?? str(frec['change_policy']) ?? str(frec['change']),
           stops: stopsRaw
             .map((sr) => asRecord(sr))
             .filter((sr): sr is Rec => sr !== null)
             .map((sr) => ({
               airport: str(sr['airport']) ?? str(sr['station']) ?? str(sr['place']),
+              depAirport:
+                str(sr['dep_airport']) ?? str(sr['dep_station']) ?? str(sr['dep_place']),
+              arrTime: str(sr['arr_time']) ?? str(sr['arr']),
+              depTime: str(sr['dep_time']) ?? str(sr['dep']),
+              arrDate: str(sr['arr_date']),
+              depDate: str(sr['dep_date']),
+              legMin: parseDurationMin(sr['leg']),
               waitMin: parseDurationMin(sr['wait']),
             })),
           note: str(frec['note']),
@@ -781,9 +792,6 @@ export function parse(src: string): ParseResult {
             note: str(dmeta['lodging_note']),
           }
         : undefined,
-      fallbackOrder: Array.isArray(dmeta['fallback_order'])
-        ? (dmeta['fallback_order'] as unknown[]).map((x) => String(x).trim()).filter(Boolean)
-        : [],
       intro: rd.intro,
       events,
       legs,

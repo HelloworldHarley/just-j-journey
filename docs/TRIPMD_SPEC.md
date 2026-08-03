@@ -141,13 +141,20 @@ transport:
 transport: {mode: rail, carrier: Amtrak, number: Cascades 504, from: PDX, to: SEA King Street}
 ```
 
-字段：`traveler`（谁的，多人时）· `mode`（flight/rail/drive/ferry/bus…，默认 flight）·
+字段：`traveler`（谁的，多人时）· `mode`（flight/rail/hsr/drive/ferry/bus…，默认 flight）·
 `carrier`（航司/铁路/船司/租车行）· `number`（航班号/车次/船班）· `from` / `to` ·
-`dep_time` / `arr_time` · `arr_day_offset`（次日到达写 1）· `dep_date` / `arr_date`
-（一般不用写 —— 缺省按事件当天为出发日推算、到达日加 arr_day_offset；只有抵达型事件的
-航班其实前一天起飞时才需要显式写 `dep_date`）· `duration`（全程含中转）·
-`baggage` · `price`（票价，如 `$189`；没订留空，UI 渲染「预算 待填」槽位）·
-`stops: [{airport, wait}]` · `note`
+`dep_time` / `arr_time` · `arr_day_offset`（次日到达写 1，UI 在到达日期右上标红色 +n）·
+`dep_date` / `arr_date`（一般不用写 —— 缺省按事件当天为出发日推算、到达日加 arr_day_offset；
+只有抵达型事件的航班其实前一天起飞时才需要显式写 `dep_date`）· `duration`（全程含中转）·
+`cabin`（客舱/座席，如 `经济舱` / `指定席`）· `baggage`（托运额度）·
+`through_check`（中转行李是否直挂）· `refund`（退改签政策）·
+`price`（票价，如 `$189`；没订留空，UI 渲染「预算 待填」槽位）·
+`stops: [{airport, dep_airport, arr_time, dep_time, leg, wait}]` · `note`
+
+中转 `stops` 每项：`airport` 到达点 · `dep_airport` 异地换乘的再出发点（同地不写）·
+`arr_time` / `dep_time` 到发当地时间 · `wait` 停留时长 ·
+`leg` **到达此中转点的前一段行进时长**（跨时区没法从两端当地时间算出，可显式提供；
+不写则按「全程 − Σ停留 − Σ已填段」均分，各段与停留之和恒等于全程）。
 
 > **预算统计的唯一来源是事件的 `cost`。** `price` 只是票面展示（多人一人一张票）；
 > 票订好后把合计金额写进事件 `cost`，预算页才会计入 —— 两处都写时以 `cost` 为准，不会重复计。
@@ -260,11 +267,11 @@ sunrise: "07:05"
 sunset: "18:52"
 lodging: Astra Hotel                          # 引用地点表
 lodging_note: 50K 券 + 补 5,000 点
-fallback_order: [煤气厂公园, 日本花园, 苏扎罗图书馆]   # 赶不上时的砍站顺序
 ```
 
-> 没有 `weather_note` 这类杂项字段 —— 天气/季节风险写进**受影响事件**的 `notes`
->（配上应对方案更好），全天性质的背景写进当天导语。
+> 没有 `weather_note`、`fallback_order` 这类杂项字段 —— 天气/季节风险写进**受影响事件**
+> 的 `notes`（配上应对方案更好）；全天性质的背景、以及「赶不上时按 X → Y → Z 顺序砍」
+> 这类整天的取舍，写进**当天导语**。每天以卡片收尾，末尾不留小提示块。
 
 标题格式 `## Day 1 · 2026-10-01`。也接受 `## Day 1`（日期按 `start` 推算，但会警告）和 `## 第 1 天`。
 

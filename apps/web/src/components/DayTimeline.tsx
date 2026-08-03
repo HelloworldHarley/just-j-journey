@@ -231,12 +231,13 @@ function EventCard({
         {rental && <RentalModule rental={rental} places={places} cost={event.cost} />}
         {event.booking && <BookingModule booking={event.booking} />}
 
-        {/* 折叠区：简要介绍 / 注意条目 / 如果条目。全局「详」全开；
-            「简」态整卡收起，留一颗「详情」单独展开 */}
+        {/* 折叠区：简要介绍 / 正文 / 注意条目 / 如果条目。
+            全局「详」= 全部展开，不再要求二次点击；
+            「简」= 整块收起，留一颗「详情」把这里的全部内容一次展开 */}
         {zoneOpened && (
           <>
             {event.summary && <Markdown className="compact mt-2">{event.summary}</Markdown>}
-            {event.detail && <DetailFold detail={event.detail} />}
+            {event.detail && <Markdown className="compact mt-2">{event.detail}</Markdown>}
             {event.notes.length > 0 && <NotesBox notes={event.notes} />}
             {event.variants.length > 0 && <VariantList variants={event.variants} />}
           </>
@@ -262,29 +263,6 @@ function EventCard({
   )
 }
 
-/** 首段之外的长正文，折叠区内再折一层 —— 长正文往往很长，不该跟着「详」全开 */
-function DetailFold({ detail }: { detail: string }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      {open && <Markdown className="compact mt-2">{detail}</Markdown>}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="mr-3 mt-1.5 inline-flex items-center gap-1 text-[11.5px] text-graphite
-                   transition-colors hover:text-ink"
-      >
-        <ChevronDown
-          size={12}
-          className={`transition-transform ${open ? 'rotate-180' : ''}`}
-          aria-hidden
-        />
-        {open ? '收起' : '详情'}
-      </button>
-    </>
-  )
-}
 
 /**
  * 注意条目 —— 一张卡只有一个「注意」框：单条直接一行，

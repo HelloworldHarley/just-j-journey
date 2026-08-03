@@ -134,9 +134,6 @@ function dayBlock(day: Day): string | null {
     L.push(`lodging: ${scalar(day.lodging.name)}`)
     if (day.lodging.note) L.push(`lodging_note: ${scalar(day.lodging.note)}`)
   }
-  if (day.fallbackOrder.length > 0) {
-    L.push(`fallback_order: [${day.fallbackOrder.map(scalar).join(', ')}]`)
-  }
   if (L.length === 0) return null
   return ['```trip-day', ...L, '```'].join('\n')
 }
@@ -149,6 +146,12 @@ function transportValue(t: Transport): string {
             .map((s) =>
               flowMap([
                 ['airport', s.airport],
+                ['dep_airport', s.depAirport],
+                ['arr_time', s.arrTime],
+                ['dep_time', s.depTime],
+                ['arr_date', s.arrDate],
+                ['dep_date', s.depDate],
+                ['leg', s.legMin !== null ? fmtDuration(s.legMin) : undefined],
                 ['wait', s.waitMin !== null ? fmtDuration(s.waitMin) : undefined],
               ]),
             )
@@ -169,7 +172,10 @@ function transportValue(t: Transport): string {
     ['arr_date', t.arrDate],
     ['arr_day_offset', t.arrDayOffset !== 0 ? t.arrDayOffset : undefined],
     ['duration', t.durationMin !== null ? fmtDuration(t.durationMin) : undefined],
+    ['cabin', t.cabin],
     ['baggage', t.baggage],
+    ['through_check', t.throughCheck],
+    ['refund', t.refund],
     ['price', t.price],
     ['stops', stops],
     ['note', t.note],

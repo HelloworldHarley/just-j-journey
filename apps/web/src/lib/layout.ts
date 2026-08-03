@@ -52,13 +52,20 @@ export function buildTimeline(day: Day): TimelineRow[] {
     if (prev) {
       const gapMin = Math.max(0, ev.startMin - prev.endMin)
       const leg = legByEvent.get(prev.id)
+      // 模糊时段（上午/下午/全天）的起止是名义窗口，不是排定时刻 ——
+      // 拿它算余量会误报冲突。解析器的同名检查也是这么跳过的。
+      const fuzzy =
+        prev.timeKind === 'period' ||
+        prev.timeKind === 'allday' ||
+        ev.timeKind === 'period' ||
+        ev.timeKind === 'allday'
 
       if (leg) {
         rows.push({
           kind: 'leg',
           key: leg.id,
           leg,
-          slackMin: leg.durationMin === null ? null : gapMin - leg.durationMin,
+          slackMin: leg.durationMin === null || fuzzy ? null : gapMin - leg.durationMin,
           gapMin,
         })
       } else {

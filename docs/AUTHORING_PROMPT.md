@@ -64,7 +64,6 @@ theme: 落地京都，稻荷神社逛到锦市场    # 直白的当天主题，�
 sunrise: "06:26"
 sunset: "16:52"
 lodging: 京都四条 UNIZO
-fallback_order: [锦市场, 清水寺夜间参拜]
 ```
 
 第一天的主线是把时差和行李都安顿好，别排太满。
@@ -108,7 +107,7 @@ icon: 💰
 | `booking` | | `{status: required, deadline: 2026-08-01, note: 需提前订位}` |
 | `stay` | | **入住事件必写**：`{platform: 万豪/希尔顿/Airbnb…, stars: 4, room: 大床房, parking: 含/不含, breakfast: 含/不含}`。**不知道的字段直接省略、绝不编造** —— UI 会留「待填」空位 |
 | `notes` | | **注意条目**，字符串列表。截止、防盗、必带装备、营业时间坑…… 一条一个坑，UI 渲染成红色「注意」条目行。有坑写这里，不要埋在正文里 |
-| `transport` | | **抵达/离开/多目的地间的长途移动必写**（不限飞机）：`{traveler: 谁的（多人汇合时）, mode: flight/rail/drive/ferry/bus, carrier: 承运方, number: 班次号, from, to, dep_time: "10:15", arr_time: "13:11", arr_day_offset: 次日到达写 1, duration: 11h55m（全程含中转）, baggage, price: 票价如 $189, stops: [{airport: ICN, wait: 2h10m}]}`。**多人从不同地方出发汇合时写成列表，一人一条**。**不知道的字段直接省略、绝不编造** —— UI 会留「待填」空位（含票价的「预算」槽） |
+| `transport` | | **抵达/离开/多目的地间的长途移动必写**（不限飞机）：`{traveler: 谁的（多人汇合时）, mode: flight/rail/hsr/drive/ferry/bus, carrier: 承运方, number: 班次号, from, to, dep_time: "10:15", arr_time: "13:11", arr_day_offset: 次日到达写 1, duration: 11h55m（全程含中转）, cabin: 经济舱/指定席, baggage, through_check: 中转行李是否直挂, refund: 退改签政策, price: 票价如 $189, stops: [{airport: ICN, arr_time: "13:55", dep_time: "16:05", leg: 前一段行进时长, wait: 2h10m, dep_airport: 异地换乘的再出发点}]}`。**多人从不同地方出发汇合时写成列表，一人一条**。**不知道的字段直接省略、绝不编造** —— UI 会留「待填」空位（含票价的「预算」槽） |
 | `to_next` | | `{mode, minutes, km, label, note}` |
 
 **类别**（只能用这些，五族十八类）：
@@ -154,7 +153,7 @@ time: 16:15–17:30          # ← 16:15 到达。16:03 + 12 = 16:15 ✓
 - **多人从不同地方汇合**：一个事件里 `transport` 写成列表，每条带 `traveler` 标签，例如她从 PVG 直飞、我从 SNA 飞。
 - **正文写「为什么」，不只是「是什么」。** 不是"去 Kerry Park 看日落"，而是"18:15–18:50 金光转粉紫，18:50–19:15 蓝调时刻更出片；山上路边位极少，早到 15 分钟绕圈"。
 - **变体（`#### 变体 · 条件`）是这个格式最重要的特性。** 凡是"如果 X 就改成 Y"的判断——天气、排队、季节性关闭、班次取消——都写成变体。这是一份计划最值钱的部分。
-- **`fallback_order` 写清赶不上时的砍站顺序。**
+- **赶不上时的砍站顺序写进当天导语**（「落后了就按 X → Y → Z 的顺序往下砍」），不要另开字段或在一天末尾单列小块 —— 每天以卡片收尾。
 - **硬约束写足 `note`。** 尤其是倒推链：为什么必须 11:20 还车。
 - **坑写进 `notes` 条目，不要埋在正文。** 每条一个坑、说明理由（"必须自带午餐：Paradise 以外整条线没有吃饭的地方"）。正文留给「这是什么、为什么值得」。
 - **简要介绍（首段）不写通勤** —— 怎么去是上一个事件 `to_next` 的事。

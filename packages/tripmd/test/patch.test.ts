@@ -60,7 +60,7 @@ describe('set_transports', () => {
     expect(ts).toHaveLength(2)
     expect(ts[0]!.number).toBe('DL281')
     expect(ts[0]!.durationMin).toBe(715)
-    expect(ts[0]!.stops).toEqual([{ airport: 'ICN', waitMin: 130 }])
+    expect(ts[0]!.stops).toMatchObject([{ airport: 'ICN', waitMin: 130, legMin: null }])
     expect(ts[1]!.traveler).toBe('我')
     expect(r.markdown).toContain('number: DL281')
     expect(r.markdown).toContain('duration: "11h55m"')

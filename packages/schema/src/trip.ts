@@ -63,10 +63,25 @@ export const CostSchema = z.object({
   optional: z.boolean().default(false),
 })
 
-/** 中转站/停靠点。时长未填时 UI 画等宽段并留「待填」空位。 */
+/** 中转站/换乘点。时长未填时 UI 画等宽段并留「待填」空位。 */
 export const TransportStopSchema = z.object({
-  /** 中转机场/换乘站/停靠港，如 "ICN" */
+  /** 中转到达点：机场/换乘站/停靠港，如 "ICN" */
   airport: z.string().optional(),
+  /** 异地中转的再出发点（与 airport 不同才写，如跨站换乘） */
+  depAirport: z.string().optional(),
+  /** 到达该中转点的当地时间 "13:55" */
+  arrTime: z.string().optional(),
+  /** 从该中转点再出发的当地时间 "16:35" */
+  depTime: z.string().optional(),
+  /** 到达该中转点的日期。缺省按时刻回卷从出发日推算；跨日期变更线时显式写 */
+  arrDate: z.string().optional(),
+  /** 从该中转点再出发的日期。缺省同上 */
+  depDate: z.string().optional(),
+  /**
+   * 到达此中转点的**前一段行进**时长（分钟）。跨时区没法从两端当地时间
+   * 算出来，作者可提供；null = 未填，按全程减停留后均分
+   */
+  legMin: z.number().int().positive().nullable().default(null),
   /** 停留分钟数；null = 未填 */
   waitMin: z.number().int().positive().nullable().default(null),
 })
@@ -115,8 +130,14 @@ export const TransportSchema = z.object({
    * 必须由作者提供；null = 未填，线段按等宽画
    */
   durationMin: z.number().int().positive().nullable().default(null),
+  /** 客舱/座席类型，如 "经济舱" / "指定席" */
+  cabin: z.string().optional(),
   /** 托运行李额说明，如 "2 件 23kg" / "无托运" */
   baggage: z.string().optional(),
+  /** 中转行李是否直挂，如 "行李直挂" / "需提取重新托运" */
+  throughCheck: z.string().optional(),
+  /** 退改签政策，如 "改签 $200 起" / "发车前免费改签" */
+  refund: z.string().optional(),
   /** 中转/停靠，按顺序 */
   stops: z.array(TransportStopSchema).default([]),
   /** 值机/检票/提车备注 */
@@ -207,8 +228,6 @@ export const DaySchema = z.object({
   lodging: z
     .object({ placeId: z.string().nullable(), name: z.string(), note: z.string().optional() })
     .optional(),
-  /** 「赶不上时的砍站顺序」 */
-  fallbackOrder: z.array(z.string()).default([]),
   /** 当天导语（h2 与第一个 h3 之间的自由 Markdown） */
   intro: z.string().default(''),
   events: z.array(EventSchema),
