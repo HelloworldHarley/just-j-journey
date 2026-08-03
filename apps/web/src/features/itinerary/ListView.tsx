@@ -1,11 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import {
-  ChevronDown,
-  MoveRight,
-  Scissors,
-  Sunrise as SunriseIcon,
-  Sunset as SunsetIcon,
-} from 'lucide-react'
+import { ChevronDown, MoveRight, Sunrise as SunriseIcon, Sunset as SunsetIcon } from 'lucide-react'
 import { CATEGORIES, formatMinutes, type Day, type Trip } from '@jjj/schema'
 import { DayTimeline, type CardModules } from '../../components/DayTimeline.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
@@ -107,7 +101,6 @@ export function ListView({ trip }: { trip: Trip }) {
               {!bookingView && filter !== 'all' && visible.length === 0 && (
                 <p className="py-3 text-[12.5px] text-graphite">这天没有匹配的安排。</p>
               )}
-              {filter === 'all' && day.fallbackOrder.length > 0 && <FallbackNote day={day} />}
             </section>
           )
         })}
@@ -245,22 +238,5 @@ function DayHeader({
       )}
       <div className="mt-4 h-px bg-[var(--hairline)]" />
     </header>
-  )
-}
-
-/** 「赶不上时的砍站顺序」—— 原文里最实用的一段，值得单独成块而不是埋在正文 */
-function FallbackNote({ day }: { day: Day }) {
-  return (
-    <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg
-                    bg-[var(--paper-sunken)] px-3.5 py-2.5 text-[12.5px]">
-      <Scissors size={13} className="text-graphite" aria-hidden />
-      <span className="text-graphite">赶不上时按此顺序砍</span>
-      {day.fallbackOrder.map((name, i) => (
-        <span key={name} className="text-soft">
-          {i > 0 && <span className="mr-2 text-graphite">→</span>}
-          {name}
-        </span>
-      ))}
-    </div>
   )
 }

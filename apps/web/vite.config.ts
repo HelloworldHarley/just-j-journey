@@ -2,11 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+// GitHub Pages 项目页挂在 /<repo>/ 子路径下，CI 里用 `vite build --base=/<repo>/` 覆盖。
+// 数据加载（MarkdownTripRepository）跟着 import.meta.env.BASE_URL 走，
+// 路由是 HashRouter —— 静态托管零 rewrite 配置。
 export default defineConfig({
-  // GitHub Pages 项目页挂在 /<repo>/ 子路径下，CI 里用 BASE_PATH 覆盖。
-  // 数据加载（MarkdownTripRepository）跟着 import.meta.env.BASE_URL 走，
-  // 路由是 HashRouter —— 静态托管零 rewrite 配置。
-  base: process.env.BASE_PATH ?? '/',
   plugins: [react(), tailwindcss()],
   server: {
     port: 5173,

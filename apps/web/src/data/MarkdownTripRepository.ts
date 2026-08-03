@@ -20,6 +20,10 @@ export class MarkdownTripRepository implements TripRepository {
     if (!res.ok) throw new Error(`行程清单加载失败（HTTP ${res.status}）— 运行 pnpm data:check 生成`)
     const ids: string[] = ((await res.json()) as { trips?: string[] }).trips ?? []
 
+    // 全要素演示行程只在本地开发时出现：`_` 前缀不入 manifest，
+    // CI 部署前还会把 _* 目录从产物里删掉 —— 线上连直链都打不开
+    if (import.meta.env.DEV) ids.push('_demo')
+
     // 一份坏文件不该拖垮整个首页：坏的跳过并在控制台报出，其余照常
     const settled = await Promise.allSettled(ids.map((id) => this.getTrip(id)))
     const out: TripSummary[] = []
