@@ -291,10 +291,9 @@ theme: 提车自驾，市区一路玩到 Kerry Park 日落
 sunrise: "07:08"
 sunset: "18:50"
 lodging: Astra Hotel
-fallback_order: [煤气厂公园, 日本花园门票, 苏扎罗图书馆]
 ```
 
-今天的锚点是 18:00 的 Kerry Park 日落，前面所有安排都为它让路。
+今天的锚点是 18:00 的 Kerry Park 日落，前面所有安排都为它让路。**落后了就按 煤气厂公园 → 日本花园门票 → 苏扎罗图书馆 的顺序往下砍。**
 
 ### 派克市场
 
