@@ -9,7 +9,7 @@ import { todayIso } from '../../lib/time.ts'
 import { useFavorites } from '../../data/useFavorites.ts'
 import { DayRail } from '../../components/DayRail.tsx'
 import { RailLayout } from '../../components/RailLayout.tsx'
-import { useScrollSpy } from '../../lib/useScrollSpy.ts'
+import { SPY_SCROLL_MARGIN, useScrollSpy } from '../../lib/useScrollSpy.ts'
 import { FilterBar, type EventFilter } from './FilterBar.tsx'
 
 const DETAIL_KEY = 'jjj:detail'
@@ -81,7 +81,13 @@ export function ListView({ trip }: { trip: Trip }) {
           const visible = day.events.filter(matches)
           if (bookingView && visible.length === 0) return null
           return (
-            <section key={day.index} ref={spy.register(i)} className="scroll-mt-[6.5rem] pt-11">
+            <section
+              key={day.index}
+              ref={spy.register(i)}
+              className="pt-11"
+              /* 与 useScrollSpy 的判定区上沿绑定，见 SPY_SCROLL_MARGIN 的注释 */
+              style={{ scrollMarginTop: SPY_SCROLL_MARGIN }}
+            >
               <DayHeader
                 day={day}
                 isToday={day.date === today}

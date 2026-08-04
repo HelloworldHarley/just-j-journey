@@ -23,28 +23,28 @@ export function DayRail({
   return (
     <nav aria-label="按天跳转">
       <ol className="relative">
-        {/* 底轨 + 进度轨。进度到当前这一天为止 */}
-        <span
-          aria-hidden
-          className="absolute left-[5px] top-2 bottom-2 w-px bg-[var(--fog)]"
-        />
-        <span
-          aria-hidden
-          className="absolute left-[5px] top-2 w-px bg-ink/35 transition-all duration-300"
-          style={{
-            height:
-              days.length > 1
-                ? `calc(${(activeIndex / (days.length - 1)) * 100}% - ${activeIndex === 0 ? 0 : 16}px)`
-                : 0,
-          }}
-        />
-
         {days.map((day, i) => {
           const active = i === activeIndex
           const past = i < activeIndex
           const isToday = day.date === todayDate
           return (
             <li key={day.index} className="relative">
+              {/*
+               * 轨道按「每行接力」画，而不是一根按百分比定长的绝对定位线。
+               *
+               * 这一段从本行圆点中心（button 的 py-2 = 8px + 圆点 mt-7px + 半径 5.5px）
+               * 起，长度取本行高度 —— 于是末端正好落在下一行圆点中心。行高不等时也自洽。
+               * 之前用「activeIndex / (天数-1) 的百分比」算总长，圆点却在各行实际位置上，
+               * 两套定位对不齐：偏差从首行 -12.5px 一路漂到末行 +29.3px。
+               */}
+              {i < days.length - 1 && (
+                <span
+                  aria-hidden
+                  className={`absolute left-[5px] top-[20.5px] h-full w-px transition-colors duration-300 ${
+                    past ? 'bg-ink/35' : 'bg-[var(--fog)]'
+                  }`}
+                />
+              )}
               <button
                 type="button"
                 onClick={() => onJump(i)}
