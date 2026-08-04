@@ -1,6 +1,7 @@
 import { Luggage } from 'lucide-react'
 import { TRANSPORTS, type Transport, type TransportMode, type TransportStop } from '@jjj/schema'
 import { iconFor } from '../lib/icons.tsx'
+import { dayOffsetOf, timelineDates } from '../lib/transport-dates.ts'
 
 /**
  * 长途换乘时间轴 —— 电子客票的版式，不钉死为航班（mode 决定图标与槽位文案）：
@@ -65,47 +66,6 @@ export function TransportTimeline({
 
 const md8 = (iso: string) => iso.slice(5).replace('-', '/')
 
-function plusDays(iso: string, d: number): string {
-  const t = new Date(`${iso}T00:00:00Z`)
-  t.setUTCDate(t.getUTCDate() + d)
-  return t.toISOString().slice(0, 10)
-}
-
-/** "HH:MM" → 分钟；不合法返回 null */
-function clockMin(t?: string): number | null {
-  const m = t ? /^(\d{1,2}):(\d{2})$/.exec(t.trim()) : null
-  return m ? Number(m[1]) * 60 + Number(m[2]) : null
-}
-
-function diffDays(a: string, b: string): number {
-  return Math.round((Date.parse(`${b}T00:00Z`) - Date.parse(`${a}T00:00Z`)) / 86_400_000)
-}
-
-/**
- * 中转点的到发日期。作者可显式写（跨日期变更线时必须）；
- * 缺省从出发日期沿时刻推进 —— 时钟回卷（后一时刻小于前一时刻）就进位一天。
- * 同时区行程（火车/巴士/轮渡）这个推算是精确的。
- */
-function stopDates(t: Transport, depDate?: string): { arr?: string; dep?: string }[] {
-  let cur = depDate
-  let prev = clockMin(t.depTime)
-  return t.stops.map((s) => {
-    const step = (authored: string | undefined, time: string | undefined): string | undefined => {
-      const min = clockMin(time)
-      if (authored) {
-        cur = authored
-        prev = min ?? prev
-        return authored
-      }
-      if (!cur || min === null) return undefined
-      if (prev !== null && min < prev) cur = plusDays(cur, 1)
-      prev = min
-      return cur
-    }
-    return { arr: step(s.arrDate, s.arrTime), dep: step(s.depDate, s.depTime) }
-  })
-}
-
 /**
  * 每个行进段的显示时长。中转前的段可由作者用 `leg` 提供（跨时区没法算），
  * 没提供的段按「全程 − Σ停留 − Σ已填段」均分 —— 各段与停留加起来恒等于全程。
@@ -137,12 +97,12 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
   const slots = MODE_SLOTS[flight.mode]
   const ModeIcon = iconFor(TRANSPORTS[flight.mode].icon)
   const stops = flight.stops
-  // 日期：没写就按事件当天为出发日推算，到达日再加 arr_day_offset
-  const depDate = flight.depDate ?? date
-  const arrDate = flight.arrDate ?? (depDate ? plusDays(depDate, flight.arrDayOffset) : undefined)
+  // 时刻是输入、日期是派生：整条轴的日期由 timelineDates 一次算出，
+  // 每个节点的红色 +n 都用同一个 dayOffsetOf(出发日, 该节点) —— 不存在两套口径
+  const dates = timelineDates(flight, date)
+  const depDate = dates.dep
 
   const flyMins = segFlyDurations(flight)
-  const sDates = stopDates(flight, depDate)
   let waitIdx = -1
   const segs: Seg[] = []
   for (let i = 0; i <= stops.length; i++) {
@@ -150,9 +110,14 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
     const stop = stops[i]
     if (stop) segs.push({ kind: 'wait', stop, grow: stop.waitMin ?? 60 })
   }
-  // 三行（分段时长 / 线 / 节点）必须逐段同宽才能对齐 —— 统一的最小宽度：
-  // 行进段很窄也没关系；停留段要装下到发时刻，异地换乘还要装两个地名
-  const minW = (s: Seg) => (s.kind === 'fly' ? '1rem' : s.stop.depAirport ? '8rem' : '4.5rem')
+  // 三行（分段时长 / 线 / 节点）必须逐段同宽才能对齐 —— 统一的最小宽度。
+  // 行进段也要有下限：段两端各压着一个时刻标签（居中于端点），比例过悬殊时
+  // 短段会被压到几十像素，两个标签直接叠在一起。比例失真好过读不出来。
+  const minW = (s: Seg, i: number): string => {
+    if (s.kind === 'wait') return s.stop.depAirport ? '8rem' : '4.5rem'
+    // 首尾段外侧压着 15px 的大时刻，中间段两侧只有 11px 小时刻
+    return i === 0 || i === segs.length - 1 ? '4.75rem' : '3rem'
+  }
 
   const hasDescRow =
     slots.cabin !== null || slots.bag !== null || flight.cabin || flight.baggage || flight.refund || flight.throughCheck
@@ -186,6 +151,11 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
         </span>
       </div>
 
+      {/* 行 3–5 是同一根轴的三层，必须同宽同步滚动 ——
+          段宽有下限（时刻标签要放得下），窄屏放不下时整根轴在自己的容器里横向滚，
+          页面本身永不横向滚动。三行包在同一个滚动容器里才不会各滚各的 */}
+      <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="min-w-max">
       {/* 行 3：时刻与日期，压在时间轴上方。两端是 时刻/日期 两行栈
           （跨日在日期右上角标红色 +n），中转段两端标到发时刻 */}
       <div className="mt-2.5 flex items-end">
@@ -194,13 +164,13 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
           const last = i === segs.length - 1
           if (s.kind === 'wait') {
             waitIdx += 1
-            const d = sDates[waitIdx]
+            const d = dates.stops[waitIdx]
             // 到发时刻以虚线两端的圆点为中心 —— 贴边对齐会差出半个标签宽
             return (
               <span
                 key={i}
                 className="relative h-8"
-                style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s) }}
+                style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s, i) }}
               >
                 {s.stop.arrTime && (
                   <span className="absolute bottom-0 left-0 flex -translate-x-1/2 flex-col items-center">
@@ -223,14 +193,14 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
               className={`flex gap-2 ${
                 first && last ? 'justify-between' : first ? 'justify-start' : last ? 'justify-end' : ''
               }`}
-              style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s) }}
+              style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s, i) }}
             >
               {first && <TimeStack time={flight.depTime} date={depDate} align="left" />}
               {last && (
                 <TimeStack
                   time={flight.arrTime}
-                  date={arrDate}
-                  dayOffset={flight.arrDayOffset}
+                  date={dates.arr}
+                  dayOffset={dayOffsetOf(depDate, dates.arr)}
                   align="right"
                 />
               )}
@@ -261,7 +231,7 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
             <span
               key={i}
               className="relative flex items-center"
-              style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s) }}
+              style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s, i) }}
             >
               {s.kind === 'fly' ? (
                 <>
@@ -303,7 +273,7 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
               <span
                 key={i}
                 className="truncate text-center text-[10.5px] leading-4 text-graphite"
-                style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s) }}
+                style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s, i) }}
               >
                 {s.stop.airport ?? slots.stop}
               </span>
@@ -311,7 +281,7 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
               <span
                 key={i}
                 className="relative h-4 text-[10.5px] leading-4 text-graphite"
-                style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s) }}
+                style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s, i) }}
               >
                 <span className="absolute left-0 top-0 max-w-[7rem] -translate-x-1/2 overflow-hidden text-ellipsis whitespace-nowrap">
                   {s.stop.airport ?? slots.stop}
@@ -328,7 +298,7 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
               className={`flex gap-2 text-[10.5px] leading-4 ${
                 first && last ? 'justify-between' : first ? 'justify-start' : last ? 'justify-end' : ''
               }`}
-              style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s) }}
+              style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s, i) }}
             >
               {first && <SlotText value={flight.from} hint={slots.from} />}
               {last && <SlotText value={flight.to} hint={slots.to} />}
@@ -337,7 +307,10 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
         })}
       </div>
 
-      {/* 行 5：客舱 · 托运 · 直挂 · 退改 */}
+      </div>
+      </div>
+
+      {/* 行 6：客舱 · 托运 · 直挂 · 退改 */}
       {hasDescRow && (
         <div
           className="mt-2 flex flex-wrap items-center gap-x-3.5 gap-y-1 border-t
@@ -374,10 +347,10 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
   )
 }
 
-/** 中转点时刻下的小日期：与出发日不同天时标红色 +n */
+/** 中转点时刻下的小日期：与出发日不同天时标红色 +n（与两端同一套口径） */
 function StopDate({ date, base }: { date?: string; base?: string }) {
   if (!date) return null
-  const offset = base ? diffDays(base, date) : 0
+  const offset = dayOffsetOf(base, date)
   return (
     <span className="tnum text-[10.5px] leading-4 text-graphite">
       {md8(date)}

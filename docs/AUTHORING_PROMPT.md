@@ -107,7 +107,9 @@ icon: 💰
 | `booking` | | `{status: required, deadline: 2026-08-01, note: 需提前订位}` |
 | `stay` | | **入住事件必写**：`{platform: 万豪/希尔顿/Airbnb…, stars: 4, room: 大床房, parking: 含/不含, breakfast: 含/不含}`。**不知道的字段直接省略、绝不编造** —— UI 会留「待填」空位 |
 | `notes` | | **注意条目**，字符串列表。截止、防盗、必带装备、营业时间坑…… 一条一个坑，UI 渲染成红色「注意」条目行。有坑写这里，不要埋在正文里 |
-| `transport` | | **抵达/离开/多目的地间的长途移动必写**（不限飞机）：`{traveler: 谁的（多人汇合时）, mode: flight/rail/hsr/drive/ferry/bus, carrier: 承运方, number: 班次号, from, to, dep_time: "10:15", arr_time: "13:11", arr_day_offset: 次日到达写 1, duration: 11h55m（全程含中转）, cabin: 经济舱/指定席, baggage, through_check: 中转行李是否直挂, refund: 退改签政策, price: 票价如 $189, stops: [{airport: ICN, arr_time: "13:55", dep_time: "16:05", leg: 前一段行进时长, wait: 2h10m, dep_airport: 异地换乘的再出发点}]}`。**多人从不同地方出发汇合时写成列表，一人一条**。**不知道的字段直接省略、绝不编造** —— UI 会留「待填」空位（含票价的「预算」槽） |
+| `transport` | | **抵达/离开/多目的地间的长途移动必写**（不限飞机）：`{traveler: 谁的（多人汇合时）, mode: flight/rail/hsr/drive/ferry/bus, carrier: 承运方, number: 班次号, from, to, dep_time: "10:15", arr_time: "13:11", duration: 11h55m（全程含中转）, cabin: 经济舱/指定席, baggage, through_check: 中转行李是否直挂, refund: 退改签政策, price: 票价如 $189, stops: [{airport: ICN, arr_time: "13:55", dep_time: "16:05", leg: 前一段行进时长, wait: 2h10m, dep_airport: 异地换乘的再出发点}]}`。**多人从不同地方出发汇合时写成列表，一人一条**。**不知道的字段直接省略、绝不编造** —— UI 会留「待填」空位（含票价的「预算」槽） |
+
+**只写时刻，不用管日期。** 出发日、中转到发日、到达日都由工具沿时间轴推出来，跨天自动补红色 `+n` 角标。两个例外必须手写，因为跨时区推不出来：**跨日期变更线的航班写 `arr_day_offset: 1`**（或直接照票面写 `arr_date`）；**抵达型事件的航班其实前一天起飞时写 `dep_date`**。中转停留只要写了 `wait`，哪怕停 27 小时日期也能算对。
 | `to_next` | | `{mode, minutes, km, label, note}` |
 
 **类别**（只能用这些，五族十八类）：
