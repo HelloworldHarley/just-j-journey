@@ -144,9 +144,19 @@ export function parseLatLng(v: unknown): [number, number] | null {
   if (Array.isArray(v) && v.length === 2) {
     nums = v.map(Number)
   } else if (typeof v === 'string') {
+    // 数字后面可以跟方向字母：`47.6062°N, 122.3321°W`。**必须应用符号** ——
+    // 只把字母当噪声剥掉的话，西经会变成东经，把西雅图画到中国境内，
+    // 而且整份文件一致地错时坐标离群检测也抓不到（大家一起偏移，中位数跟着走）
     const cleaned = v.replace(/[[\]()（）]/g, ' ')
-    const found = cleaned.match(/-?\d+(?:\.\d+)?/g)
-    if (found && found.length >= 2) nums = [Number(found[0]), Number(found[1])]
+    const found = [...cleaned.matchAll(/(-?\d+(?:\.\d+)?)\s*°?\s*([NSEWnsew])?/g)]
+    if (found.length >= 2) {
+      const signed = (m: RegExpMatchArray): number => {
+        const n = Number(m[1])
+        const dir = m[2]?.toUpperCase()
+        return dir === 'S' || dir === 'W' ? -Math.abs(n) : n
+      }
+      nums = [signed(found[0]!), signed(found[1]!)]
+    }
   } else if (typeof v === 'object' && v !== null) {
     const o = v as Record<string, unknown>
     const lat = o['lat'] ?? o['latitude']

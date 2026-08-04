@@ -58,6 +58,13 @@ export function BudgetView({ trip }: { trip: Trip }) {
               ，未计入
             </div>
           )}
+          {/* 其它币种单独列，绝不并进上面的总额 —— 混加出来的数字没有意义 */}
+          {model.otherCurrencies.map((c) => (
+            <div key={c.currency ?? '_'} className="mt-1.5 text-[12.5px] text-graphite">
+              另有 <span className="tnum">{fmtMoney(c.amount, c.currency)}</span>
+              ，币种不同未计入
+            </div>
+          ))}
         </div>
         <div className="flex gap-5 text-[12px] text-graphite">
           {(['play', 'food', 'other'] as GroupKey[]).map((g) => (
@@ -94,7 +101,7 @@ export function BudgetView({ trip }: { trip: Trip }) {
         )}
       </div>
 
-      {/* 按细类的横向条形图。类目数有限（≤11），每根直接标注，不需要图例 */}
+      {/* 按类型的横向条形图。一趟行程实际出现的类型远少于 18 个上限，每根直接标注，不需要图例 */}
       <section className="mt-10">
         <h2 className="signage mb-4 text-[11px] text-graphite">按类目</h2>
         <div className="space-y-2.5">
@@ -268,9 +275,37 @@ function build(trip: Trip) {
     }
   }
 
-  const counted = items.filter((i): i is Item & { amount: number } => !i.optional && i.amount != null)
+  /**
+   * 主币种 = 出现次数最多的那个（没有金额时回退到 frontmatter 的 currency）。
+   *
+   * **不同币种的金额绝不能相加。** parseCost 是按每条 cost 文本里的符号单独判币种的，
+   * 所以「整体按 $ 记账、某条小吃随手写 ¥1200」很常见 —— 直接 reduce 会得到
+   * $140 + ¥1200 = 1340 这种假总数，而卡片上每条自己显示得都对，
+   * 恰好构成「卡片对、预算页错」的不一致。这里只统计主币种，其余单列。
+   */
+  const withAmount = items.filter((i): i is Item & { amount: number } => i.amount != null)
+  const tally = new Map<string, number>()
+  for (const i of withAmount) tally.set(i.currency ?? '', (tally.get(i.currency ?? '') ?? 0) + 1)
+  const primary =
+    [...tally.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || (trip.currency ?? '')
+  const isPrimary = (i: Item) => (i.currency ?? '') === primary
+
+  const counted = withAmount.filter((i) => !i.optional && isPrimary(i))
   const total = counted.reduce((n, i) => n + i.amount, 0)
-  const optionalTotal = items.reduce((n, i) => n + (i.optional ? (i.amount ?? 0) : 0), 0)
+  const optionalTotal = withAmount
+    .filter((i) => i.optional && isPrimary(i))
+    .reduce((n, i) => n + i.amount, 0)
+
+  // 非主币种的条目：明细里照常列出，但不并进总额 —— 按币种分别汇总后单独展示
+  const otherCurrencies = [...tally.keys()]
+    .filter((c) => c !== primary)
+    .map((c) => ({
+      currency: c || undefined,
+      amount: withAmount
+        .filter((i) => !i.optional && (i.currency ?? '') === c)
+        .reduce((n, i) => n + i.amount, 0),
+    }))
+    .filter((r) => r.amount > 0)
 
   const byGroup: Record<GroupKey, number> = { play: 0, food: 0, other: 0 }
   const catMap = new Map<CategoryKey, number>()
@@ -293,11 +328,12 @@ function build(trip: Trip) {
     items,
     total,
     optionalTotal,
+    otherCurrencies,
     byGroup,
     byCategory,
     byDay,
     maxCategory: Math.max(...byCategory.map((r) => r.amount), 1),
     maxDay: Math.max(...byDay.map((r) => r.total), 1),
-    currency: counted[0]?.currency ?? trip.currency,
+    currency: primary || undefined,
   } as const
 }

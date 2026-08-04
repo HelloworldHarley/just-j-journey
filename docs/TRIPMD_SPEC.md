@@ -214,9 +214,9 @@ UI 把它们渲染成红色「注意」条目行，和 `#### 变体` 的「如�
 
 ### 交通方式（`to_next.mode`）
 
-`walk` `drive` `rideshare` `rail` `bus` `monorail` `streetcar` `ferry` `flight` `bike`
+`walk` `drive` `rideshare` `rail` `hsr` `bus` `monorail` `streetcar` `ferry` `flight` `bike`
 
-别名：`taxi`/`uber`→`rideshare`、`subway`/`metro`/`lightrail`→`rail`、`tram`→`streetcar`、`car`→`drive`、`foot`→`walk`。
+别名：`taxi`/`uber`→`rideshare`、`subway`/`metro`/`lightrail`→`rail`、`shinkansen`/`bullet`→`hsr`、`tram`→`streetcar`、`car`→`drive`、`foot`→`walk`。
 
 `walk` `drive` `rideshare` `bike` 可由 OSRM 算出真实路网轨迹；其余在地图上画虚线弧。
 
@@ -279,7 +279,11 @@ lodging_note: 50K 券 + 补 5,000 点
 
 ## ` ```trip-constraints `
 
-整趟行程里不可移动的时间点。常驻列表视图顶部。
+整趟行程里不可移动的时间点。
+
+> **当前列表视图不渲染它们** —— 日头改成四行规格时约束条被移除了（那些坑现在写在
+> 受影响事件的 `notes` 里）。这个块仍然有效且会被解析，供日历订阅（`.ics`）与将来的
+> 日历视图使用；写了不会丢，只是暂时不出现在列表页。
 
 ```yaml
 - kind: deadline

@@ -87,7 +87,7 @@ function push(lines: string[], key: string, value: string): void {
 }
 
 export interface IcsOptions {
-  /** 提前多少分钟提醒 starred 事件。0 或负数表示不加提醒。 */
+  /** 提前多少分钟提醒需要行动的事件（待订 / 有坑）。0 或负数表示不加提醒。 */
   reminderMin?: number
   /** 硬约束提前多少分钟提醒 */
   deadlineReminderMin?: number

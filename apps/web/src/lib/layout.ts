@@ -35,6 +35,8 @@ export interface IdleRow {
   minutes: number
   /** 短空档只画一小段连接线；长空档才标出「N 小时空档」 */
   labelled: boolean
+  /** 两个事件真实重叠了多少分钟（没有通勤段时的撞车）。null = 不重叠 */
+  overlapMin: number | null
 }
 
 export type TimelineRow = EventRow | LegRow | IdleRow
@@ -50,10 +52,13 @@ export function buildTimeline(day: Day): TimelineRow[] {
     const prev = i > 0 ? events[i - 1] : undefined
 
     if (prev) {
-      const gapMin = Math.max(0, ev.startMin - prev.endMin)
+      // 原始差值可能为负 —— 那是两个事件真的撞在一起，不能钳成 0 一了百了
+      const rawGap = ev.startMin - prev.endMin
+      const gapMin = Math.max(0, rawGap)
       const leg = legByEvent.get(prev.id)
       // 模糊时段（上午/下午/全天）的起止是名义窗口，不是排定时刻 ——
-      // 拿它算余量会误报冲突。解析器的同名检查也是这么跳过的。
+      // 拿它算余量会误报冲突，也不能拿它编出「N 小时空档」。
+      // 解析器的同名检查也是这么跳过的。
       const fuzzy =
         prev.timeKind === 'period' ||
         prev.timeKind === 'allday' ||
@@ -75,7 +80,8 @@ export function buildTimeline(day: Day): TimelineRow[] {
           kind: 'idle',
           key: `idle-${prev.id}`,
           minutes: gapMin,
-          labelled: gapMin >= IDLE_FLOOR,
+          labelled: !fuzzy && gapMin >= IDLE_FLOOR,
+          overlapMin: !fuzzy && rawGap < 0 ? -rawGap : null,
         })
       }
     }

@@ -7,7 +7,8 @@ import { useCallback, useEffect, useState } from 'react'
  * TripRepository 的一个方法。接口形状（读一个值 / 写一个值 / 清除）刻意保持一致，
  * 届时替换不动调用方。
  *
- * 覆盖值与导入的原始数据分开存 —— 重新跑 pnpm data:import 不会冲掉你改的名字。
+ * 覆盖值与 plan.md 分开存 —— 重新编辑行程文件不会冲掉你改的名字。
+ * 注意这是当前唯一一处「行程内容不以 TripMD 为准」的地方，编辑模式落地时应收回 TripMD。
  */
 const KEY = 'jjj:overrides'
 

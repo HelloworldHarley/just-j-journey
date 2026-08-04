@@ -118,7 +118,7 @@ icon: 💰
 
 **起床/洗漱/收拾这类日常动作不要成事件。** 事件是「值得在时间轴上占一格的事」；早晨的准备写进当天导语一句话即可。退房只有携带行李寄存、装车这类实际动作时才值得成卡。
 
-**10 种交通方式**（`to_next.mode` / `transport.mode` 用，与类别是两套枚举）：`walk` `drive` `rideshare` `rail` `bus` `monorail` `streetcar` `ferry` `flight` `bike`
+**11 种交通方式**（`to_next.mode` / `transport.mode` 用，与类别是两套枚举）：`walk` `drive` `rideshare` `rail` `hsr` `bus` `monorail` `streetcar` `ferry` `flight` `bike`
 
 **4 种状态标记**：
 - `warning` 有坑（具体的坑写进 `notes`）

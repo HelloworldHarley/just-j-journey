@@ -47,6 +47,8 @@ export interface ParseResult {
   diagnostics: Diagnostic[]
 }
 
+const BOOKING_STATUSES = ['required', 'booked', 'none'] as const
+
 const DAY_HEADING = /^(?:day\s*(\d+)|第\s*(\d+)\s*天)/i
 const APPENDIX_HEADING = /^(?:附录|资料|appendix)\s*[·:：|\-—]\s*(.+)$/i
 const VARIANT_HEADING = /^(?:变体|备选|variant|alt)\s*[·:：|\-—]\s*(.+)$/i
@@ -530,7 +532,7 @@ export function parse(src: string): ParseResult {
   const days: Day[] = []
   const seenIndex = new Set<number>()
 
-  rawDays.forEach((rd, order) => {
+  rawDays.forEach((rd) => {
     if (seenIndex.has(rd.index)) {
       bag.error(rd.line, `Day ${rd.index} 重复出现`)
     }
@@ -594,10 +596,21 @@ export function parse(src: string): ParseResult {
       const brec = asRecord(m['booking'])
       if (brec) {
         const s = str(brec['status']) ?? 'required'
+        // 拼错必须报错，不能静默兜底成 required —— 那会把「已订」读成「待订」，
+        // 语义正好反过来，行前清单上还会多出一项根本不存在的待办
+        let status: 'required' | 'booked' | 'none' = 'required'
+        if ((BOOKING_STATUSES as readonly string[]).includes(s)) {
+          status = s as 'required' | 'booked' | 'none'
+        } else {
+          const guess = suggest(s, BOOKING_STATUSES)
+          bag.error(
+            re.line,
+            `事件「${re.title}」的 booking status "${s}" 无效`,
+            guess ? `是否想写 \`${guess}\`？` : `可选值：${BOOKING_STATUSES.join(' / ')}`,
+          )
+        }
         booking = {
-          status: (['required', 'booked', 'none'] as const).includes(s as never)
-            ? (s as 'required' | 'booked' | 'none')
-            : 'required',
+          status,
           deadline: str(brec['deadline']),
           note: str(brec['note']),
         }
@@ -618,7 +631,10 @@ export function parse(src: string): ParseResult {
           )
           mode = 'flight'
         }
-        const stopsRaw = Array.isArray(frec['stops']) ? frec['stops'] : []
+        // 单个中转写成 map 而非列表也接受 —— 与紧邻的 transport 字段同样的宽容度，
+        // 否则 `stops: {airport: SEA}` 会静默丢掉整个中转段
+        const stopsField = frec['stops']
+        const stopsRaw = Array.isArray(stopsField) ? stopsField : stopsField ? [stopsField] : []
         return {
           traveler: str(frec['traveler']) ?? str(frec['who']),
           mode: mode ?? 'flight',
@@ -704,7 +720,10 @@ export function parse(src: string): ParseResult {
       if (toNext) pending.push({ evIndex: events.length - 1, line: re.line, rec: toNext })
     })
 
-    // 时间倒退检查 —— 排行程最容易犯、最难自己看出来的错
+    // 时间倒退 / 时段重叠检查 —— 排行程最容易犯、最难自己看出来的错。
+    // 有 to_next 的相邻事件由下面的余量检查覆盖（报得更准），这里只管没有通勤段的那些：
+    // 否则「10:00–12:00」后面跟「11:00–13:00」这种手滑，全链路没有任何地方会吭声。
+    const hasLeg = new Set(pending.map((p) => p.evIndex))
     for (let i = 1; i < events.length; i++) {
       const prev = events[i - 1]
       const cur = events[i]
@@ -715,6 +734,18 @@ export function parse(src: string): ParseResult {
           rd.line,
           `Day ${rd.index}：「${cur.title}」(${cur.timeRaw}) 早于上一个事件「${prev.title}」(${prev.timeRaw})`,
           '事件应按时间先后书写；确实跨午夜的话忽略此条',
+        )
+      } else if (
+        !hasLeg.has(i - 1) &&
+        cur.timeKind !== 'period' &&
+        prev.timeKind !== 'period' &&
+        cur.startMin < prev.endMin
+      ) {
+        bag.warn(
+          rd.line,
+          `Day ${rd.index} 时段重叠：「${prev.title}」(${prev.timeRaw}) 还没结束，` +
+            `「${cur.title}」(${cur.timeRaw}) 就开始了`,
+          `重叠 ${prev.endMin - cur.startMin} 分钟。改掉其中一个时段，或补上 to_next 说明这段路怎么走`,
         )
       }
     }
@@ -782,7 +813,9 @@ export function parse(src: string): ParseResult {
       date,
       weekday: weekdayOf(date),
       theme: str(dmeta['theme']),
-      color: dayColor(order + 1),
+      // 用 day.index 而非书写顺序 —— serialize 总按日期排序输出，
+      // 若源文件里 Day 2 写在 Day 1 前面，取书写顺序会让往返前后颜色互换，破坏语义幂等
+      color: dayColor(rd.index),
       sunrise: str(dmeta['sunrise']),
       sunset: str(dmeta['sunset']),
       lodging: lodgingName

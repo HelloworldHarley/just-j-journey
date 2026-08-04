@@ -35,6 +35,19 @@ currency: JPY
   label: 离开 KIX
 ```
 
+## 租车
+
+```trip-rentals
+- what: 丰田 Yaris Cross
+  platform: Times Car Rental
+  from: "2026-11-21 10:30"
+  to: "2026-11-22 08:40"
+  pickup: 箱根汤本站
+  dropoff: 小田原站
+  mileage: 不限里程
+  note: 异地还车加收 ¥2200 · 免 ETC 卡需自带
+```
+
 ## 地点表
 
 ```trip-places
@@ -70,6 +83,10 @@ currency: JPY
 - name: 强罗雪月花
   en: Gora Setsugetsuka Hakone
   category: homestay
+- name: 箱根汤本站
+  en: Hakone-Yumoto Station
+  coord: 35.2325, 139.1067
+  category: transit
 - name: 小田原站
   en: Odawara Station
   category: transit
@@ -196,7 +213,7 @@ sunset: "16:31"
 lodging: 强罗雪月花
 ```
 
-演示日：全天事件、火车票（票价已填）、多条注意合框、可选费用、民宿模块五格全满。**时间不够就按 大涌谷 → 海盗船 的顺序往下砍。**
+演示日：全天事件、火车票（票价已填）、自驾与租车模块、多条注意合框、可选费用、民宿模块五格全满。**时间不够就按 大涌谷 → 海盗船 的顺序往下砍。**
 
 ### 箱根周游券 · 区内交通随便坐
 
@@ -214,10 +231,24 @@ time: "09:00"
 category: rail
 place: 新宿站
 transport: {mode: rail, carrier: 小田急, number: はこね 51 号, from: 新宿, to: 箱根汤本, dep_time: "09:00", arr_time: "10:25", duration: 1h25m, cabin: 展望席, refund: 发车前可免费改签, price: "¥2470/人"}
-to_next: {mode: bus, minutes: 25, label: 登山缆车 + 巴士上大涌谷}
+to_next: {mode: walk, minutes: 5, label: 站前取车}
 ```
 
 展望席在第一节车厢，提前 30 天放票。
+
+### 提车 · 箱根自驾
+
+```trip-event
+time: 10:30–10:50
+category: drive
+place: 箱根汤本站
+cost: "¥14800"
+notes:
+  - 山路弯多，大涌谷一带冬季可能要求雪胎或防滑链
+to_next: {mode: drive, minutes: 10, label: 沿国道 1 号上山}
+```
+
+演示自驾类别与租车信息模块 —— 异地还车（箱根汤本取、小田原还）。
 
 ### 大涌谷
 
@@ -283,6 +314,17 @@ lodging: 京都格兰比亚酒店
 ```
 
 演示日：高铁换乘票、下午模糊时段、警告注意、可选卡、酒店模块半填、识别不出金额的费用。
+
+### 还车 · 小田原站
+
+```trip-event
+time: 08:40–08:55
+category: drive
+place: 小田原站
+to_next: {mode: walk, minutes: 10, label: 走进新干线检票口}
+```
+
+异地还车。这张卡在「行」筛选里会被折叠 —— 同一辆车只留取车那张。
 
 ### 新干线 · 小田原→京都
 
@@ -465,6 +507,7 @@ icon: 🧪
 
 - **全天事件**：周游券 `allday` + 事务透明底
 - **火车票**：浪漫特快，票价已填（金色）
+- **自驾类别 + 租车模块**：提车卡（`category: drive`）上挂 `trip-rentals` 区间，**异地还车**（箱根汤本取 / 小田原还），预算钉在模块右上角
 - **多条注意**：大涌谷两条 —— 同框数字序号
 - **可选费用**：黑蛋「（可选）」→ 预算归可选档
 - **民宿模块全满**：雪月花五格全填，星级是四颗金星
@@ -473,6 +516,7 @@ icon: 🧪
 ### Day 3 · 高铁与例外
 
 - **高铁换乘**：名古屋停 12 分钟（10:19 到 / 10:31 发），同站换乘位置居中在虚线下方；`mode: hsr` 专属图标
+- **住/行视图去重**：还车卡在「行」筛选里被折叠，同一辆车只留取车那张
 - **下午模糊时段** + **警告注意** + **可选卡**（鸭川）
 - **住宿模块半填**：格兰比亚只有平台/星级，其余待填
 - **金额识别失败**：先斗町「看店家时价」→ 预算明细「—」不计入

@@ -62,6 +62,23 @@ function opError(message: string): Diagnostic {
   return { severity: 'error', line: 0, message }
 }
 
+/**
+ * 事件被移走后，把**两侧**的通勤段都删掉 —— 它出发的那段，以及前一个事件指向它的那段。
+ *
+ * 前一段必须一起删：`to_next` 挂在事件上、按**位置**决定去向（见 serialize），
+ * 光删被移事件自己的 leg，前一段就会静默改指到新的后继，却仍带着原来那段路的
+ * 时长与说明 —— A(步行5分→B) B(坐车60分→C) 删掉 B 之后，会变成「A 步行 5 分到 C」。
+ * 宁可留空让校验提示作者补，也不能留一条看起来合理的错数据。
+ *
+ * 调用时机：必须在 events.splice 之后（loc.index 此时指向新的后继）。
+ */
+function dropAdjacentLegs(loc: Located): void {
+  const prev = loc.index > 0 ? loc.day.events[loc.index - 1] : undefined
+  loc.day.legs = loc.day.legs.filter(
+    (l) => l.afterEventId !== loc.event.id && l.afterEventId !== prev?.id,
+  )
+}
+
 export function applyPatch(original: Trip, ops: TripPatchOp[]): PatchResult {
   if (ops.length === 0) {
     return { ok: true, trip: original, diagnostics: [], markdown: serialize(original) }
@@ -153,8 +170,7 @@ export function applyPatch(original: Trip, ops: TripPatchOp[]): PatchResult {
           break
         }
         loc.day.events.splice(loc.index, 1)
-        // 该事件出发的通勤段一并删；指向它的前一段保留（内容判断留给作者/agent）
-        loc.day.legs = loc.day.legs.filter((l) => l.afterEventId !== op.eventId)
+        dropAdjacentLegs(loc)
         break
       }
 
@@ -170,8 +186,7 @@ export function applyPatch(original: Trip, ops: TripPatchOp[]): PatchResult {
           break
         }
         loc.day.events.splice(loc.index, 1)
-        // 换了位置，原 to_next 的去向大概率不再成立 —— 删掉，让校验提示作者补
-        loc.day.legs = loc.day.legs.filter((l) => l.afterEventId !== op.eventId)
+        dropAdjacentLegs(loc)
         const at =
           op.afterEventId === null
             ? 0

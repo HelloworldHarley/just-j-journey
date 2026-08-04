@@ -94,7 +94,12 @@ export function DayTimeline({
         ) : row.kind === 'leg' ? (
           <LegConnector key={row.key} row={row} places={places} />
         ) : (
-          <IdleConnector key={row.key} minutes={row.minutes} labelled={row.labelled} />
+          <IdleConnector
+            key={row.key}
+            minutes={row.minutes}
+            labelled={row.labelled}
+            overlapMin={row.overlapMin}
+          />
         ),
       )}
     </div>
@@ -538,18 +543,45 @@ function LegConnector({ row, places }: { row: LegRow; places: Map<string, Place>
   )
 }
 
-/** 没有通勤的空档。短的只画一小段线保持先后关系，长的标出分钟数。 */
-function IdleConnector({ minutes, labelled }: { minutes: number; labelled: boolean }) {
+/**
+ * 没有通勤的空档。短的只画一小段线保持先后关系，长的标出分钟数。
+ * 两个事件真的撞车（后一个早于前一个结束）时必须报出来 —— 这种手写时段
+ * 错误在别处没有任何提示：没有通勤段，余量检查就轮不到。
+ */
+function IdleConnector({
+  minutes,
+  labelled,
+  overlapMin,
+}: {
+  minutes: number
+  labelled: boolean
+  overlapMin: number | null
+}) {
+  const showRow = labelled || overlapMin !== null
   return (
     <div className="grid" style={{ gridTemplateColumns: `${TIME_COL} minmax(0,1fr)` }}>
-      <div className={`flex justify-center ${labelled ? 'py-1.5' : 'py-1'}`}>
-        <span aria-hidden className="w-px border-l border-dotted border-[var(--fog)]" />
+      <div className={`flex justify-center ${showRow ? 'py-1.5' : 'py-1'}`}>
+        <span
+          aria-hidden
+          className={`w-px border-l border-dotted ${
+            overlapMin !== null ? 'border-[var(--tight)]' : 'border-[var(--fog)]'
+          }`}
+        />
       </div>
-      <div className={labelled ? 'py-2.5 pl-1 text-[11.5px] text-graphite' : 'py-1'}>
-        {labelled && (
-          <>
-            <span className="tnum">{fmtDuration(minutes)}</span> 空档
-          </>
+      <div className={showRow ? 'py-2.5 pl-1 text-[11.5px] text-graphite' : 'py-1'}>
+        {overlapMin !== null ? (
+          <span
+            className="tight-badge tnum whitespace-nowrap rounded-sm px-1.5 py-px text-[10.5px] font-medium"
+            title="后一个事件早于前一个结束 —— 时段写重叠了"
+          >
+            时间重叠 {overlapMin} 分
+          </span>
+        ) : (
+          labelled && (
+            <>
+              <span className="tnum">{fmtDuration(minutes)}</span> 空档
+            </>
+          )
         )}
       </div>
     </div>

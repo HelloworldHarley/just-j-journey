@@ -30,7 +30,7 @@ export function HomePage() {
       {data.length === 0 && (
         <Problem
           title="还没有行程"
-          detail="在 data/ 下建一个目录放 plan.md，然后运行 pnpm data:import"
+          detail="在 apps/web/public/data/ 下建一个目录放 plan.md，然后运行 pnpm data:check"
         />
       )}
 

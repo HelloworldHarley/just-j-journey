@@ -3,7 +3,7 @@ import type { Trip, TripSummary } from '@jjj/schema'
 /**
  * 数据访问的唯一切换点。
  *
- * 现在：StaticTripRepository 读 /data/*.json
+ * 现在：MarkdownTripRepository 直接 fetch plan.md 在浏览器里解析（单工件，无 JSON 中间层）
  * 将来：HttpTripRepository 读 /api/*（Agent 上线后行程需要可写）
  *
  * 视图层永远只认这个接口，不知道数据从哪来。换实现 = 改 main.tsx 一行。
