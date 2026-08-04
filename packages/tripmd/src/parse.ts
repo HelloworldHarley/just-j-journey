@@ -519,11 +519,12 @@ export function parse(src: string): ParseResult {
         what,
         platform: str(rec['platform']) ?? str(rec['company']),
         mileage: str(rec['mileage']) ?? str(rec['miles']),
+        insurance: str(rec['insurance']),
+        refund: str(rec['refund']) ?? str(rec['cancellation']),
         from: { raw: fromRaw, ...from },
         to: { raw: toRaw, ...to },
         pickupPlaceId: pickup ? resolvePlaceRef(pickup, fence.line, 'logistics') : null,
         dropoffPlaceId: dropoff ? resolvePlaceRef(dropoff, fence.line, 'logistics') : null,
-        note: str(rec['note']),
       })
     }
   }

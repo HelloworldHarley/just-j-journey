@@ -2,6 +2,7 @@ import { Luggage } from 'lucide-react'
 import { TRANSPORTS, type Transport, type TransportMode, type TransportStop } from '@jjj/schema'
 import { iconFor } from '../lib/icons.tsx'
 import { dayOffsetOf, timelineDates } from '../lib/transport-dates.ts'
+import { Arrow, Dot, SlotText, TermsRow, TimeStack, md8 } from './ticket-parts.tsx'
 
 /**
  * 长途换乘时间轴 —— 电子客票的版式，不钉死为航班（mode 决定图标与槽位文案）：
@@ -63,8 +64,6 @@ export function TransportTimeline({
     </div>
   )
 }
-
-const md8 = (iso: string) => iso.slice(5).replace('-', '/')
 
 /**
  * 每个行进段的显示时长。中转前的段可由作者用 `leg` 提供（跨时区没法算），
@@ -197,12 +196,7 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
             >
               {first && <TimeStack time={flight.depTime} date={depDate} align="left" />}
               {last && (
-                <TimeStack
-                  time={flight.arrTime}
-                  date={dates.arr}
-                  dayOffset={dayOffsetOf(depDate, dates.arr)}
-                  align="right"
-                />
+                <TimeStack time={flight.arrTime} date={dates.arr} base={depDate} align="right" />
               )}
             </span>
           )
@@ -237,9 +231,7 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
                 <>
                   {first && <Dot />}
                   <span className="h-[2px] flex-1 rounded-full bg-ink/50" />
-                  {last && (
-                    <span className="-ml-px h-0 w-0 border-y-[4px] border-l-[7px] border-y-transparent border-l-ink/50" />
-                  )}
+                  {last && <Arrow />}
                 </>
               ) : (
                 <>
@@ -347,108 +339,10 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
   )
 }
 
-/** 中转点时刻下的小日期：与出发日不同天时标红色 +n（与两端同一套口径） */
-function StopDate({ date, base }: { date?: string; base?: string }) {
-  if (!date) return null
-  const offset = dayOffsetOf(base, date)
-  return (
-    <span className="tnum text-[10.5px] leading-4 text-graphite">
-      {md8(date)}
-      {offset > 0 && (
-        <sup
-          className="tnum ml-px text-[9px] font-semibold text-[var(--tight)]"
-          title={`${offset} 天后`}
-        >
-          +{offset}
-        </sup>
-      )}
-    </span>
-  )
-}
-
-/** 时间轴端点的两行栈：时刻（大）/ 日期（小，跨日红 +n），压在线上方 */
-function TimeStack({
-  time,
-  date,
-  dayOffset = 0,
-  align,
-}: {
-  time: string | undefined
-  date: string | undefined
-  dayOffset?: number
-  align: 'left' | 'right'
-}) {
-  return (
-    <span
-      className={`flex min-w-0 flex-col ${align === 'right' ? 'items-end text-right' : 'items-start'}`}
-    >
-      <SlotText value={time} hint="--:--" mono strong />
-      {date && (
-        <span className="tnum text-[10.5px] leading-4 text-graphite">
-          {md8(date)}
-          {dayOffset > 0 && (
-            <sup
-              className="tnum ml-px text-[9px] font-semibold text-[var(--tight)]"
-              title={`${dayOffset} 天后到达`}
-            >
-              +{dayOffset}
-            </sup>
-          )}
-        </span>
-      )}
-    </span>
-  )
-}
-
 /** 两段可缺文本用 · 连接（托运额度 + 直挂说明） */
 function joinDot(a?: string, b?: string): string | undefined {
   const parts = [a, b].filter(Boolean)
   return parts.length ? parts.join(' · ') : undefined
-}
-
-export function Dot({ small }: { small?: boolean }) {
-  return (
-    <span
-      className={`shrink-0 rounded-full border-[1.5px] border-ink/50 bg-paper ${
-        small ? 'h-[6px] w-[6px]' : 'h-[7px] w-[7px]'
-      }`}
-    />
-  )
-}
-
-/** 值缺失时渲染「待填」空位：虚线框 + 提示词，一眼可见这里等着填 */
-export function SlotText({
-  value,
-  hint,
-  mono,
-  strong,
-}: {
-  value: string | undefined
-  hint: string
-  mono?: boolean
-  strong?: boolean
-}) {
-  if (value) {
-    return (
-      <span
-        className={`min-w-0 truncate ${mono ? 'tnum' : ''} ${
-          strong ? 'text-[15px] font-medium text-ink' : 'text-soft'
-        }`}
-      >
-        {value}
-      </span>
-    )
-  }
-  return (
-    <span
-      className={`whitespace-nowrap rounded border border-dashed border-[var(--fog)] px-1.5 py-px text-graphite/60 ${
-        mono ? 'tnum' : ''
-      } ${strong ? 'text-[12px]' : 'text-[10.5px]'}`}
-      title="待填 —— 在 plan.md 的 transport 块里补上"
-    >
-      {hint}
-    </span>
-  )
 }
 
 function joinSlot(a?: string, b?: string): string | undefined {
@@ -460,4 +354,20 @@ function fmtDur(min: number): string {
   const h = Math.floor(min / 60)
   const m = min % 60
   return m === 0 ? `${h}h` : h === 0 ? `${m}m` : `${h}h${String(m).padStart(2, '0')}m`
+}
+
+/** 中转点时刻下的小日期：与出发日不同天时标红色 +n（与两端同一套口径） */
+function StopDate({ date, base }: { date?: string; base?: string }) {
+  if (!date) return null
+  const offset = dayOffsetOf(base, date)
+  return (
+    <span className="tnum text-[10.5px] leading-4 text-graphite">
+      {md8(date)}
+      {offset > 0 && (
+        <sup className="tnum ml-px text-[9px] font-semibold text-[var(--tight)]" title={`${offset} 天后`}>
+          +{offset}
+        </sup>
+      )}
+    </span>
+  )
 }

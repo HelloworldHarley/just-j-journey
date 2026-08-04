@@ -263,14 +263,17 @@ export const RentalSchema = z.object({
   what: z.string().min(1),
   /** 租车平台/租车行：Turo / Hertz / 车主直租… */
   platform: z.string().optional(),
-  /** 总里程限制，自由文本，如 "全程约 310 英里" */
+  /** 里程**上限**（不是预估行驶里程），自由文本，如 "600 英里" / "不限" / "每日 200 英里" */
   mileage: z.string().optional(),
+  /** 保险方案，如 "全险 + 三者 100 万" */
+  insurance: z.string().optional(),
+  /** 退改政策，如 "取车前 48 小时免费取消" */
+  refund: z.string().optional(),
   from: MomentSchema,
   to: MomentSchema,
   /** 取/还地点（placeId），按名引用地点表 */
   pickupPlaceId: z.string().nullable(),
   dropoffPlaceId: z.string().nullable(),
-  note: z.string().optional(),
 })
 
 export const ReferenceSchema = z.object({

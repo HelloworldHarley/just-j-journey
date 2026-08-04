@@ -102,7 +102,8 @@ function rentalsBlock(trip: Trip, placeById: Map<string, Place>): string | null 
     if (pickup) L.push(`  pickup: ${scalar(pickup.name)}`)
     if (dropoff) L.push(`  dropoff: ${scalar(dropoff.name)}`)
     if (r.mileage) L.push(`  mileage: ${scalar(r.mileage)}`)
-    if (r.note) L.push(`  note: ${scalar(r.note)}`)
+    if (r.insurance) L.push(`  insurance: ${scalar(r.insurance)}`)
+    if (r.refund) L.push(`  refund: ${scalar(r.refund)}`)
   }
   L.push('```')
   return L.join('\n')

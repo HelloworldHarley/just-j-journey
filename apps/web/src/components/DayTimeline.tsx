@@ -24,11 +24,13 @@ import {
   type TripEvent,
 } from '@jjj/schema'
 import { buildTimeline, isConflict, type LegRow } from '../lib/layout.ts'
+import { diffDays } from '../lib/transport-dates.ts'
 import type { StaySpan } from '../lib/derive.ts'
 import type { Favorites } from '../data/useFavorites.ts'
 import { iconFor } from '../lib/icons.tsx'
 import { CategoryChip, kindVars } from './CategoryChip.tsx'
-import { Dot, SlotText, TransportTimeline } from './TransportTimeline.tsx'
+import { TransportTimeline } from './TransportTimeline.tsx'
+import { Arrow, Dot, SlotText, TermsRow, TimeStack, md8 } from './ticket-parts.tsx'
 import { MapLinkButton } from './MapLinkButton.tsx'
 import { Markdown } from './Markdown.tsx'
 
@@ -333,8 +335,6 @@ function VariantList({ variants }: { variants: TripEvent['variants'] }) {
 
 // ── 信息模块 ────────────────────────────────────────────────────
 
-const md8 = (iso: string) => iso.slice(5).replace('-', '/')
-
 /**
  * 住宿模块 —— 订房 App 卡片的字段。首行 区间 · 几晚 · 房型；
  * 下面两栏：左栏 平台 / 星级（几星就画几颗星），右栏 停车 / 早餐。
@@ -395,9 +395,18 @@ function StayModule({ span, stay }: { span: StaySpan; stay?: StayInfo }) {
 }
 
 /**
- * 租车模块 —— 与换乘时间轴同一套版式：
- * 头行 平台 · 车辆 · 取还同点 · 限总里程，右上角预算；
- * 时间轴两端镜像：左「日期 时间」、右「时间 日期」，日期字号更小。
+ * 租车模块 —— 与换乘时间轴同一套票面版式，读起来是同一种东西：
+ *
+ *   🔑 Turo · 保时捷 Macan · 共 3 天                          $310
+ *   11:30                                             11:20
+ *   10/02                                             10/05
+ *   ●━━━━━━━━━━━━━━━━━━━━━━━━━━━▶
+ *   取 唐人街提车点                            还 唐人街提车点
+ *   还车 取还同点 · 里程上限 600 英里 · 保险 Turo 自带 · 退改 24 小时内
+ *
+ * 不标红色 `+n`：租车跨天是常态不是意外，天数已在头行写着，
+ * 而这套设计里红色只留给真会出事的东西。
+ * 「11:20 前必须还车」这类坑写进卡片的 `notes`，不塞进凭证。
  */
 function RentalModule({
   rental,
@@ -411,27 +420,18 @@ function RentalModule({
   const pickup = rental.pickupPlaceId ? places.get(rental.pickupPlaceId) : undefined
   const dropoff = rental.dropoffPlaceId ? places.get(rental.dropoffPlaceId) : undefined
   const sameSpot = Boolean(pickup && dropoff && pickup.id === dropoff.id)
-  const days = Math.max(
-    1,
-    Math.round(
-      (Date.parse(`${rental.to.date}T00:00Z`) - Date.parse(`${rental.from.date}T00:00Z`)) /
-        86_400_000,
-    ),
-  )
+  const days = Math.max(1, diffDays(rental.from.date, rental.to.date))
+
   return (
-    <div className="mt-2.5 rounded-lg bg-[var(--paper-sunken)] px-3.5 pb-3 pt-2.5 text-[12px]">
-      {/* 头行：平台（可待填）· 车辆 · 取还同点 · 限里程（可待填）……右上角预算 */}
+    <div className="mt-2.5 rounded-lg bg-[var(--paper-sunken)] px-3.5 pb-3 pt-2.5">
+      {/* 行 1：平台 · 车型 · 总天数 ……右上角预算 */}
       <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11.5px]">
-        <span className="inline-flex items-center gap-1.5">
+        <span className="inline-flex min-w-0 items-center gap-1.5">
           <KeyRound size={12} className="shrink-0 text-graphite" aria-hidden />
           <SlotText value={rental.platform} hint="平台 / 租车行" />
         </span>
-        <span className="text-soft">{rental.what}</span>
-        <span className="text-graphite">{sameSpot ? '取还同点' : '异地取还'}</span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="text-graphite">限里程</span>
-          <SlotText value={rental.mileage} hint="待填" />
-        </span>
+        <span className="min-w-0 truncate text-soft">{rental.what}</span>
+        <span className="tnum text-graphite">共 {days} 天</span>
         {cost && (
           <span className="ml-auto">
             <CostText cost={cost} />
@@ -439,39 +439,38 @@ function RentalModule({
         )}
       </div>
 
-      {/* 时间行：左「日期 时间」→ 右「时间 日期」，日期小一号 */}
-      <div className="mt-2.5 flex items-baseline justify-between gap-2">
-        <span className="flex min-w-0 items-baseline gap-1.5">
-          <span className="tnum text-[11px] text-graphite">{md8(rental.from.date)}</span>
-          <span className="tnum truncate text-[15px] font-medium text-ink">
-            {formatMinutes(rental.from.minute)}
-          </span>
-        </span>
-        <span className="tnum shrink-0 text-[11px] text-graphite">{days} 天</span>
-        <span className="flex min-w-0 items-baseline gap-1.5">
-          <span className="tnum truncate text-[15px] font-medium text-ink">
-            {formatMinutes(rental.to.minute)}
-          </span>
-          <span className="tnum text-[11px] text-graphite">{md8(rental.to.date)}</span>
-        </span>
+      {/* 行 2：时刻在上、日期在下，两端对齐；天数卡在线上 */}
+      <div className="mt-2.5 flex items-end justify-between gap-2">
+        <TimeStack
+          time={formatMinutes(rental.from.minute)}
+          date={rental.from.date}
+          align="left"
+        />
+        <TimeStack time={formatMinutes(rental.to.minute)} date={rental.to.date} align="right" />
       </div>
 
-      {/* 线：●━━━━━━▶ */}
+      {/* 线上不重复写天数 —— 租车是一段连续区间，和直飞航班一样没有分段，
+          总时长头行已经写了。分段时长只在有中转时才有意义 */}
       <div className="mt-1.5 flex items-center" aria-hidden>
         <Dot />
         <span className="h-[2px] flex-1 rounded-full bg-ink/50" />
-        <span className="-ml-px h-0 w-0 border-y-[4px] border-l-[7px] border-y-transparent border-l-ink/50" />
+        <Arrow />
       </div>
 
-      {/* 地点行：取 / 还 */}
-      <div className="mt-1 flex items-start justify-between gap-3 text-[11.5px] leading-4">
-        <span className="min-w-0 truncate text-soft">取 {pickup?.name ?? '待填'}</span>
-        <span className="min-w-0 truncate text-right text-soft">还 {dropoff?.name ?? '待填'}</span>
+      <div className="mt-1 flex items-start justify-between gap-3 text-[10.5px] leading-4 text-graphite">
+        <span className="min-w-0 truncate">取 {pickup?.name ?? '待填'}</span>
+        <span className="min-w-0 truncate text-right">还 {dropoff?.name ?? '待填'}</span>
       </div>
 
-      {rental.note && (
-        <p className="mt-1.5 text-[11.5px] leading-relaxed text-graphite">{rental.note}</p>
-      )}
+      {/* 行 3：还车方式 · 里程 · 保险 · 退改 */}
+      <TermsRow
+        terms={[
+          { label: '还车', value: sameSpot ? '取还同点' : '异地还车' },
+          { label: '里程上限', value: rental.mileage },
+          { label: '保险', value: rental.insurance },
+          { label: '退改', value: rental.refund },
+        ]}
+      />
     </div>
   )
 }

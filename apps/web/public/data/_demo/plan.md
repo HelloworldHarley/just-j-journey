@@ -44,8 +44,9 @@ currency: JPY
   to: "2026-11-22 08:40"
   pickup: 箱根汤本站
   dropoff: 小田原站
-  mileage: 不限里程
-  note: 异地还车加收 ¥2200 · 免 ETC 卡需自带
+  mileage: 不限
+  insurance: 全险 + 免赔额 ¥0
+  refund: 取车前 24 小时免费取消
 ```
 
 ## 地点表
@@ -245,6 +246,7 @@ place: 箱根汤本站
 cost: "¥14800"
 notes:
   - 山路弯多，大涌谷一带冬季可能要求雪胎或防滑链
+  - 异地还车加收 ¥2200 · 免 ETC 卡需自带
 to_next: {mode: drive, minutes: 10, label: 沿国道 1 号上山}
 ```
 
