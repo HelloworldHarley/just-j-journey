@@ -103,11 +103,18 @@ export function isConflict(slackMin: number | null): boolean {
   return slackMin !== null && slackMin < 0
 }
 
-/** 当天的时间跨度，给日头用 */
+/**
+ * 当天有时刻的安排从几点到几点。日头的时间范围、周视图的轴范围都用它。
+ *
+ * **全天事件不算进来** —— 一张周游券的名义窗口是 00:00–24:00，
+ * 把它算进跨度，这天就永远显示「00:00–24:00」，周视图的轴也会被
+ * 一整天撑开、真正有事的那十几个小时反而被压扁。全天事件另有画法。
+ */
 export function daySpan(day: Day): { from: number; to: number } | null {
-  if (day.events.length === 0) return null
+  const timed = day.events.filter((e) => e.timeKind !== 'allday')
+  if (timed.length === 0) return null
   return {
-    from: Math.min(...day.events.map((e) => e.startMin)),
-    to: Math.max(...day.events.map((e) => e.endMin)),
+    from: Math.min(...timed.map((e) => e.startMin)),
+    to: Math.max(...timed.map((e) => e.endMin)),
   }
 }

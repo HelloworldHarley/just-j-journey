@@ -64,6 +64,11 @@
 html {
   background: var(--paper);
   -webkit-text-size-adjust: 100%;
+  /*
+   * 滚动条槽位常驻。否则短页面（月视图）没有滚动条、长页面（列表）有，
+   * 居中容器在两者之间差出一整条滚动条的宽度 —— 切标签时整块内容会横向跳一下。
+   */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -151,6 +156,52 @@ body {
   .tint-stay { color: var(--a-stay-dark); }
   .tint-move { color: var(--a-move-dark); }
   .tint-faved { color: var(--a-faved-dark); }
+}
+
+/*
+ * 日历的事件块与区间带。和 .grp-card 一样：浅深两套规则由媒体查询挑，
+ * 组件只注入 --grp/--grp-dark（kindVars），自己不碰色值。
+ */
+.cal-block {
+  border-left-color: var(--grp, var(--fog));
+  background: color-mix(in srgb, var(--grp, var(--fog)) 9%, var(--paper-raised));
+}
+/* 时间点事件：没占用时长，填成方块就是撒谎 —— 只留左色条 */
+.cal-block-point {
+  background: transparent;
+}
+/* 模糊时段（上午/下午）：斜纹，与确切时间的实底区分 */
+.cal-block-fuzzy {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--grp, var(--fog)) 13%, var(--paper-raised)) 0 5px,
+    var(--paper-raised) 5px 10px
+  );
+}
+/* 月视图住/行区间带：实色底，文字颜色跟 .grp-chip 同一约定 */
+.band-stay { background: var(--a-stay); color: #fff; }
+.band-move { background: var(--a-move); color: #fff; }
+/* 周视图租车期间的底色衬垫 */
+.band-move-tint { background: color-mix(in srgb, var(--a-move) 8%, transparent); }
+
+@media (prefers-color-scheme: dark) {
+  .cal-block {
+    border-left-color: var(--grp-dark, var(--fog));
+    background: color-mix(in srgb, var(--grp-dark, var(--fog)) 13%, var(--paper-raised));
+  }
+  .cal-block-point {
+    background: transparent;
+  }
+  .cal-block-fuzzy {
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--grp-dark, var(--fog)) 16%, var(--paper-raised)) 0 5px,
+      var(--paper-raised) 5px 10px
+    );
+  }
+  .band-stay { background: var(--a-stay-dark); color: #0f1216; }
+  .band-move { background: var(--a-move-dark); color: #0f1216; }
+  .band-move-tint { background: color-mix(in srgb, var(--a-move-dark) 10%, transparent); }
 }
 
 /* 红色只用在「注意」上 —— 它是唯一表示「会出事」的颜色 */

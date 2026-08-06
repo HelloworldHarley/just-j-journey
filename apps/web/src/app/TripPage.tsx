@@ -4,16 +4,18 @@ import type { Trip } from '@jjj/schema'
 import { useTrip } from '../data/hooks.ts'
 import { useTripTitle } from '../data/useTripOverrides.ts'
 import { ListView } from '../features/itinerary/ListView.tsx'
+import { CalendarView } from '../features/calendar/CalendarView.tsx'
 import { InfoView } from '../features/reference/InfoView.tsx'
 import { BudgetView } from '../features/budget/BudgetView.tsx'
 import { Loading, Problem } from '../components/States.tsx'
 
 /**
- * 现有视图：列表 / 资料 / 预算。
- * 日历和地图做好之前不放灰掉的占位 —— 点不动的 tab 比没有更让人困惑。
+ * 现有视图：列表 / 日历 / 资料 / 预算。
+ * 地图做好之前不放灰掉的占位 —— 点不动的 tab 比没有更让人困惑。
  */
 const TABS = [
   { to: 'list', label: '列表' },
+  { to: 'calendar', label: '日历' },
   { to: 'info', label: '资料' },
   { to: 'budget', label: '预算' },
 ]
@@ -78,6 +80,10 @@ function useTripContext(): Trip {
 
 export function ListRoute() {
   return <ListView trip={useTripContext()} />
+}
+
+export function CalendarRoute() {
+  return <CalendarView trip={useTripContext()} />
 }
 
 export function InfoRoute() {
