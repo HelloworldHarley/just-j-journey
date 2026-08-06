@@ -19,20 +19,20 @@ import {
   type Day,
   type Place,
   type Rental,
-  type StayInfo,
+  type Stay,
   type Transport,
   type TripEvent,
 } from '@jjj/schema'
-import { buildTimeline, isConflict, type LegRow } from '../lib/layout.ts'
-import { diffDays } from '../lib/transport-dates.ts'
-import type { StaySpan } from '../lib/derive.ts'
-import type { Favorites } from '../data/useFavorites.ts'
-import { iconFor } from '../lib/icons.tsx'
-import { CategoryChip, kindVars } from './CategoryChip.tsx'
+import { buildTimeline, isConflict, type LegRow } from '../../lib/layout.ts'
+import { daysBetween } from '@jjj/tripmd'
+import type { Favorites } from '../../data/useFavorites.ts'
+import { iconFor } from '../../lib/icons.tsx'
+import { CategoryChip, kindVars } from '../../components/CategoryChip.tsx'
 import { TransportTimeline } from './TransportTimeline.tsx'
-import { Arrow, Dot, SlotText, TermsRow, TimeStack, md8 } from './ticket-parts.tsx'
+import { fmtDurationZh, fmtMoney, shortDate } from '../../lib/format.ts'
+import { Arrow, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
 import { MapLinkButton } from './MapLinkButton.tsx'
-import { Markdown } from './Markdown.tsx'
+import { Markdown } from '../../components/Markdown.tsx'
 
 /** flight 事件没写 transport 块时的空骨架 —— 所有槽位都显示「待填」 */
 const EMPTY_TRANSPORT: Transport = { mode: 'flight', arrDayOffset: 0, durationMin: null, stops: [] }
@@ -42,7 +42,7 @@ const TIME_COL = '3.5rem'
 
 export interface CardModules {
   /** 住宿区间模块的归属（首晚入住事件 → 区间），见 lib/derive.ts */
-  stay?: Map<string, StaySpan>
+  stay?: Map<string, Stay>
   /** 租车区间模块的归属（取车事件 → 租赁） */
   rental?: Map<string, Rental>
 }
@@ -77,7 +77,7 @@ export function DayTimeline({
       favorites={favorites}
       showTime={showTime}
       detail={detail}
-      staySpan={modules?.stay?.get(event.id)}
+      stay={modules?.stay?.get(event.id)}
       rental={modules?.rental?.get(event.id)}
     />
   )
@@ -125,7 +125,7 @@ function EventCard({
   favorites,
   showTime,
   detail,
-  staySpan,
+  stay,
   rental,
 }: {
   event: TripEvent
@@ -135,7 +135,7 @@ function EventCard({
   favorites: Favorites
   showTime: boolean
   detail: boolean
-  staySpan?: StaySpan
+  stay?: Stay
   rental?: Rental
 }) {
   const [zoneOpen, setZoneOpen] = useState(false)
@@ -234,7 +234,7 @@ function EventCard({
         ) : event.category === 'flight' ? (
           <TransportTimeline transports={[EMPTY_TRANSPORT]} date={date} />
         ) : null}
-        {staySpan && <StayModule span={staySpan} stay={event.stay} />}
+        {stay && <StayModule stay={stay} />}
         {rental && <RentalModule rental={rental} places={places} cost={event.cost} />}
         {event.booking && <BookingModule booking={event.booking} />}
 
@@ -336,17 +336,18 @@ function VariantList({ variants }: { variants: TripEvent['variants'] }) {
 // ── 信息模块 ────────────────────────────────────────────────────
 
 /**
- * 住宿模块 —— 订房 App 卡片的字段。首行 区间 · 几晚 · 房型；
+ * 住宿模块 —— 订房 App 卡片的字段。首行 入住 → 退房 · 几晚 · 房型；
  * 下面两栏：左栏 平台 / 星级（几星就画几颗星），右栏 停车 / 早餐。
- * 只出现在区间首晚的入住卡上。缺的字段渲染「待填」空位，之后补进 TripMD 的 stay 块。
+ * 只出现在入住当天那张卡上。缺的字段渲染「待填」空位，之后补进 trip-stays 块。
  */
-function StayModule({ span, stay }: { span: StaySpan; stay?: StayInfo }) {
+function StayModule({ stay }: { stay: Stay }) {
+  const nights = Math.max(1, daysBetween(stay.from.date, stay.to.date))
   const left: { label: string; value: React.ReactNode }[] = [
-    { label: '平台', value: <SlotText value={stay?.platform} hint="待填" /> },
+    { label: '平台', value: <SlotText value={stay.platform} hint="待填" /> },
     {
       label: '星级',
       value:
-        stay?.stars !== undefined ? (
+        stay.stars !== undefined ? (
           <span className="tint-faved tracking-[1px]" title={`${stay.stars} 星`}>
             {'★'.repeat(stay.stars)}
           </span>
@@ -356,21 +357,22 @@ function StayModule({ span, stay }: { span: StaySpan; stay?: StayInfo }) {
     },
   ]
   const right: { label: string; value: React.ReactNode }[] = [
-    { label: '停车', value: <SlotText value={stay?.parking} hint="待填" /> },
-    { label: '早餐', value: <SlotText value={stay?.breakfast} hint="待填" /> },
+    { label: '停车', value: <SlotText value={stay.parking} hint="待填" /> },
+    { label: '早餐', value: <SlotText value={stay.breakfast} hint="待填" /> },
   ]
   return (
     <div className="mt-2.5 rounded-lg bg-[var(--paper-sunken)] px-3.5 py-2.5 text-[12px]">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <MoonStar size={13} className="shrink-0 text-graphite" aria-hidden />
         <span className="tnum font-medium text-ink">
-          {md8(span.checkIn)} <span className="font-normal text-graphite">→</span>{' '}
-          {md8(span.checkOut)}
+          {shortDate(stay.from.date)} {formatMinutes(stay.from.minute)}{' '}
+          <span className="font-normal text-graphite">→</span> {shortDate(stay.to.date)}{' '}
+          {formatMinutes(stay.to.minute)}
         </span>
-        <span className="text-graphite">{span.nights} 晚</span>
+        <span className="text-graphite">{nights} 晚</span>
         <span className="inline-flex items-center gap-1.5">
           <span className="text-graphite">房型</span>
-          <SlotText value={stay?.room} hint="待填" />
+          <SlotText value={stay.room} hint="待填" />
         </span>
       </div>
       <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11.5px]">
@@ -385,10 +387,10 @@ function StayModule({ span, stay }: { span: StaySpan; stay?: StayInfo }) {
           </div>
         ))}
       </div>
-      {(stay?.note ?? span.note) && (
-        <p className="mt-1.5 text-[11.5px] leading-relaxed text-graphite">
-          {stay?.note ?? span.note}
-        </p>
+      {/* 与租车同构：缺的字段渲染「待填」空位，不是整行消失 */}
+      <TermsRow terms={[{ label: '退改', value: stay.refund }]} />
+      {stay.note && (
+        <p className="mt-1.5 text-[11.5px] leading-relaxed text-graphite">{stay.note}</p>
       )}
     </div>
   )
@@ -420,7 +422,7 @@ function RentalModule({
   const pickup = rental.pickupPlaceId ? places.get(rental.pickupPlaceId) : undefined
   const dropoff = rental.dropoffPlaceId ? places.get(rental.dropoffPlaceId) : undefined
   const sameSpot = Boolean(pickup && dropoff && pickup.id === dropoff.id)
-  const days = Math.max(1, diffDays(rental.from.date, rental.to.date))
+  const days = Math.max(1, daysBetween(rental.from.date, rental.to.date))
 
   return (
     <div className="mt-2.5 rounded-lg bg-[var(--paper-sunken)] px-3.5 pb-3 pt-2.5">
@@ -524,7 +526,7 @@ function LegConnector({ row, places }: { row: LegRow; places: Map<string, Place>
         <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap">
           <Icon size={13} aria-hidden />
           {t.zh}
-          {leg.durationMin !== null && <span className="tnum">{fmtDuration(leg.durationMin)}</span>}
+          {leg.durationMin !== null && <span className="tnum">{fmtDurationZh(leg.durationMin)}</span>}
           {leg.distanceKm !== null && <span className="tnum">{leg.distanceKm} km</span>}
         </span>
         {leg.label && <span className="min-w-0 truncate">{leg.label}</span>}
@@ -578,7 +580,7 @@ function IdleConnector({
         ) : (
           labelled && (
             <>
-              <span className="tnum">{fmtDuration(minutes)}</span> 空档
+              <span className="tnum">{fmtDurationZh(minutes)}</span> 空档
             </>
           )
         )}
@@ -667,16 +669,3 @@ function periodLabel(e: TripEvent): string {
   return p ? PERIOD_ZH[p] : e.timeRaw
 }
 
-export function fmtDuration(min: number): string {
-  if (min < 60) return `${min} 分`
-  const h = Math.floor(min / 60)
-  const m = min % 60
-  return m === 0 ? `${h} 小时` : `${h} 小时 ${m} 分`
-}
-
-const SIGN: Record<string, string> = { USD: '$', CNY: '¥', JPY: '¥', EUR: '€', GBP: '£', KRW: '₩' }
-
-export function fmtMoney(amount: number, currency?: string): string {
-  const sign = currency ? (SIGN[currency] ?? `${currency} `) : ''
-  return `${sign}${amount.toLocaleString()}`
-}

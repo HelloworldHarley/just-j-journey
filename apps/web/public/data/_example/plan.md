@@ -57,13 +57,25 @@ currency: JPY
   category: hotel
 ```
 
+## 住宿
+
+```trip-stays
+- what: 京都四条 UNIZO
+  platform: Booking
+  from: "2026-11-14 19:30"
+  to: "2026-11-15 10:00"
+  stars: 3
+  room: 双床房
+  parking: 不含
+  breakfast: 不含
+```
+
 ## Day 1 · 2026-11-14
 
 ```trip-day
 theme: 落地京都，稻荷神社逛到锦市场
 sunrise: "06:26"
 sunset: "16:52"
-lodging: 京都四条 UNIZO
 ```
 
 第一天的主线是把时差和行李都安顿好，别排太满。**赶不上就按 锦市场 → 清水寺夜间参拜 的顺序往下砍。**
@@ -123,7 +135,6 @@ cost: 约 ¥3000/人
 time: "19:30"
 category: hotel
 place: 京都四条 UNIZO
-stay: {platform: Booking, stars: 3, room: 双床房, parking: 不含, breakfast: 不含}
 cost: ¥14,000
 ```
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { dayColor } from '@jjj/schema'
+import { DEFAULT_CHECK_OUT, dayColor } from '@jjj/schema'
 import { parse } from '../src/parse.ts'
+import { summarize } from '../src/summary.ts'
 import { serialize } from '../src/serialize.ts'
 import { applyPatch } from '../src/patch.ts'
 import { parseLatLng } from '../src/values.ts'
@@ -172,5 +173,117 @@ describe('删除/移动事件时的通勤段', () => {
     expect(r.ok).toBe(true)
     // A→B 那段与被删的 C 无关，必须留下
     expect(r.trip.days[0]!.legs.map((l) => l.label)).toEqual(['A到B'])
+  })
+})
+
+describe('住宿是一等区间，不靠名字合并', () => {
+  const md = `---
+id: t
+title: T
+destination: X
+timezone: UTC
+start: 2026-10-01
+end: 2026-10-05
+---
+
+## 住宿
+
+\`\`\`trip-stays
+- what: Astra Hotel
+  from: "2026-10-01 16:00"
+  to: "2026-10-02 09:45"
+- what: 山里木屋
+  from: "2026-10-02 20:30"
+  to: "2026-10-03 07:15"
+- what: astra hotel
+  from: "2026-10-03 18:00"
+  to: "2026-10-05"
+\`\`\`
+
+## Day 1 · 2026-10-01
+${event('入住', '"16:00"')}`
+
+  it('先住 A、去别处、再回 A 产出三段独立区间', () => {
+    // 曾经：区间靠「连续几天 lodging 名字相等」合并出来，
+    // 大小写一漂就断成两截，续住那晚的信息直接从界面消失（code review F3）
+    const stays = parse(md).trip!.stays
+    expect(stays.map((s) => s.what)).toEqual(['Astra Hotel', '山里木屋', 'astra hotel'])
+  })
+
+  it('只写日期时按保底时刻算，但写回仍是日期，往返不长出时刻', () => {
+    const once = parse(md).trip!
+    const last = once.stays[2]!
+    expect(last.to.minute).toBe(DEFAULT_CHECK_OUT)
+    expect(last.to.raw).toBe('2026-10-05')
+
+    const md2 = serialize(once)
+    expect(md2).toContain('to: "2026-10-05"')
+    expect(md2).not.toContain('to: "2026-10-05 10:00"')
+    expect(parse(md2).trip).toEqual(once)
+  })
+
+  it('两端都有确定时刻 —— 区间带永远知道画到哪', () => {
+    for (const st of parse(md).trip!.stays) {
+      expect(Number.isInteger(st.from.minute)).toBe(true)
+      expect(Number.isInteger(st.to.minute)).toBe(true)
+    }
+  })
+})
+
+describe('旧写法不静默丢数据', () => {
+  it('事件上的 `stay:` 与天上的 `lodging:` 都报错', () => {
+    // 迁移到 trip-stays 之后，这两个键不再被读取。
+    // 不报错的话，作者的平台/星级/停车信息会无声消失
+    const md = wrap(
+      `## Day 1 · 2026-10-01\n\`\`\`trip-day\nlodging: Astra Hotel\n\`\`\`\n` +
+        event('入住', '"16:00"', 'stay: {platform: 万豪, stars: 4}'),
+    )
+    const errors = parse(md).diagnostics.filter((d) => d.severity === 'error')
+    expect(errors.map((d) => d.message)).toEqual([
+      '`trip-day` 的 `lodging` 已不再使用',
+      '`stay:` 已不再写在事件上',
+    ])
+  })
+})
+
+describe('构成条不被全天事件淹没', () => {
+  it('allday 事件不计入 dayComposition 的分钟数与跨度', () => {
+    // 曾经：一张周游券（allday，名义窗口 00:00–24:00）按 1440 分钟计入，
+    // 独占构成条的八九成，密度条几乎全灰 —— 同一次改动里 daySpan 修了
+    // 这个陷阱，dayComposition 却漏了，两个「同一件事」的口径分了叉
+    const md = wrap(
+      `## Day 1 · 2026-10-01\n### 周游券\n\`\`\`trip-event\ntime: allday\ncategory: logistics\n\`\`\`\n` +
+        event('公园', '10:00–12:00'),
+    )
+    const shape = summarize(parse(md).trip!).dayShape[0]!
+    expect(shape.other).toBe(0) // 周游券是 logistics（other 组），被排除后归零
+    expect(shape.play).toBe(120)
+    expect(shape.span).toBe(120)
+  })
+})
+
+describe('trip-stays 不静默吞错', () => {
+  const stays = (block: string): string =>
+    wrap(`## 住宿\n\`\`\`trip-stays\n${block}\n\`\`\`\n## Day 1 · 2026-10-01\n${event('入住', '"16:00"')}`)
+
+  it('漏写 what: 的裸字符串项报错，不是整条消失', () => {
+    // 曾经：`- Astra Hotel` 被 asRecord 判 null 后静默跳过 → stays: []、零诊断
+    const r = parse(stays('- Astra Hotel'))
+    expect(r.diagnostics.some((d) => d.severity === 'error' && d.message.includes('不是键值对'))).toBe(true)
+  })
+
+  it('字段名拼错给出警告与建议，不是渲染「待填」骗人', () => {
+    const r = parse(stays('- what: Astra\n  from: "2026-10-01 16:00"\n  to: "2026-10-02 10:00"\n  platfrom: 万豪'))
+    const w = r.diagnostics.find((d) => d.message.includes('platfrom'))
+    expect(w?.severity).toBe('warning')
+    expect(w?.hint).toContain('platform')
+  })
+
+  it('stars 写歪只丢字段并警告，不让整趟行程解析失败', () => {
+    // 曾经：stars: 0 → zod 裸英文报错、trip = null，整页打不开
+    const r = parse(stays('- what: Astra\n  from: "2026-10-01 16:00"\n  to: "2026-10-02 10:00"\n  stars: 4.5'))
+    expect(r.trip).not.toBeNull()
+    expect(r.trip!.stays[0]!.stars).toBeUndefined()
+    expect(r.diagnostics.some((d) => d.severity === 'warning' && d.message.includes('stars'))).toBe(true)
   })
 })

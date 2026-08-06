@@ -1,8 +1,9 @@
 import { Luggage } from 'lucide-react'
 import { TRANSPORTS, type Transport, type TransportMode, type TransportStop } from '@jjj/schema'
-import { iconFor } from '../lib/icons.tsx'
-import { dayOffsetOf, timelineDates } from '../lib/transport-dates.ts'
-import { Arrow, Dot, SlotText, TermsRow, TimeStack, md8 } from './ticket-parts.tsx'
+import { iconFor } from '../../lib/icons.tsx'
+import { dayOffsetOf, timelineDates } from '../../lib/transport-dates.ts'
+import { formatDurationCompact, shortDate } from '../../lib/format.ts'
+import { Arrow, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
 
 /**
  * 长途换乘时间轴 —— 电子客票的版式，不钉死为航班（mode 决定图标与槽位文案）：
@@ -135,7 +136,7 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
           <SlotText value={joinSlot(flight.carrier, flight.number)} hint={slots.who} mono />
         </span>
         <span className="tnum text-graphite">
-          {flight.durationMin !== null ? `全程 ${fmtDur(flight.durationMin)}` : '全程 —'}
+          {flight.durationMin !== null ? `全程 ${formatDurationCompact(flight.durationMin)}` : '全程 —'}
         </span>
         {/* 票价钉右上角：订好了是金色金额，没订是等着填的预算槽 */}
         <span className="ml-auto inline-flex items-center gap-1.5">
@@ -215,10 +216,10 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
             stops.length > 0
               ? s.kind === 'fly'
                 ? s.min !== null
-                  ? fmtDur(s.min)
+                  ? formatDurationCompact(s.min)
                   : ''
                 : s.stop.waitMin !== null
-                  ? fmtDur(s.stop.waitMin)
+                  ? formatDurationCompact(s.stop.waitMin)
                   : '—'
               : ''
           return (
@@ -350,11 +351,6 @@ function joinSlot(a?: string, b?: string): string | undefined {
   return parts.length ? parts.join(' ') : undefined
 }
 
-function fmtDur(min: number): string {
-  const h = Math.floor(min / 60)
-  const m = min % 60
-  return m === 0 ? `${h}h` : h === 0 ? `${m}m` : `${h}h${String(m).padStart(2, '0')}m`
-}
 
 /** 中转点时刻下的小日期：与出发日不同天时标红色 +n（与两端同一套口径） */
 function StopDate({ date, base }: { date?: string; base?: string }) {
@@ -362,7 +358,7 @@ function StopDate({ date, base }: { date?: string; base?: string }) {
   const offset = dayOffsetOf(base, date)
   return (
     <span className="tnum text-[10.5px] leading-4 text-graphite">
-      {md8(date)}
+      {shortDate(date)}
       {offset > 0 && (
         <sup className="tnum ml-px text-[9px] font-semibold text-[var(--tight)]" title={`${offset} 天后`}>
           +{offset}

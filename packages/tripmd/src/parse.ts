@@ -6,6 +6,8 @@ import {
   FLAG_KEYS,
   TRANSPORT_ALIASES,
   TRANSPORT_MODES,
+  DEFAULT_CHECK_IN,
+  DEFAULT_CHECK_OUT,
   TripSchema,
   dayColor,
   resolveCategory,
@@ -188,6 +190,7 @@ export function parse(src: string): ParseResult {
   const rawDays: RawDay[] = []
   const rawRefs: RawRef[] = []
   const constraintFences: { line: number; value: unknown }[] = []
+  const stayFences: { line: number; value: unknown }[] = []
   const rentalFences: { line: number; value: unknown }[] = []
   const placeFences: { line: number; value: unknown }[] = []
 
@@ -248,6 +251,9 @@ export function parse(src: string): ParseResult {
       switch (t.info) {
         case 'trip-constraints':
           constraintFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-constraints') })
+          continue
+        case 'trip-stays':
+          stayFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-stays') })
           continue
         case 'trip-rentals':
           rentalFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-rentals') })
@@ -480,54 +486,146 @@ export function parse(src: string): ParseResult {
     }
   }
 
-  // ── 长租（租车等） ──
-  const rentals: Trip['rentals'] = []
-  for (const fence of rentalFences) {
-    const list = fence.value
-    if (list === null) continue
-    if (!Array.isArray(list)) {
-      bag.error(fence.line, '`trip-rentals` 必须是一个列表', '每项以 `- what: ...` 开头')
-      continue
+  // ── 预订（住宿 / 长租）──
+  //
+  // 两者是同一种东西：有起止时刻的资产占用。骨架（what/platform/from/to/退改/备注）
+  // 走同一个解析器，各自只读自己特有的字段 —— 校验口径也因此只有一份。
+  interface ReservationBase {
+    what: string
+    platform?: string
+    from: Trip['rentals'][number]['from']
+    to: Trip['rentals'][number]['to']
+    refund?: string
+    note?: string
+  }
+
+  const reservationOf = (
+    rec: Rec,
+    line: number,
+    block: string,
+    /** 只写日期时两端各自的保底时刻 */
+    defFrom: number,
+    defTo: number,
+  ): ReservationBase | null => {
+    const what = str(rec['what']) ?? str(rec['item']) ?? str(rec['name'])
+    if (!what) {
+      bag.error(line, `\`${block}\` 里有一项缺少 \`what\``, '写成 `- what: Astra Hotel`')
+      return null
     }
-    for (const item of list) {
-      const rec = asRecord(item)
-      if (!rec) continue
-      const what = str(rec['what']) ?? str(rec['item'])
-      if (!what) {
-        bag.error(fence.line, '`trip-rentals` 里有一项缺少 `what`（租的是什么）')
-        continue
-      }
-      const fromRaw = str(rec['from']) ?? ''
-      const toRaw = str(rec['to']) ?? ''
-      const from = parseDateTime(fromRaw)
-      const to = parseDateTime(toRaw)
-      if (!from || !to) {
-        bag.error(
-          fence.line,
-          `租赁「${what}」的 ${!from ? 'from' : 'to'} "${!from ? fromRaw : toRaw}" 无法解析`,
-          '格式为 `2026-10-02 11:30`',
-        )
-        continue
-      }
-      if (to.date < from.date || (to.date === from.date && to.minute <= from.minute)) {
-        bag.error(fence.line, `租赁「${what}」的归还时刻不晚于取用时刻`)
-        continue
-      }
-      const pickup = str(rec['pickup'])
-      const dropoff = str(rec['dropoff'])
-      rentals.push({
-        what,
-        platform: str(rec['platform']) ?? str(rec['company']),
-        mileage: str(rec['mileage']) ?? str(rec['miles']),
-        insurance: str(rec['insurance']),
-        refund: str(rec['refund']) ?? str(rec['cancellation']),
-        from: { raw: fromRaw, ...from },
-        to: { raw: toRaw, ...to },
-        pickupPlaceId: pickup ? resolvePlaceRef(pickup, fence.line, 'logistics') : null,
-        dropoffPlaceId: dropoff ? resolvePlaceRef(dropoff, fence.line, 'logistics') : null,
-      })
+    const fromRaw = str(rec['from']) ?? ''
+    const toRaw = str(rec['to']) ?? ''
+    const from = parseDateTime(fromRaw, defFrom)
+    const to = parseDateTime(toRaw, defTo)
+    if (!from || !to) {
+      bag.error(
+        line,
+        `「${what}」的 ${!from ? 'from' : 'to'} "${!from ? fromRaw : toRaw}" 无法解析`,
+        '格式为 `2026-10-02 11:30`，只写 `2026-10-02` 则按保底时刻算',
+      )
+      return null
+    }
+    if (to.date < from.date || (to.date === from.date && to.minute <= from.minute)) {
+      bag.error(line, `「${what}」的结束时刻不晚于开始时刻`)
+      return null
+    }
+    return {
+      what,
+      platform: str(rec['platform']) ?? str(rec['brand']) ?? str(rec['company']),
+      from: { raw: fromRaw, ...from },
+      to: { raw: toRaw, ...to },
+      refund: str(rec['refund']) ?? str(rec['cancellation']),
+      note: str(rec['note']),
     }
   }
+
+  /** 两个块都是「- 开头的一串记录」，列表形状校验也只写一遍 */
+  const eachItem = (
+    fences: { line: number; value: unknown }[],
+    block: string,
+    fn: (rec: Rec, line: number) => void,
+  ): void => {
+    for (const fence of fences) {
+      if (fence.value === null) continue
+      if (!Array.isArray(fence.value)) {
+        bag.error(fence.line, `\`${block}\` 必须是一个列表`, '每项以 `- what: ...` 开头')
+        continue
+      }
+      for (const item of fence.value) {
+        const rec = asRecord(item)
+        if (rec) {
+          fn(rec, fence.line)
+        } else {
+          // `- Astra Hotel`（漏写 what:）这种项静默丢掉 = 整条住宿消失，必须吭声
+          bag.error(fence.line, `\`${block}\` 里有一项不是键值对`, '每项以 `- what: ...` 开头')
+        }
+      }
+    }
+  }
+
+  /**
+   * 拼错的字段名必须报出来 —— `platfrom: 万豪` 静默吞掉的结果是
+   * 卡片渲染「待填」而作者以为填了。category/flags/booking/transport
+   * 全都有 suggest 纠错，这两个新块不能是例外。
+   */
+  const checkKeys = (rec: Rec, allowed: readonly string[], line: number, block: string): void => {
+    for (const key of Object.keys(rec)) {
+      if (allowed.includes(key)) continue
+      const guess = suggest(key, [...allowed])
+      bag.warn(
+        line,
+        `\`${block}\` 的字段 \`${key}\` 无法识别，已忽略`,
+        guess ? `是否想写 \`${guess}\`？` : `可用字段：${allowed.join(' / ')}`,
+      )
+    }
+  }
+  const RESERVATION_KEYS = ['what', 'item', 'name', 'platform', 'brand', 'company', 'from', 'to', 'refund', 'cancellation', 'note'] as const
+  const STAY_KEYS = [...RESERVATION_KEYS, 'place', 'stars', 'star', 'room', 'parking', 'breakfast'] as const
+  const RENTAL_KEYS = [...RESERVATION_KEYS, 'pickup', 'dropoff', 'mileage', 'miles', 'insurance'] as const
+
+  const stays: Trip['stays'] = []
+  eachItem(stayFences, 'trip-stays', (rec, line) => {
+    const base = reservationOf(rec, line, 'trip-stays', DEFAULT_CHECK_IN, DEFAULT_CHECK_OUT)
+    if (!base) return
+    checkKeys(rec, STAY_KEYS, line, 'trip-stays')
+    // stars 写歪不该让整趟行程解析失败（zod 只会抛裸英文），也不该静默消失
+    const starsRaw = rec['stars'] ?? rec['star']
+    let stars = num(starsRaw)
+    if (starsRaw !== undefined && (stars === undefined || !Number.isInteger(stars) || stars <= 0)) {
+      bag.warn(line, `「${base.what}」的 stars "${String(starsRaw)}" 不是正整数，已忽略`, '写成 stars: 4')
+      stars = undefined
+    }
+    stays.push({
+      ...base,
+      // 酒店名通常就是地点名，省掉 `place:` 这行重复
+      placeId: resolvePlaceRef(str(rec['place']) ?? base.what, line, 'hotel'),
+      stars,
+      room: str(rec['room']),
+      parking: str(rec['parking']),
+      breakfast: str(rec['breakfast']),
+    })
+  })
+
+  const rentals: Trip['rentals'] = []
+  eachItem(rentalFences, 'trip-rentals', (rec, line) => {
+    const base = reservationOf(rec, line, 'trip-rentals', 0, 0)
+    if (!base) return
+    checkKeys(rec, RENTAL_KEYS, line, 'trip-rentals')
+    const pickup = str(rec['pickup'])
+    const dropoff = str(rec['dropoff'])
+    rentals.push({
+      ...base,
+      mileage: str(rec['mileage']) ?? str(rec['miles']),
+      insurance: str(rec['insurance']),
+      pickupPlaceId: pickup ? resolvePlaceRef(pickup, line, 'logistics') : null,
+      dropoffPlaceId: dropoff ? resolvePlaceRef(dropoff, line, 'logistics') : null,
+    })
+  })
+
+  // 两个块都按开始时刻排 —— 日历的区间带、列表的「住/行」视图都按时间顺序读
+  const byStart = (a: ReservationBase, b: ReservationBase): number =>
+    a.from.date.localeCompare(b.from.date) || a.from.minute - b.from.minute
+  stays.sort(byStart)
+  rentals.sort(byStart)
 
   // ── 天 ──
   const days: Day[] = []
@@ -579,18 +677,13 @@ export function parse(src: string): ParseResult {
       const placeName = str(m['place'])
       const pid = placeName ? resolvePlaceRef(placeName, re.line, category) : null
 
-      // 住宿信息块：`stay:` map。全部可空 —— 缺的字段 UI 留「待填」空位
-      let stay: TripEvent['stay']
-      const srec = asRecord(m['stay'])
-      if (srec) {
-        stay = {
-          platform: str(srec['platform']) ?? str(srec['brand']),
-          stars: num(srec['stars']) ?? num(srec['star']),
-          room: str(srec['room']),
-          parking: str(srec['parking']),
-          breakfast: str(srec['breakfast']),
-          note: str(srec['note']),
-        }
+      // 住宿信息从事件搬到了顶层 trip-stays。留在这里的 `stay:` 会静默丢失，必须拦住
+      if (m['stay'] !== undefined) {
+        bag.error(
+          re.line,
+          '`stay:` 已不再写在事件上',
+          '改写进顶层 `trip-stays` 块（带 from/to 的一条区间记录）',
+        )
       }
 
       let booking: TripEvent['booking']
@@ -709,7 +802,6 @@ export function parse(src: string): ParseResult {
         flags: readFlags(bag, re.line, m['flags']),
         cost: costRaw ? parseCost(costRaw, num(meta['travelers']) ?? 1, str(meta['currency'])) : undefined,
         booking,
-        stay,
         transports,
         summary,
         detail,
@@ -808,7 +900,14 @@ export function parse(src: string): ParseResult {
       })
     }
 
-    const lodgingName = str(dmeta['lodging'])
+    // lodging 已升格为顶层 trip-stays 的区间记录，留在这里会静默丢失
+    if (dmeta['lodging'] !== undefined || dmeta['lodging_note'] !== undefined) {
+      bag.error(
+        rd.line,
+        '`trip-day` 的 `lodging` 已不再使用',
+        '改写进顶层 `trip-stays` 块：一次写清 from/to，不用每天重复',
+      )
+    }
     days.push({
       index: rd.index,
       date,
@@ -819,13 +918,6 @@ export function parse(src: string): ParseResult {
       color: dayColor(rd.index),
       sunrise: str(dmeta['sunrise']),
       sunset: str(dmeta['sunset']),
-      lodging: lodgingName
-        ? {
-            placeId: places.get(placeKey(lodgingName))?.id ?? resolvePlaceRef(lodgingName, rd.line, 'hotel'),
-            name: lodgingName,
-            note: str(dmeta['lodging_note']),
-          }
-        : undefined,
       intro: rd.intro,
       events,
       legs,
@@ -862,6 +954,7 @@ export function parse(src: string): ParseResult {
     travelers: num(meta['travelers']),
     currency: str(meta['currency']),
     constraints,
+    stays,
     rentals,
     places: [...places.values()],
     days,

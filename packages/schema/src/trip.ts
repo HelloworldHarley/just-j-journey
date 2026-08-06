@@ -144,24 +144,6 @@ export const TransportSchema = z.object({
   note: z.string().optional(),
 })
 
-/**
- * 住宿信息块 —— 挂在入住事件上，订房 App 卡片的字段。
- * **所有字段可空**：知道就提前填，不知道渲染「待填」空位，之后人工或 Agent 补。
- */
-export const StayInfoSchema = z.object({
-  /** 订在哪：万豪 / 希尔顿 / Airbnb / Booking… */
-  platform: z.string().optional(),
-  /** 星级 */
-  stars: z.number().int().positive().optional(),
-  /** 房型，如 "大床房" / "双床房" */
-  room: z.string().optional(),
-  /** 停车：含 / 不含 / "$30 每晚" 这类自由文本 */
-  parking: z.string().optional(),
-  /** 早餐：含 / 不含 */
-  breakfast: z.string().optional(),
-  note: z.string().optional(),
-})
-
 export const EventSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -177,8 +159,6 @@ export const EventSchema = z.object({
   flags: z.array(z.enum(FLAG_KEYS)).default([]),
   cost: CostSchema.optional(),
   booking: BookingSchema.optional(),
-  /** 住宿信息（平台/星级/房型/停车/早餐），通常写在入住事件上 */
-  stay: StayInfoSchema.optional(),
   /** 长途换乘段（0..n 条，多人汇合时一人一条） */
   transports: z.array(TransportSchema).default([]),
   /**
@@ -225,9 +205,6 @@ export const DaySchema = z.object({
   color: z.string(),
   sunrise: z.string().optional(),
   sunset: z.string().optional(),
-  lodging: z
-    .object({ placeId: z.string().nullable(), name: z.string(), note: z.string().optional() })
-    .optional(),
   /** 当天导语（h2 与第一个 h3 之间的自由 Markdown） */
   intro: z.string().default(''),
   events: z.array(EventSchema),
@@ -245,36 +222,78 @@ export const ConstraintSchema = z.object({
 })
 
 /** "YYYY-MM-DD HH:MM" 拆解后的时刻，raw 原样保留供导出 */
-const MomentSchema = z.object({
+export const MomentSchema = z.object({
   raw: z.string(),
   date: z.string().regex(iso),
   minute: z.number().int().min(0),
 })
 
 /**
- * 长租 —— 有明确取还时刻、跨越多天的租赁资产：租车、随身 WiFi、滑雪装备。
+ * 预订的共同骨架。
  *
- * 它不是事件（不属于某一天的时间轴，虽然取/还动作可以另写成 logistics 事件），
- * 而是一段横跨行程的区间 —— 「行」视图里渲染成订车 App 那种 从…到… 的卡片。
+ * 住宿和长租是同一种东西 —— **有起止时刻的资产占用**：一段时间里
+ * 「这间房 / 这辆车归我」，不属于某一天的时间轴，而是横跨若干天的区间。
+ * 于是它们共享这个基底，各自只 extend 自己特有的字段。
+ *
+ * 这个同构一路贯到底：日历的区间带用同一个函数把两者化成坐标，
+ * 卡片里的信息模块用同一套零件（ticket-parts）画。
+ */
+const ReservationBase = z.object({
+  /** 订的是什么：酒店名 / "保时捷 Macan" */
+  what: z.string().min(1),
+  /** 订在哪：万豪 / Airbnb / Booking / Turo / 车主直租… */
+  platform: z.string().optional(),
+  from: MomentSchema,
+  to: MomentSchema,
+  /** 退改政策，如 "免费取消至入住前 48 小时" */
+  refund: z.string().optional(),
+  note: z.string().optional(),
+})
+
+/**
+ * 住宿 —— 一段「这间房归我」的区间。
+ *
+ * **不是**从每天的 `lodging:` 靠名字相等合并出来的（那样大小写一漂
+ * 区间就断成两截），作者直接写区间，起止两端都在这一条记录上。
+ */
+export const StaySchema = ReservationBase.extend({
+  /** 住在哪（placeId），按名引用地点表；缺省用 what 去找 */
+  placeId: z.string().nullable(),
+  /** 星级 */
+  stars: z.number().int().positive().optional(),
+  /** 房型，如 "大床房" / "双床房" */
+  room: z.string().optional(),
+  /** 停车：含 / 不含 / "$30 每晚" 这类自由文本 */
+  parking: z.string().optional(),
+  /** 早餐：含 / 不含 */
+  breakfast: z.string().optional(),
+})
+
+/**
+ * 长租 —— 有明确取还时刻的租赁资产：租车、随身 WiFi、滑雪装备。
+ *
+ * 取/还动作可以另写成 logistics 事件，但区间本身不属于任何一天。
  * 费用仍写在取车那个事件的 cost 上，预算统计单一来源不变。
  */
-export const RentalSchema = z.object({
-  /** 租的是什么，如 "保时捷 Macan" */
-  what: z.string().min(1),
-  /** 租车平台/租车行：Turo / Hertz / 车主直租… */
-  platform: z.string().optional(),
+export const RentalSchema = ReservationBase.extend({
   /** 里程**上限**（不是预估行驶里程），自由文本，如 "600 英里" / "不限" / "每日 200 英里" */
   mileage: z.string().optional(),
   /** 保险方案，如 "全险 + 三者 100 万" */
   insurance: z.string().optional(),
-  /** 退改政策，如 "取车前 48 小时免费取消" */
-  refund: z.string().optional(),
-  from: MomentSchema,
-  to: MomentSchema,
   /** 取/还地点（placeId），按名引用地点表 */
   pickupPlaceId: z.string().nullable(),
   dropoffPlaceId: z.string().nullable(),
 })
+
+/**
+ * 作者只写日期不写时刻时的保底 —— 入住 18:00、退房 10:00，行业惯例。
+ *
+ * 保底在**解析时**就填进 `minute`，导出仍按作者写的 `raw` 原样写回，
+ * 所以往返幂等不受影响，而下游拿到的区间**两端永远有确定值**，
+ * 不存在「这条带该画到哪」的悬空情形。
+ */
+export const DEFAULT_CHECK_IN = 18 * 60
+export const DEFAULT_CHECK_OUT = 10 * 60
 
 export const ReferenceSchema = z.object({
   id: z.string().min(1),
@@ -293,6 +312,8 @@ export const TripSchema = z.object({
   travelers: z.number().int().positive().optional(),
   currency: z.string().optional(),
   constraints: z.array(ConstraintSchema).default([]),
+  /** 住宿区间，与 rentals 同构 */
+  stays: z.array(StaySchema).default([]),
   rentals: z.array(RentalSchema).default([]),
   places: z.array(PlaceSchema).default([]),
   days: z.array(DaySchema),
@@ -333,7 +354,6 @@ export type Coord = z.infer<typeof CoordSchema>
 export type Place = z.infer<typeof PlaceSchema>
 export type Variant = z.infer<typeof VariantSchema>
 export type Booking = z.infer<typeof BookingSchema>
-export type StayInfo = z.infer<typeof StayInfoSchema>
 export type Cost = z.infer<typeof CostSchema>
 export type Transport = z.infer<typeof TransportSchema>
 export type TransportStop = z.infer<typeof TransportStopSchema>
@@ -341,7 +361,11 @@ export type TripEvent = z.infer<typeof EventSchema>
 export type Leg = z.infer<typeof LegSchema>
 export type Day = z.infer<typeof DaySchema>
 export type Constraint = z.infer<typeof ConstraintSchema>
+export type Moment = z.infer<typeof MomentSchema>
+export type Stay = z.infer<typeof StaySchema>
 export type Rental = z.infer<typeof RentalSchema>
+/** 住宿与长租的公共形状 —— 只关心「起止时刻的资产占用」的代码收这个类型 */
+export type Reservation = Stay | Rental
 export type Reference = z.infer<typeof ReferenceSchema>
 export type Trip = z.infer<typeof TripSchema>
 export type TripSummary = z.infer<typeof TripSummarySchema>

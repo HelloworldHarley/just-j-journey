@@ -32,6 +32,30 @@ currency: USD
   note: 12:40 前到航站楼。绝对底线 13:10，但别拿这个当计划
 ```
 
+## 住宿
+
+```trip-stays
+- what: Astra Hotel
+  platform: 万豪 · Autograph Collection
+  from: "2026-10-01 16:00"
+  to: "2026-10-03 09:45"
+  stars: 4
+  parking: 不含 · 停 SpotHero 地库
+  refund: 免费取消至入住前 48 小时
+- what: Ashford 木屋
+  platform: Airbnb
+  from: "2026-10-03 20:30"
+  to: "2026-10-04 07:15"
+  room: 独栋木屋
+  parking: 含 · 门口
+- what: Renaissance Seattle
+  platform: 万豪
+  from: "2026-10-04 20:45"
+  to: "2026-10-05 09:40"
+  stars: 4
+  parking: 不含 · SpotHero 另订
+```
+
 ## 租车
 
 ```trip-rentals
@@ -179,7 +203,6 @@ currency: USD
 theme: 落地西雅图 Citywalk 感受市区
 sunrise: "07:07"
 sunset: "18:52"
-lodging: Astra Hotel
 ```
 
 时差日。主线是把行李安顿好，靠日落收尾，别排太满。
@@ -207,7 +230,6 @@ to_next: {mode: rail, minutes: 38, label: 1 Line 到 Westlake，再换电车, no
 time: 16:00–16:30
 category: hotel
 place: Astra Hotel
-stay: {platform: 万豪 · Autograph Collection, stars: 4, parking: 不含 · 停 SpotHero 地库}
 to_next: {mode: walk, minutes: 22, km: 1.8, label: 平路好走}
 ```
 
@@ -291,7 +313,6 @@ place: Astra Hotel
 theme: 提车自驾，市区一路玩到 Kerry Park 日落
 sunrise: "07:08"
 sunset: "18:50"
-lodging: Astra Hotel
 ```
 
 今天的锚点是 18:00 的 Kerry Park 日落，前面所有安排都为它让路。**落后了就按 煤气厂公园 → 日本花园门票 → 苏扎罗图书馆 的顺序往下砍。**
@@ -431,7 +452,6 @@ notes:
 theme: 水上飞机与玻璃艺术，傍晚南下雪山
 sunrise: "07:10"
 sunset: "18:48"
-lodging: Ashford 木屋
 ```
 
 **十月第一个周六** —— 亚马逊玻璃球这趟唯一的开放日，不可移动。
@@ -551,7 +571,6 @@ Bonney Lake 观景台，**日落 18:48**。零遮挡，巨大的雷尼尔怼在�
 time: "20:30"
 category: homestay
 place: Ashford 木屋
-stay: {platform: Airbnb, room: 独栋木屋, parking: 含 · 门口}
 flags: [tentative, needs-booking]
 booking: {status: required, note: 5 选 1 未定，见附录。订前必须问泡池是独享还是公用}
 cost: $250–400
@@ -568,7 +587,6 @@ notes:
 theme: 雷尼尔国家公园徒步大环线
 sunrise: "07:11"
 sunset: "18:46"
-lodging: Renaissance Seattle
 ```
 
 **⚠️ 全程唯一的硬核长日：7:15 出门，18:30 落地 Kent。**
@@ -696,7 +714,6 @@ to_next: {mode: drive, minutes: 30, label: Kent → 市中心}
 time: "20:45"
 category: hotel
 place: Renaissance Seattle
-stay: {platform: 万豪, stars: 4, parking: 不含 · SpotHero 另订}
 flags: [tentative, needs-booking]
 booking: {status: required, note: 第三张 50K 券。换不出来退 Courtyard Pioneer Square}
 cost: SpotHero 停车 $20–35

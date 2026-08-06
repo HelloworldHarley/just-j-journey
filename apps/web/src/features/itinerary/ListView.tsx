@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { ChevronDown, MoveRight, Sunrise as SunriseIcon, Sunset as SunsetIcon } from 'lucide-react'
 import { CATEGORIES, formatMinutes, type Day, type Trip } from '@jjj/schema'
-import { DayTimeline, type CardModules } from '../../components/DayTimeline.tsx'
+import { DayTimeline, type CardModules } from './DayTimeline.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
+import { shortDate } from '../../lib/format.ts'
 import { daySpan } from '../../lib/layout.ts'
 import { dedupIds, rentalModuleMap, stayModuleMap } from '../../lib/derive.ts'
 import { todayIso } from '../../lib/time.ts'
 import { useFavorites } from '../../data/useFavorites.ts'
-import { DayRail } from '../../components/DayRail.tsx'
+import { DayRail } from './DayRail.tsx'
 import { RailLayout } from '../../components/RailLayout.tsx'
 import { SPY_SCROLL_MARGIN, useScrollSpy } from '../../lib/useScrollSpy.ts'
 import { FilterBar, type EventFilter } from './FilterBar.tsx'
@@ -50,13 +52,23 @@ export function ListView({ trip }: { trip: Trip }) {
   /** 住/行是「订好的东西一览」：极简眉头、去时间列、没货的天直接不出现 */
   const bookingView = filter === 'stay' || filter === 'move'
 
-  // 「今天」智能定位：当前日期落在行程区间内就自动滚过去。
-  // 旅行中最常见的动作是「我现在该干嘛」，不该让人每次都自己找。
+  /*
+    进场定位。两个来源，由这一处统一决定滚到哪 —— 分散到各处会互相抢：
+
+    - 从日历下钻过来：路由 state 带着锚点 id（事件卡或 `day-N` 分区）
+    - 平时打开：当前日期落在行程区间内就滚到今天。旅行中最常见的动作是
+      「我现在该干嘛」，不该让人每次都自己找
+  */
+  const focus = (useLocation().state as { focus?: string } | null)?.focus
   useEffect(() => {
+    if (focus) {
+      document.getElementById(focus)?.scrollIntoView({ block: 'start' })
+      return
+    }
     const i = trip.days.findIndex((d) => d.date === today)
     if (i >= 0) spy.jumpTo(i)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trip.id])
+  }, [trip.id, focus])
 
   return (
     <div className="pb-24">
@@ -83,6 +95,7 @@ export function ListView({ trip }: { trip: Trip }) {
           return (
             <section
               key={day.index}
+              id={`day-${day.index}`}
               ref={spy.register(i)}
               className="pt-11"
               /* 与 useScrollSpy 的判定区上沿绑定，见 SPY_SCROLL_MARGIN 的注释 */
@@ -156,7 +169,7 @@ function DayHeader({
       <div className="flex items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-3">
           <span className="signage text-[15px] text-ink">Day {day.index}</span>
-          <span className="tnum text-[14px] text-soft">{day.date.slice(5).replace('-', '/')}</span>
+          <span className="tnum text-[14px] text-soft">{shortDate(day.date)}</span>
           <span className="text-[14px] text-graphite">{day.weekday}</span>
           {!minimal && isToday && (
             <span className="rounded-full bg-ink px-2 py-[2px] text-[11px] font-medium text-paper">

@@ -13,7 +13,7 @@ import { serialize } from '../src/serialize.ts'
  * 注意锁的是语义（Trip 对象深等），不是字节：注释、排版、区块顺序允许丢。
  */
 
-const FIXTURES = ['seattle-2026-10', '_example'] as const
+const FIXTURES = ['seattle-2026-10', '_example', '_demo'] as const
 
 const load = (dir: string) =>
   readFileSync(join(__dirname, '../../../apps/web/public/data', dir, 'plan.md'), 'utf8')

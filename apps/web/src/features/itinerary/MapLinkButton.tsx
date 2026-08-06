@@ -7,7 +7,7 @@ import {
   placeUrl,
   preferredProvider,
   type MapProvider,
-} from '../lib/maplink.ts'
+} from '../../lib/maplink.ts'
 
 const ORDER: MapProvider[] = ['google', 'apple']
 

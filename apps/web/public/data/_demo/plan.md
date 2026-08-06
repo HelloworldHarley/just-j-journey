@@ -35,6 +35,34 @@ currency: JPY
   label: 离开 KIX
 ```
 
+## 住宿
+
+```trip-stays
+- what: 浅草豪景酒店
+  platform: 一休.com
+  from: "2026-11-20 16:40"
+  to: "2026-11-21 08:00"
+  stars: 3
+  room: 双床房 · 高层
+  breakfast: 不含
+  note: 高层朝隅田川的房要单独邮件要
+- what: 强罗雪月花
+  platform: 一休.com
+  from: "2026-11-21 15:30"
+  to: "2026-11-22 07:30"
+  stars: 4
+  room: 和洋室 · 半露天风吕
+  parking: 含 · 免费 3 台
+  breakfast: 含 · 会席早餐
+  refund: 入住前 7 天免费取消
+- what: 京都格兰比亚酒店
+  platform: 万豪
+  from: "2026-11-22 18:10"
+  to: "2026-11-23"
+  stars: 5
+  note: to 只写了日期，退房时刻按保底 10:00 算
+```
+
 ## 租车
 
 ```trip-rentals
@@ -134,8 +162,6 @@ currency: JPY
 theme: 落地东京，浅草的第一晚
 sunrise: "06:19"
 sunset: "16:32"
-lodging: 浅草豪景酒店
-lodging_note: 高层朝隅田川的房要单独邮件要
 ```
 
 演示日：中转航班、跨日出发、多人一人一票、全空待填骨架、模糊时段、预订状态。
@@ -211,7 +237,6 @@ cost: 约 ¥2000/人
 theme: 浪漫特快进箱根，温泉旅馆躺平
 sunrise: "06:20"
 sunset: "16:31"
-lodging: 强罗雪月花
 ```
 
 演示日：全天事件、火车票（票价已填）、自驾与租车模块、多条注意合框、可选费用、民宿模块五格全满。**时间不够就按 大涌谷 → 海盗船 的顺序往下砍。**
@@ -290,7 +315,6 @@ to_next: {mode: bus, minutes: 20}
 time: "15:30"
 category: homestay
 place: 强罗雪月花
-stay: {platform: 一休.com, stars: 4, room: 和洋室 · 半露天风吕, parking: 含 · 免费 3 台, breakfast: 含 · 会席早餐}
 booking: {status: booked, note: 含晚餐会席，15:00 后可入住}
 cost: "¥52000"
 ```
@@ -312,7 +336,6 @@ category: food
 theme: 新干线换乘进京都，古都压马路
 sunrise: "06:39"
 sunset: "16:47"
-lodging: 京都格兰比亚酒店
 ```
 
 演示日：高铁换乘票、下午模糊时段、警告注意、可选卡、酒店模块半填、识别不出金额的费用。
@@ -384,7 +407,6 @@ to_next: {mode: walk, minutes: 15}
 time: "18:10"
 category: hotel
 place: 京都格兰比亚酒店
-stay: {platform: 万豪, stars: 5}
 to_next: {mode: walk, minutes: 15}
 ```
 

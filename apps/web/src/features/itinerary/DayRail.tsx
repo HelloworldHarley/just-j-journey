@@ -1,4 +1,6 @@
-import { groupKeyOf, type Day, type GroupKey } from '@jjj/schema'
+import type { Day, GroupKey } from '@jjj/schema'
+import { dayComposition } from '@jjj/tripmd'
+import { shortDate } from '../../lib/format.ts'
 
 /**
  * 左侧日程轨。
@@ -80,7 +82,7 @@ export function DayRail({
                       active ? 'text-soft' : 'text-graphite/70'
                     }`}
                   >
-                    {day.date.slice(5).replace('-', '/')} {day.weekday}
+                    {shortDate(day.date)} {day.weekday}
                   </span>
                   <CompositionBar day={day} dim={!active} />
                 </span>
@@ -95,10 +97,7 @@ export function DayRail({
 
 /** 当天玩/吃/其他的占比，一条 3px 的小横条 */
 function CompositionBar({ day, dim }: { day: Day; dim: boolean }) {
-  const acc: Record<GroupKey, number> = { play: 0, food: 0, other: 0 }
-  for (const e of day.events) {
-    acc[groupKeyOf(e.category)] += Math.max(e.endMin - e.startMin, 15)
-  }
+  const acc = dayComposition(day)
   const total = acc.play + acc.food + acc.other || 1
 
   return (

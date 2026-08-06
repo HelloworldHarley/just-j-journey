@@ -1,4 +1,5 @@
-import { dayOffsetOf } from '../lib/transport-dates.ts'
+import { shortDate } from '../../lib/format.ts'
+import { dayOffsetOf } from '../../lib/transport-dates.ts'
 
 /**
  * 票面共用零件。换乘时间轴（机票/火车/巴士/轮渡）和租车区间卡共用同一套 ——
@@ -7,9 +8,6 @@ import { dayOffsetOf } from '../lib/transport-dates.ts'
  * 抽出来是因为原先租车模块反向 import 了换乘时间轴的内部零件，
  * 依赖方向不对；将来日历的事件弹层大概率也要用同一套。
  */
-
-/** ISO 日期 → MM/DD */
-export const md8 = (iso: string): string => iso.slice(5).replace('-', '/')
 
 /** 时间轴上的节点圆点 */
 export function Dot({ small }: { small?: boolean }) {
@@ -96,7 +94,7 @@ export function TimeStack({
       <SlotText value={time} hint="--:--" mono strong />
       {date && (
         <span className="tnum text-[10.5px] leading-4 text-graphite">
-          {md8(date)}
+          {shortDate(date)}
           {offset > 0 && (
             <sup
               className="tnum ml-px text-[9px] font-semibold text-[var(--tight)]"

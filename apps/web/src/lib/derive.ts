@@ -1,4 +1,4 @@
-import { CATEGORIES, type Day, type Reference, type Rental, type Trip } from '@jjj/schema'
+import { CATEGORIES, type Reference, type Rental, type Stay, type Trip } from '@jjj/schema'
 
 /**
  * 从 Trip 派生「信息模块」的归属 —— 哪张卡片该长出住宿/租车模块。
@@ -6,7 +6,7 @@ import { CATEGORIES, type Day, type Reference, type Rental, type Trip } from '@j
  * 统一卡片模板下，住/行不再有专属卡片组件；差异全部表现为
  * 卡片内部的可选信息模块。这里回答「模块挂在哪个事件上」：
  *
- * - 住宿：连续住同一家的夜晚合并成区间；**只有区间首晚的入住事件**
+ * - 住宿：trip-stays 是作者直接写的区间；**只有入住当天的那个事件**
  *   显示完整模块（几晚、哪天到哪天），当天再回酒店、之后每天回酒店
  *   都只是普通简卡 —— 同一家酒店的信息说一遍就够了。
  * - 租车：trip-rentals 是横跨行程的区间，模块挂在取车当天、
@@ -21,59 +21,30 @@ export function isBudgetRef(ref: Reference): boolean {
   return ref.id === 'budget' || /预算|budget/i.test(ref.title)
 }
 
-export interface StaySpan {
-  name: string
-  placeId: string | null
-  note?: string
-  /** 入住日 */
-  checkIn: string
-  /** 退房日 = 最后一晚的次日 */
-  checkOut: string
-  nights: number
-}
-
-export function buildStaySpans(days: Day[]): StaySpan[] {
-  const spans: StaySpan[] = []
-  for (const day of days) {
-    if (!day.lodging) continue
-    const last = spans[spans.length - 1]
-    if (last && last.name === day.lodging.name && last.checkOut === day.date) {
-      last.nights += 1
-      last.checkOut = nextDay(day.date)
-      if (!last.note && day.lodging.note) last.note = day.lodging.note
-    } else {
-      spans.push({
-        name: day.lodging.name,
-        placeId: day.lodging.placeId,
-        note: day.lodging.note,
-        checkIn: day.date,
-        checkOut: nextDay(day.date),
-        nights: 1,
-      })
+/**
+ * 住宿模块归属：eventId → 住宿区间，归到区间内第一个匹配的住类事件。
+ *
+ * 不锁死在 from 当天 —— 行前一夜就住下时（清晨航班前先到酒店），
+ * from 落在行程区间之外，那天根本没有 Day；只查那一天的话
+ * 平台/星级/退改整段信息会静默消失。月视图为同一场景扩了网格
+ * （见 tripCalendarRange），列表这头的口径必须一致。
+ */
+export function stayModuleMap(trip: Trip): Map<string, Stay> {
+  const map = new Map<string, Stay>()
+  for (const st of trip.stays) {
+    for (const day of trip.days) {
+      if (day.date < st.from.date || day.date > st.to.date) continue
+      const ev = day.events.find(
+        (e) =>
+          CATEGORIES[e.category].kind === 'stay' &&
+          !map.has(e.id) &&
+          (e.placeId === st.placeId || e.title.includes(st.what)),
+      )
+      if (ev) {
+        map.set(ev.id, st)
+        break
+      }
     }
-  }
-  return spans
-}
-
-function nextDay(iso: string): string {
-  const d = new Date(`${iso}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + 1)
-  return d.toISOString().slice(0, 10)
-}
-
-/** 住宿模块归属：eventId → 区间。每个区间只归到首晚第一个匹配的住类事件。 */
-export function stayModuleMap(trip: Trip): Map<string, StaySpan> {
-  const map = new Map<string, StaySpan>()
-  const spans = buildStaySpans(trip.days)
-  for (const span of spans) {
-    const day = trip.days.find((d) => d.date === span.checkIn)
-    if (!day) continue
-    const ev = day.events.find(
-      (e) =>
-        CATEGORIES[e.category].kind === 'stay' &&
-        (e.placeId === span.placeId || e.title.includes(span.name)),
-    )
-    if (ev) map.set(ev.id, span)
   }
   return map
 }
@@ -103,7 +74,7 @@ export function rentalModuleMap(trip: Trip): Map<string, Rental> {
  */
 export function dedupIds(
   trip: Trip,
-  stay: Map<string, StaySpan>,
+  stay: Map<string, Stay>,
   rental: Map<string, Rental>,
 ): Set<string> {
   const dup = new Set<string>()

@@ -1,4 +1,5 @@
 import type { Day, Leg, Place, Transport, Trip, TripEvent } from '@jjj/schema'
+import { formatDurationCompact } from './values.ts'
 
 /**
  * Trip → 规范 TripMD。parse() 的逆操作。
@@ -51,14 +52,6 @@ function flowMap(entries: [string, FlowVal][]): string {
   return `{${parts.join(', ')}}`
 }
 
-/** 715 → "11h55m" */
-function fmtDuration(min: number): string {
-  const h = Math.floor(min / 60)
-  const m = min % 60
-  if (h === 0) return `${m}m`
-  return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}m`
-}
-
 // ── 各区块 ──────────────────────────────────────────────────────
 
 function frontmatter(trip: Trip): string {
@@ -89,6 +82,28 @@ function constraintsBlock(trip: Trip): string | null {
   return L.join('\n')
 }
 
+function staysBlock(trip: Trip, placeById: Map<string, Place>): string | null {
+  if (trip.stays.length === 0) return null
+  const L = ['## 住宿', '', '```trip-stays']
+  for (const st of trip.stays) {
+    L.push(`- what: ${scalar(st.what)}`)
+    if (st.platform) L.push(`  platform: ${scalar(st.platform)}`)
+    L.push(`  from: ${scalar(st.from.raw)}`)
+    L.push(`  to: ${scalar(st.to.raw)}`)
+    // 地点名与 what 相同时省掉这行 —— 解析器缺省就按 what 去找
+    const place = st.placeId ? placeById.get(st.placeId) : undefined
+    if (place && place.name !== st.what) L.push(`  place: ${scalar(place.name)}`)
+    if (st.stars) L.push(`  stars: ${st.stars}`)
+    if (st.room) L.push(`  room: ${scalar(st.room)}`)
+    if (st.parking) L.push(`  parking: ${scalar(st.parking)}`)
+    if (st.breakfast) L.push(`  breakfast: ${scalar(st.breakfast)}`)
+    if (st.refund) L.push(`  refund: ${scalar(st.refund)}`)
+    if (st.note) L.push(`  note: ${scalar(st.note)}`)
+  }
+  L.push('```')
+  return L.join('\n')
+}
+
 function rentalsBlock(trip: Trip, placeById: Map<string, Place>): string | null {
   if (trip.rentals.length === 0) return null
   const L = ['## 租车', '', '```trip-rentals']
@@ -104,6 +119,7 @@ function rentalsBlock(trip: Trip, placeById: Map<string, Place>): string | null 
     if (r.mileage) L.push(`  mileage: ${scalar(r.mileage)}`)
     if (r.insurance) L.push(`  insurance: ${scalar(r.insurance)}`)
     if (r.refund) L.push(`  refund: ${scalar(r.refund)}`)
+    if (r.note) L.push(`  note: ${scalar(r.note)}`)
   }
   L.push('```')
   return L.join('\n')
@@ -131,10 +147,6 @@ function dayBlock(day: Day): string | null {
   if (day.theme) L.push(`theme: ${scalar(day.theme)}`)
   if (day.sunrise) L.push(`sunrise: ${scalar(day.sunrise)}`)
   if (day.sunset) L.push(`sunset: ${scalar(day.sunset)}`)
-  if (day.lodging) {
-    L.push(`lodging: ${scalar(day.lodging.name)}`)
-    if (day.lodging.note) L.push(`lodging_note: ${scalar(day.lodging.note)}`)
-  }
   if (L.length === 0) return null
   return ['```trip-day', ...L, '```'].join('\n')
 }
@@ -152,8 +164,8 @@ function transportValue(t: Transport): string {
                 ['dep_time', s.depTime],
                 ['arr_date', s.arrDate],
                 ['dep_date', s.depDate],
-                ['leg', s.legMin !== null ? fmtDuration(s.legMin) : undefined],
-                ['wait', s.waitMin !== null ? fmtDuration(s.waitMin) : undefined],
+                ['leg', s.legMin !== null ? formatDurationCompact(s.legMin) : undefined],
+                ['wait', s.waitMin !== null ? formatDurationCompact(s.waitMin) : undefined],
               ]),
             )
             .join(', ')}]`,
@@ -172,7 +184,7 @@ function transportValue(t: Transport): string {
     ['arr_time', t.arrTime],
     ['arr_date', t.arrDate],
     ['arr_day_offset', t.arrDayOffset !== 0 ? t.arrDayOffset : undefined],
-    ['duration', t.durationMin !== null ? fmtDuration(t.durationMin) : undefined],
+    ['duration', t.durationMin !== null ? formatDurationCompact(t.durationMin) : undefined],
     ['cabin', t.cabin],
     ['baggage', t.baggage],
     ['through_check', t.throughCheck],
@@ -197,18 +209,6 @@ function eventBlock(ev: TripEvent, placeById: Map<string, Place>, leg: Leg | und
         ['status', ev.booking.status],
         ['deadline', ev.booking.deadline],
         ['note', ev.booking.note],
-      ])}`,
-    )
-  }
-  if (ev.stay) {
-    L.push(
-      `stay: ${flowMap([
-        ['platform', ev.stay.platform],
-        ['stars', ev.stay.stars],
-        ['room', ev.stay.room],
-        ['parking', ev.stay.parking],
-        ['breakfast', ev.stay.breakfast],
-        ['note', ev.stay.note],
       ])}`,
     )
   }
@@ -248,6 +248,7 @@ export function serialize(trip: Trip): string {
   chunks.push(frontmatter(trip))
   chunks.push(`# ${trip.title}`)
   chunks.push(constraintsBlock(trip))
+  chunks.push(staysBlock(trip, placeById))
   chunks.push(rentalsBlock(trip, placeById))
   chunks.push(placesBlock(trip))
 

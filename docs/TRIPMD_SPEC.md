@@ -78,7 +78,6 @@ currency: USD
 | `flags` | | `warning` `tentative` `optional` `needs-booking` |
 | `cost` | | 自由文本，如 `约 $70/人`。解析器自动抽金额进预算统计：`/人` 乘人数、`× 2` 认乘法、`$250–400` 取中值、带「可选」不计入总额 |
 | `booking` | | `{status: required\|booked\|none, deadline: YYYY-MM-DD, note: ...}` |
-| `stay` | | **住宿信息块**，写在入住事件上：`{platform: 万豪/希尔顿/Airbnb…, stars: 4, room: 大床房, parking: 含/不含, breakfast: 含/不含, note}`。全部可空 —— 知道就填，不知道 UI 留「待填」空位 |
 | `notes` | | **注意条目**，字符串列表。截止、防盗、必带装备、营业时间坑…… 一条一个坑，UI 渲染成与「如果」同款的红色「注意」条目行。有坑写这里，不要埋在正文散文里 |
 | `transport` | | 长途换乘段（单个对象或**列表**，多人汇合一人一条）：`{traveler, mode: flight/rail/drive/ferry/bus…, carrier, number, from, to, dep_time, arr_time, arr_day_offset, duration, baggage, stops: [{airport, wait}], note}`。任何类别的事件都可挂；`category: flight` 没写块也会渲染待填骨架。|
 | `to_next` | | `{mode, minutes, km, label, note}` —— 到**下一个事件**怎么走 |
@@ -284,9 +283,10 @@ UI 把它们渲染成红色「注意」条目行，和 `#### 变体` 的「如�
 theme: 落地西雅图 Citywalk 感受市区   # 直白的当天主题，别用箭头串景点名
 sunrise: "07:05"
 sunset: "18:52"
-lodging: Astra Hotel                          # 引用地点表
-lodging_note: 50K 券 + 补 5,000 点
 ```
+
+> 住在哪**不写在天里** —— 写成顶层 ` ```trip-stays ` 的一条区间记录（见下）。
+> 每天重复一遍 `lodging:` 既啰嗦，又要靠「名字相等」反推区间，名称一漂区间就断。
 
 > 没有 `weather_note`、`fallback_order` 这类杂项字段 —— 天气/季节风险写进**受影响事件**
 > 的 `notes`（配上应对方案更好）；全天性质的背景、以及「赶不上时按 X → Y → Z 顺序砍」
@@ -300,9 +300,9 @@ lodging_note: 50K 券 + 补 5,000 点
 
 整趟行程里不可移动的时间点。
 
-> **当前列表视图不渲染它们** —— 日头改成四行规格时约束条被移除了（那些坑现在写在
-> 受影响事件的 `notes` 里）。这个块仍然有效且会被解析，供日历订阅（`.ics`）与将来的
-> 日历视图使用；写了不会丢，只是暂时不出现在列表页。
+> **当前没有视图渲染它们**（列表在日头改版时移除了约束条，日历视图也暂未消费；
+> 那些坑现在写在受影响事件的 `notes` 里）。这个块仍然有效且会被解析，
+> 供日历订阅（`.ics`）使用；写了不会丢，只是暂时不出现在页面上。
 
 ```yaml
 - kind: deadline
@@ -312,6 +312,35 @@ lodging_note: 50K 券 + 补 5,000 点
 ```
 
 `kind`：`arrive` `depart` `deadline` `checkin` `checkout` `reservation`
+
+---
+
+## ` ```trip-stays `（住宿，可选）
+
+住在哪、从什么时候到什么时候。**与 ` ```trip-rentals ` 完全同构** ——
+两者都是「有起止时刻的资产占用」，字段骨架、渲染零件、日历里的区间带都共用一套。
+
+```yaml
+- what: Astra Hotel                    # 必需：住哪（同时也是默认的地点引用）
+  platform: 万豪 · Autograph Collection # 订在哪：万豪 / Airbnb / Booking…
+  from: "2026-10-01 16:00"             # 必需：入住
+  to: "2026-10-03 09:45"               # 必需：退房
+  place: Astra Hotel                   # 地点表里的名字与 what 不同时才写
+  stars: 4
+  room: 大床房
+  parking: 不含 · 停 SpotHero 地库
+  breakfast: 不含
+  refund: 免费取消至入住前 48 小时
+  note: 50K 券 + 补 5,000 点
+```
+
+除 `what` / `from` / `to` 外都可空，缺的在卡片上渲染「待填」空位。
+模块只出现在**入住当天**那张住类卡片上；连住的后续几晚不再重复。
+
+**只写日期也行**：`from: "2026-10-01"` 按入住 18:00、`to: "2026-10-03"` 按退房 10:00 算。
+保底只影响读数，写回时仍按你写的原样输出，不会凭空长出时刻。
+之所以两端一定要有确定时刻：日历的区间带按真实时刻占格子的比例 ——
+换酒店那天上午退房、晚上入住能画成两段，中间的空白正是「在路上」。
 
 ---
 

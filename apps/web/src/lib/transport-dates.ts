@@ -1,4 +1,5 @@
 import type { Transport } from '@jjj/schema'
+import { addDays, daysBetween } from '@jjj/tripmd'
 
 /**
  * 换乘时间轴上每个节点落在哪一天 —— **时刻是输入，日期是派生**。
@@ -38,16 +39,6 @@ export function clockMin(t?: string): number | null {
   return h <= 24 && mi <= 59 ? h * 60 + mi : null
 }
 
-export function plusDays(iso: string, n: number): string {
-  const d = new Date(`${iso}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + n)
-  return d.toISOString().slice(0, 10)
-}
-
-export function diffDays(from: string, to: string): number {
-  return Math.round((Date.parse(`${to}T00:00Z`) - Date.parse(`${from}T00:00Z`)) / 86_400_000)
-}
-
 export function timelineDates(t: Transport, eventDate?: string): TimelineDates {
   // 出发日：作者写的优先，否则就是事件所在那天
   const dep = t.depDate ?? eventDate
@@ -72,12 +63,12 @@ export function timelineDates(t: Transport, eventDate?: string): TimelineDates {
     if (!cur) return undefined
     if (elapsedMin !== null && prevClock !== null) {
       const total = prevClock + elapsedMin
-      cur = plusDays(cur, Math.floor(total / DAY))
+      cur = addDays(cur, Math.floor(total / DAY))
       prevClock = clock ?? ((total % DAY) + DAY) % DAY
       return cur
     }
     if (clock === null) return undefined
-    if (prevClock !== null && clock < prevClock) cur = plusDays(cur, 1)
+    if (prevClock !== null && clock < prevClock) cur = addDays(cur, 1)
     prevClock = clock
     return cur
   }
@@ -94,7 +85,7 @@ export function timelineDates(t: Transport, eventDate?: string): TimelineDates {
     arr = t.arrDate
   } else if (t.arrDayOffset !== 0 && dep) {
     // 规范里 arr_day_offset 是「相对出发日第几天」
-    arr = plusDays(dep, t.arrDayOffset)
+    arr = addDays(dep, t.arrDayOffset)
   } else {
     arr = step(undefined, t.arrTime, null)
   }
@@ -108,5 +99,5 @@ export function timelineDates(t: Transport, eventDate?: string): TimelineDates {
  */
 export function dayOffsetOf(dep: string | undefined, node: string | undefined): number {
   if (!dep || !node) return 0
-  return Math.max(0, diffDays(dep, node))
+  return Math.max(0, daysBetween(dep, node))
 }
