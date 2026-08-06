@@ -5,6 +5,7 @@ import type { GroupKey, TripSummary } from '@jjj/schema'
 import { useTripList } from '../../data/hooks.ts'
 import { useTripTitle } from '../../data/useTripOverrides.ts'
 import { useFavorites } from '../../data/useFavorites.ts'
+import { shortDate } from '../../lib/format.ts'
 import { daysUntil, todayIso } from '../../lib/time.ts'
 import { Loading, Problem } from '../../components/States.tsx'
 
@@ -81,7 +82,7 @@ function TripCard({ trip, muted }: { trip: TripSummary; muted?: boolean }) {
   const countdown =
     left > 0 ? `${left} 天后` : left === 0 ? '今天出发' : muted ? '已结束' : '进行中'
 
-  const range = `${fmt(trip.dates.start)} – ${fmt(trip.dates.end)}`
+  const range = `${shortDate(trip.dates.start)} – ${shortDate(trip.dates.end)}`
 
   return (
     <div
@@ -299,7 +300,4 @@ function DayShapeBars({ shape }: { shape: TripSummary['dayShape'] }) {
   )
 }
 
-/** "2026-10-01" → "10/01" */
-function fmt(iso: string): string {
-  return `${iso.slice(5, 7)}/${iso.slice(8, 10)}`
-}
+

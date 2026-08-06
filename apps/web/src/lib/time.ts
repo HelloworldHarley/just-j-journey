@@ -17,8 +17,3 @@ export function daysUntil(iso: string, timeZone: string): number {
   const to = Date.parse(`${iso}T00:00:00Z`)
   return Math.round((to - from) / 86_400_000)
 }
-
-/** "2026-10-01" → "10.01" */
-export function shortDate(iso: string): string {
-  return `${iso.slice(5, 7)}.${iso.slice(8, 10)}`
-}

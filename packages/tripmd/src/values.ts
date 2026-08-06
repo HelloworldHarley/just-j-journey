@@ -135,6 +135,17 @@ export function parseDurationMin(raw: unknown): number | null {
   return null
 }
 
+/**
+ * 分钟 → 紧凑时长 "11h55m" / "2h" / "45m"。`parseDurationMin` 的逆运算，
+ * 所以住在它旁边 —— 作者格式的序列化和票面时间轴共用这一份。
+ */
+export function formatDurationCompact(min: number): string {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  if (h === 0) return `${m}m`
+  return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}m`
+}
+
 // ── 坐标 ────────────────────────────────────────────────────────
 
 /** 作者格式写 lat, lng（和地图 App 一致）；返回也是 [lat, lng]，转 GeoJSON 顺序在调用处做。 */
@@ -184,6 +195,16 @@ export function weekdayOf(iso: string): string {
   return WEEKDAYS[d.getUTCDay()] ?? ''
 }
 
+/**
+ * 周一 = 0 …… 周日 = 6。
+ *
+ * `getUTCDay()` 是周日 = 0，日历网格按周一起排，差这一格整周都会错位 ——
+ * 这个陷阱封在这里，调用方不再各自 `+6 % 7`。
+ */
+export function mondayIndex(iso: string): number {
+  return (new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7
+}
+
 export function addDays(iso: string, n: number): string {
   const d = new Date(`${iso}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + n)
@@ -202,11 +223,15 @@ export function extractDate(text: string): string | null {
 }
 
 /** "2026-10-05 11:20" → { date, minute } */
-export function parseDateTime(raw: string): { date: string; minute: number } | null {
+export function parseDateTime(
+  raw: string,
+  /** 只写日期时用它补足时刻（酒店入住/退房这类有行业惯例的场合） */
+  defaultMinute = 0,
+): { date: string; minute: number } | null {
   const s = normalizeText(String(raw))
   const m = /^(\d{4}-\d{2}-\d{2})(?:[T\s]+(\d{1,2}[:：]\d{2}))?$/.exec(s)
   if (!m || !isIsoDate(m[1] ?? '')) return null
-  const minute = m[2] ? parseClock(m[2]) : 0
+  const minute = m[2] ? parseClock(m[2]) : defaultMinute
   if (minute === null) return null
   return { date: m[1] as string, minute }
 }

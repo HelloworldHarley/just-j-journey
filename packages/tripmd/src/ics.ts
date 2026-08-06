@@ -8,6 +8,7 @@ import {
   type Trip,
   type TripEvent,
 } from '@jjj/schema'
+import { addDays } from './values.ts'
 
 /**
  * RFC 5545 日历导出。
@@ -54,18 +55,13 @@ function esc(v: string): string {
 
 /** "2026-10-01" + 1105 → "20261001T182500"（浮动本地时间，配 TZID） */
 function localStamp(date: string, minute: number): string {
-  const dayOffset = Math.floor(minute / 1440)
   const m = ((minute % 1440) + 1440) % 1440
-  const d = new Date(`${date}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + dayOffset)
-  const ymd = d.toISOString().slice(0, 10).replace(/-/g, '')
+  const ymd = dateStamp(date, Math.floor(minute / 1440))
   return `${ymd}T${String(Math.floor(m / 60)).padStart(2, '0')}${String(m % 60).padStart(2, '0')}00`
 }
 
 function dateStamp(date: string, dayOffset = 0): string {
-  const d = new Date(`${date}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + dayOffset)
-  return d.toISOString().slice(0, 10).replace(/-/g, '')
+  return addDays(date, dayOffset).replace(/-/g, '')
 }
 
 /**
