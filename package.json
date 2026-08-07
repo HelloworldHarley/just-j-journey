@@ -8,12 +8,13 @@
     "build": "pnpm --filter @jjj/web build",
     "preview": "pnpm --filter @jjj/web preview",
     "data:check": "tsx tools/check.ts",
-    "typecheck": "tsc -b --pretty",
+    "typecheck": "tsc --noEmit && pnpm -r exec tsc --noEmit",
     "test": "vitest run"
   },
   "devDependencies": {
     "@jjj/schema": "workspace:*",
     "@jjj/tripmd": "workspace:*",
+    "@types/node": "^26.1.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
