@@ -57,12 +57,20 @@ currency: JPY
   category: hotel
 ```
 
+## 长途
+
+```trip-transports
+- what: 去程航班
+  transport: {mode: flight, carrier: 全日空 ANA, number: NH971 · NH1715, from: PVG T2, to: KIX T1, dep_time: "08:15", arr_time: "09:20", arr_day_offset: 1, duration: 24h05m, baggage: 2 件 23kg, stops: [{airport: HND, wait: 14h30m}]}
+```
+
 ## 住宿
 
 ```trip-stays
 - what: 京都四条 UNIZO
   platform: Booking
   from: "2026-11-14 19:30"
+  cost: ¥14,000
   to: "2026-11-15 10:00"
   stars: 3
   room: 双床房
@@ -86,7 +94,7 @@ sunset: "16:52"
 time: "09:20"
 category: flight
 place: 关西国际机场
-transport: {mode: flight, carrier: 全日空 ANA, number: NH971 · NH1715, from: PVG T2, to: KIX T1, dep_time: "08:15", arr_time: "09:20", arr_day_offset: 1, duration: 24h05m, baggage: 2 件 23kg, stops: [{airport: HND, wait: 14h30m}]}
+detail: 去程航班
 to_next: {mode: rail, minutes: 80, label: HARUKA 特急直达京都站}
 ```
 
@@ -135,7 +143,7 @@ cost: 约 ¥3000/人
 time: "19:30"
 category: hotel
 place: 京都四条 UNIZO
-cost: ¥14,000
+detail: 京都四条 UNIZO
 ```
 
 四条河原町的正中心，从锦市场走回来 5 分钟。

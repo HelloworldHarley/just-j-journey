@@ -95,7 +95,22 @@ export function applyPatch(original: Trip, ops: TripPatchOp[]): PatchResult {
           errors.push(opError(`set_transports: 找不到事件 ${op.eventId}`))
           break
         }
-        loc.event.transports = op.transports
+        // 明细的家在顶层 trip-transports —— 事件引用了哪段就更新哪段；
+        // 还没有引用（agent 给一个裸事件填票）就新建一段并挂上引用。
+        // 直接塞进 event.transports 的话 serialize 不会写它，数据静默丢失。
+        {
+          const journey = loc.event.detailRef
+            ? trip.journeys.find((j) => j.what === loc.event.detailRef)
+            : undefined
+          if (journey) {
+            journey.transports = op.transports
+          } else {
+            const what = loc.event.detailRef ?? loc.event.title
+            trip.journeys.push({ what, transports: op.transports })
+            loc.event.detailRef = what
+          }
+          loc.event.transports = op.transports
+        }
         break
       }
 

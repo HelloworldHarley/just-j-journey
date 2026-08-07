@@ -88,11 +88,12 @@ export const TransportStopSchema = z.object({
 
 /**
  * 长途换乘段 —— 抵达/离开/多目的地间的移动，机票式时间轴渲染。
+ * 住在顶层 trip-transports（JourneySchema）里，事件用 detail: 引用。
  *
  * 不钉死为航班：mode 决定它是飞机、火车、自驾还是轮渡，
  * 卡片视觉相同（左起点右终点、实线行进、虚线停留），只换图标与文案。
  *
- * 多人从不同地方出发汇合时，一个事件挂多条 transport，各自带 traveler 标签。
+ * 多人从不同地方出发汇合时，一段长途挂多条 transport，各自带 traveler 标签。
  *
  * **所有字段可空** —— 行程常常先排好、票后买。缺的字段渲染「待填」空位，
  * 之后人工补进 TripMD 或由 Agent 填入。
@@ -159,8 +160,18 @@ export const EventSchema = z.object({
   flags: z.array(z.enum(FLAG_KEYS)).default([]),
   cost: CostSchema.optional(),
   booking: BookingSchema.optional(),
-  /** 长途换乘段（0..n 条，多人汇合时一人一条） */
+  /**
+   * 长途换乘段（0..n 条，多人汇合时一人一条）。
+   * 只在**首次引用**某段长途的事件上非空 —— 解析器按日期序把 trip-transports
+   * 的明细灌进第一个 `detail:` 引用它的事件，后续引用是「简单提及」，不重复。
+   */
   transports: z.array(TransportSchema).default([]),
+  /**
+   * `detail:` 引用的前置记录名（trip-transports / trip-stays / trip-rentals 的 what）。
+   * 事件专注行程本身，大段事务的细节全部住在前置块里，这里只留一根指针。
+   * 序列化写回 `detail: 名字`。
+   */
+  detailRef: z.string().optional(),
   /**
    * 正文摘要 —— 第一段。卡片默认只显示这一段。
    * TripMD 的通用书写约定：首段写"一句话说清这是什么/怎么做"，细节放后面。
@@ -245,6 +256,11 @@ const ReservationBase = z.object({
   platform: z.string().optional(),
   from: MomentSchema,
   to: MomentSchema,
+  /**
+   * 这笔预订的钱 —— 写在记录自己身上，预算页与信息模块从同一处取数。
+   * 提车/入住**事件**上不再写房费车费（事件 cost 留给当场发生的散项，如停车）。
+   */
+  cost: CostSchema.optional(),
   /** 退改政策，如 "免费取消至入住前 48 小时" */
   refund: z.string().optional(),
   note: z.string().optional(),
@@ -273,7 +289,7 @@ export const StaySchema = ReservationBase.extend({
  * 长租 —— 有明确取还时刻的租赁资产：租车、随身 WiFi、滑雪装备。
  *
  * 取/还动作可以另写成 logistics 事件，但区间本身不属于任何一天。
- * 费用仍写在取车那个事件的 cost 上，预算统计单一来源不变。
+ * 租金写在记录自己的 cost 上（继承自 ReservationBase），随预订走。
  */
 export const RentalSchema = ReservationBase.extend({
   /** 里程**上限**（不是预估行驶里程），自由文本，如 "600 英里" / "不限" / "每日 200 英里" */
@@ -295,6 +311,23 @@ export const RentalSchema = ReservationBase.extend({
 export const DEFAULT_CHECK_IN = 18 * 60
 export const DEFAULT_CHECK_OUT = 10 * 60
 
+/**
+ * 长途 —— 一段带票面明细的跨城移动：去程航班、新干线、跨城巴士、轮渡。
+ *
+ * 和住宿/租车一样是**前置声明**：细节（承运方、时刻、票价、行李、退改）
+ * 全部写在顶层块里，每日行程中的事件用 `transport: 名字` 一句话引用。
+ * 解析时明细灌进事件的 transports，票面时间轴/日历/导出零改动。
+ *
+ * 多人从不同地方出发汇合 = 一段长途里的多条 transport，各带 traveler。
+ */
+export const JourneySchema = z.object({
+  /** 这段长途叫什么，事件按它引用 —— 全文唯一 */
+  what: z.string().min(1),
+  /** 总预算（多人多段加总的那个数），进预算统计 */
+  cost: CostSchema.optional(),
+  transports: z.array(TransportSchema).default([]),
+})
+
 export const ReferenceSchema = z.object({
   id: z.string().min(1),
   icon: z.string().optional(),
@@ -312,6 +345,8 @@ export const TripSchema = z.object({
   travelers: z.number().int().positive().optional(),
   currency: z.string().optional(),
   constraints: z.array(ConstraintSchema).default([]),
+  /** 长途（前置声明，事件按名引用） */
+  journeys: z.array(JourneySchema).default([]),
   /** 住宿区间，与 rentals 同构 */
   stays: z.array(StaySchema).default([]),
   rentals: z.array(RentalSchema).default([]),
@@ -366,6 +401,7 @@ export type Stay = z.infer<typeof StaySchema>
 export type Rental = z.infer<typeof RentalSchema>
 /** 住宿与长租的公共形状 —— 只关心「起止时刻的资产占用」的代码收这个类型 */
 export type Reservation = Stay | Rental
+export type Journey = z.infer<typeof JourneySchema>
 export type Reference = z.infer<typeof ReferenceSchema>
 export type Trip = z.infer<typeof TripSchema>
 export type TripSummary = z.infer<typeof TripSummarySchema>

@@ -1,16 +1,16 @@
-import { CATEGORIES, type Reference, type Rental, type Stay, type Trip } from '@jjj/schema'
+import type { Reference, Rental, Stay, Trip } from '@jjj/schema'
 
 /**
- * 从 Trip 派生「信息模块」的归属 —— 哪张卡片该长出住宿/租车模块。
+ * `detail:` 引用的归属 —— 哪张卡片长出信息模块、哪些卡片是「简单提及」。
  *
- * 统一卡片模板下，住/行不再有专属卡片组件；差异全部表现为
- * 卡片内部的可选信息模块。这里回答「模块挂在哪个事件上」：
+ * 事件用 `detail: 名字` 显式指认前置记录（长途/住宿/长租），这里只做两件事：
  *
- * - 住宿：trip-stays 是作者直接写的区间；**只有入住当天的那个事件**
- *   显示完整模块（几晚、哪天到哪天），当天再回酒店、之后每天回酒店
- *   都只是普通简卡 —— 同一家酒店的信息说一遍就够了。
- * - 租车：trip-rentals 是横跨行程的区间，模块挂在取车当天、
- *   地点与取车点一致的那个事件上（通常是「提车」）。
+ * - **首次引用**（按日期序，与解析器灌长途明细的口径一致）拿到信息模块；
+ * - 之后的引用是简单提及：普通卡片，且在住/行筛选视图里去重隐藏 ——
+ *   同一家酒店、同一辆车的信息说一遍就够了。
+ *
+ * 这里没有任何按地点/名字猜归属的启发式 —— 那套东西曾经因为
+ * 名字大小写漂移把连住区间拆断过（F3），显式引用之后整类问题不存在了。
  */
 
 /**
@@ -21,74 +21,38 @@ export function isBudgetRef(ref: Reference): boolean {
   return ref.id === 'budget' || /预算|budget/i.test(ref.title)
 }
 
-/**
- * 住宿模块归属：eventId → 住宿区间，归到区间内第一个匹配的住类事件。
- *
- * 不锁死在 from 当天 —— 行前一夜就住下时（清晨航班前先到酒店），
- * from 落在行程区间之外，那天根本没有 Day；只查那一天的话
- * 平台/星级/退改整段信息会静默消失。月视图为同一场景扩了网格
- * （见 tripCalendarRange），列表这头的口径必须一致。
- */
-export function stayModuleMap(trip: Trip): Map<string, Stay> {
-  const map = new Map<string, Stay>()
-  for (const st of trip.stays) {
-    for (const day of trip.days) {
-      if (day.date < st.from.date || day.date > st.to.date) continue
-      const ev = day.events.find(
-        (e) =>
-          CATEGORIES[e.category].kind === 'stay' &&
-          !map.has(e.id) &&
-          (e.placeId === st.placeId || e.title.includes(st.what)),
-      )
-      if (ev) {
-        map.set(ev.id, st)
-        break
-      }
-    }
-  }
-  return map
+export interface DetailModules {
+  /** eventId → 住宿记录（只含首次引用） */
+  stay: Map<string, Stay>
+  /** eventId → 租赁记录（只含首次引用） */
+  rental: Map<string, Rental>
+  /** 非首次引用的事件 —— 住/行筛选视图里隐藏 */
+  dup: Set<string>
 }
 
-/** 租车模块归属：eventId → 租赁。挂在取车当天、地点与取车点一致的事件上。 */
-export function rentalModuleMap(trip: Trip): Map<string, Rental> {
-  const map = new Map<string, Rental>()
-  for (const rental of trip.rentals) {
-    const day = trip.days.find((d) => d.date === rental.from.date)
-    if (!day) continue
-    const ev =
-      day.events.find(
-        (e) => e.placeId !== null && e.placeId === rental.pickupPlaceId && !map.has(e.id),
-      ) ?? undefined
-    if (ev) map.set(ev.id, rental)
-  }
-  return map
-}
+export function detailModules(trip: Trip): DetailModules {
+  const stayByWhat = new Map(trip.stays.map((s) => [s.what, s]))
+  const rentalByWhat = new Map(trip.rentals.map((r) => [r.what, r]))
 
-/**
- * 「住」「行」视图的去重集合 —— 同一家酒店 / 同一辆租车只保留最开始那张卡：
- *
- * - 住：不是区间首卡的住类事件（当晚再回酒店、连住第二天）全部隐藏
- * - 行：租期内、地点是取/还车点、又不是取车卡的行类事件（还车）隐藏
- *
- * 只作用于住/行筛选视图；「全部」照常显示每一张卡。
- */
-export function dedupIds(
-  trip: Trip,
-  stay: Map<string, Stay>,
-  rental: Map<string, Rental>,
-): Set<string> {
+  const stay = new Map<string, Stay>()
+  const rental = new Map<string, Rental>()
   const dup = new Set<string>()
+  const seen = new Set<string>()
+
   for (const day of trip.days) {
     for (const e of day.events) {
-      const kind = CATEGORIES[e.category].kind
-      if (kind === 'stay' && !stay.has(e.id)) dup.add(e.id)
-      if (kind === 'move' && !rental.has(e.id) && e.placeId) {
-        for (const r of trip.rentals) {
-          if (day.date < r.from.date || day.date > r.to.date) continue
-          if (e.placeId === r.pickupPlaceId || e.placeId === r.dropoffPlaceId) dup.add(e.id)
-        }
+      if (!e.detailRef) continue
+      if (seen.has(e.detailRef)) {
+        dup.add(e.id)
+        continue
       }
+      seen.add(e.detailRef)
+      const st = stayByWhat.get(e.detailRef)
+      if (st) stay.set(e.id, st)
+      const r = rentalByWhat.get(e.detailRef)
+      if (r) rental.set(e.id, r)
+      // 长途的「模块」是票面时间轴，解析器已把明细灌进首次引用的事件
     }
   }
-  return dup
+  return { stay, rental, dup }
 }

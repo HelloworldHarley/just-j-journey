@@ -190,6 +190,7 @@ export function parse(src: string): ParseResult {
   const rawDays: RawDay[] = []
   const rawRefs: RawRef[] = []
   const constraintFences: { line: number; value: unknown }[] = []
+  const journeyFences: { line: number; value: unknown }[] = []
   const stayFences: { line: number; value: unknown }[] = []
   const rentalFences: { line: number; value: unknown }[] = []
   const placeFences: { line: number; value: unknown }[] = []
@@ -251,6 +252,9 @@ export function parse(src: string): ParseResult {
       switch (t.info) {
         case 'trip-constraints':
           constraintFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-constraints') })
+          continue
+        case 'trip-transports':
+          journeyFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-transports') })
           continue
         case 'trip-stays':
           stayFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-stays') })
@@ -486,6 +490,80 @@ export function parse(src: string): ParseResult {
     }
   }
 
+      // 长途换乘段的字段读取 —— 顶层 trip-transports 与事件内联共用这一份。
+  // 所有字段都可空：票常常晚于行程定下来，UI 会为缺的字段留「待填」空位。
+  const readTransport = (line: number, frec: Rec): TripEvent['transports'][number] | null => {
+    const modeRaw = str(frec['mode'])
+    let mode = modeRaw ? resolveTransport(modeRaw) : null
+    if (modeRaw && !mode) {
+      const guess = suggestEnum(modeRaw, TRANSPORT_MODES, TRANSPORT_ALIASES)
+      bag.warn(
+        line,
+        `transport 的 mode "${modeRaw}" 无法识别，按 flight 处理`,
+        guess ? `是否想写 \`${guess}\`？` : undefined,
+      )
+      mode = 'flight'
+    }
+    // 单个中转写成 map 而非列表也接受 —— 与紧邻的 transport 字段同样的宽容度，
+    // 否则 `stops: {airport: SEA}` 会静默丢掉整个中转段
+    const stopsField = frec['stops']
+    const stopsRaw = Array.isArray(stopsField) ? stopsField : stopsField ? [stopsField] : []
+    return {
+      traveler: str(frec['traveler']) ?? str(frec['who']),
+      mode: mode ?? 'flight',
+      carrier: str(frec['carrier']) ?? str(frec['airline']),
+      number: str(frec['number']) ?? str(frec['flight_no']) ?? str(frec['flightNo']) ?? str(frec['no']),
+      from: str(frec['from']),
+      to: str(frec['to']),
+      depDate: str(frec['dep_date']) ?? str(frec['depDate']),
+      depTime: str(frec['dep_time']) ?? str(frec['depTime']) ?? str(frec['dep']),
+      arrTime: str(frec['arr_time']) ?? str(frec['arrTime']) ?? str(frec['arr']),
+      arrDate: str(frec['arr_date']) ?? str(frec['arrDate']),
+      arrDayOffset: num(frec['arr_day_offset']) ?? num(frec['arrDayOffset']) ?? 0,
+      price: str(frec['price']) ?? str(frec['fare']),
+      durationMin: parseDurationMin(frec['duration']),
+      cabin: str(frec['cabin']) ?? str(frec['class']) ?? str(frec['seat']),
+      baggage: str(frec['baggage']),
+      throughCheck:
+        str(frec['through_check']) ?? str(frec['throughCheck']) ?? str(frec['baggage_through']),
+      refund: str(frec['refund']) ?? str(frec['change_policy']) ?? str(frec['change']),
+      stops: stopsRaw
+        .map((sr) => asRecord(sr))
+        .filter((sr): sr is Rec => sr !== null)
+        .map((sr) => ({
+          airport: str(sr['airport']) ?? str(sr['station']) ?? str(sr['place']),
+          depAirport:
+            str(sr['dep_airport']) ?? str(sr['dep_station']) ?? str(sr['dep_place']),
+          arrTime: str(sr['arr_time']) ?? str(sr['arr']),
+          depTime: str(sr['dep_time']) ?? str(sr['dep']),
+          arrDate: str(sr['arr_date']),
+          depDate: str(sr['dep_date']),
+          legMin: parseDurationMin(sr['leg']),
+          waitMin: parseDurationMin(sr['wait']),
+        })),
+      note: str(frec['note']),
+    }
+  }
+
+  /** `transport:` 接受单个 map 或列表；owner 用于报错时说明是谁的 */
+  const readTransportList = (
+    line: number,
+    raw: unknown,
+    owner: string,
+  ): TripEvent['transports'] => {
+    const out: TripEvent['transports'] = []
+    for (const item of Array.isArray(raw) ? raw : raw ? [raw] : []) {
+      const rec = asRecord(item)
+      if (!rec) {
+        bag.warn(line, `${owner}的 transport 列表里有一项不是对象，已忽略`)
+        continue
+      }
+      const t = readTransport(line, rec)
+      if (t) out.push(t)
+    }
+    return out
+  }
+
   // ── 预订（住宿 / 长租）──
   //
   // 两者是同一种东西：有起止时刻的资产占用。骨架（what/platform/from/to/退改/备注）
@@ -495,6 +573,7 @@ export function parse(src: string): ParseResult {
     platform?: string
     from: Trip['rentals'][number]['from']
     to: Trip['rentals'][number]['to']
+    cost?: Trip['rentals'][number]['cost']
     refund?: string
     note?: string
   }
@@ -528,11 +607,13 @@ export function parse(src: string): ParseResult {
       bag.error(line, `「${what}」的结束时刻不晚于开始时刻`)
       return null
     }
+    const costRaw = str(rec['cost'])
     return {
       what,
       platform: str(rec['platform']) ?? str(rec['brand']) ?? str(rec['company']),
       from: { raw: fromRaw, ...from },
       to: { raw: toRaw, ...to },
+      cost: costRaw ? parseCost(costRaw, num(meta['travelers']) ?? 1, str(meta['currency'])) : undefined,
       refund: str(rec['refund']) ?? str(rec['cancellation']),
       note: str(rec['note']),
     }
@@ -578,14 +659,52 @@ export function parse(src: string): ParseResult {
       )
     }
   }
-  const RESERVATION_KEYS = ['what', 'item', 'name', 'platform', 'brand', 'company', 'from', 'to', 'refund', 'cancellation', 'note'] as const
+  const RESERVATION_KEYS = ['what', 'item', 'name', 'platform', 'brand', 'company', 'from', 'to', 'cost', 'refund', 'cancellation', 'note'] as const
   const STAY_KEYS = [...RESERVATION_KEYS, 'place', 'stars', 'star', 'room', 'parking', 'breakfast'] as const
   const RENTAL_KEYS = [...RESERVATION_KEYS, 'pickup', 'dropoff', 'mileage', 'miles', 'insurance'] as const
+
+  // ── 长途（前置声明，事件按名引用）──
+
+  // 事件 detail: 引用的名字空间 —— 三个前置块共享。
+  // 撞名会让引用分不清指谁，所以注册时就报，带着行号。
+  const detailNames = new Map<string, string>()
+  const registerDetailName = (what: string, block: string, line: number): boolean => {
+    const existing = detailNames.get(what)
+    if (existing) {
+      bag.error(
+        line,
+        `「${what}」在 ${existing} 里已经声明过`,
+        '事件的 `detail:` 按名字引用，长途/住宿/长租之间名字必须唯一',
+      )
+      return false
+    }
+    detailNames.set(what, block)
+    return true
+  }
+
+  const journeys: Trip['journeys'] = []
+  const JOURNEY_KEYS = ['what', 'name', 'cost', 'transport', 'transports'] as const
+  eachItem(journeyFences, 'trip-transports', (rec, line) => {
+    const what = str(rec['what']) ?? str(rec['name'])
+    if (!what) {
+      bag.error(line, '`trip-transports` 里有一项缺少 `what`（这段长途叫什么）')
+      return
+    }
+    if (!registerDetailName(what, 'trip-transports', line)) return
+    checkKeys(rec, JOURNEY_KEYS, line, 'trip-transports')
+    const costRaw = str(rec['cost'])
+    journeys.push({
+      what,
+      cost: costRaw ? parseCost(costRaw, num(meta['travelers']) ?? 1, str(meta['currency'])) : undefined,
+      transports: readTransportList(line, rec['transport'] ?? rec['transports'], `长途「${what}」`),
+    })
+  })
 
   const stays: Trip['stays'] = []
   eachItem(stayFences, 'trip-stays', (rec, line) => {
     const base = reservationOf(rec, line, 'trip-stays', DEFAULT_CHECK_IN, DEFAULT_CHECK_OUT)
     if (!base) return
+    if (!registerDetailName(base.what, 'trip-stays', line)) return
     checkKeys(rec, STAY_KEYS, line, 'trip-stays')
     // stars 写歪不该让整趟行程解析失败（zod 只会抛裸英文），也不该静默消失
     const starsRaw = rec['stars'] ?? rec['star']
@@ -609,6 +728,7 @@ export function parse(src: string): ParseResult {
   eachItem(rentalFences, 'trip-rentals', (rec, line) => {
     const base = reservationOf(rec, line, 'trip-rentals', 0, 0)
     if (!base) return
+    if (!registerDetailName(base.what, 'trip-rentals', line)) return
     checkKeys(rec, RENTAL_KEYS, line, 'trip-rentals')
     const pickup = str(rec['pickup'])
     const dropoff = str(rec['dropoff'])
@@ -710,72 +830,33 @@ export function parse(src: string): ParseResult {
         }
       }
 
-      // 长途换乘段：`transport:`（单个或列表）；旧写法 `flight:` 仍接受（等价于 mode: flight）。
-      // 不限定 category —— 火车抵达的事件可以是 transit，照样挂时间轴卡片。
-      // 所有字段都可空：票常常晚于行程定下来，UI 会为缺的字段留「待填」空位。
-      const readTransport = (frec: Rec): TripEvent['transports'][number] | null => {
-        const modeRaw = str(frec['mode'])
-        let mode = modeRaw ? resolveTransport(modeRaw) : null
-        if (modeRaw && !mode) {
-          const guess = suggestEnum(modeRaw, TRANSPORT_MODES, TRANSPORT_ALIASES)
-          bag.warn(
-            re.line,
-            `transport 的 mode "${modeRaw}" 无法识别，按 flight 处理`,
-            guess ? `是否想写 \`${guess}\`？` : undefined,
-          )
-          mode = 'flight'
-        }
-        // 单个中转写成 map 而非列表也接受 —— 与紧邻的 transport 字段同样的宽容度，
-        // 否则 `stops: {airport: SEA}` 会静默丢掉整个中转段
-        const stopsField = frec['stops']
-        const stopsRaw = Array.isArray(stopsField) ? stopsField : stopsField ? [stopsField] : []
-        return {
-          traveler: str(frec['traveler']) ?? str(frec['who']),
-          mode: mode ?? 'flight',
-          carrier: str(frec['carrier']) ?? str(frec['airline']),
-          number: str(frec['number']) ?? str(frec['flight_no']) ?? str(frec['flightNo']) ?? str(frec['no']),
-          from: str(frec['from']),
-          to: str(frec['to']),
-          depDate: str(frec['dep_date']) ?? str(frec['depDate']),
-          depTime: str(frec['dep_time']) ?? str(frec['depTime']) ?? str(frec['dep']),
-          arrTime: str(frec['arr_time']) ?? str(frec['arrTime']) ?? str(frec['arr']),
-          arrDate: str(frec['arr_date']) ?? str(frec['arrDate']),
-          arrDayOffset: num(frec['arr_day_offset']) ?? num(frec['arrDayOffset']) ?? 0,
-          price: str(frec['price']) ?? str(frec['fare']),
-          durationMin: parseDurationMin(frec['duration']),
-          cabin: str(frec['cabin']) ?? str(frec['class']) ?? str(frec['seat']),
-          baggage: str(frec['baggage']),
-          throughCheck:
-            str(frec['through_check']) ?? str(frec['throughCheck']) ?? str(frec['baggage_through']),
-          refund: str(frec['refund']) ?? str(frec['change_policy']) ?? str(frec['change']),
-          stops: stopsRaw
-            .map((sr) => asRecord(sr))
-            .filter((sr): sr is Rec => sr !== null)
-            .map((sr) => ({
-              airport: str(sr['airport']) ?? str(sr['station']) ?? str(sr['place']),
-              depAirport:
-                str(sr['dep_airport']) ?? str(sr['dep_station']) ?? str(sr['dep_place']),
-              arrTime: str(sr['arr_time']) ?? str(sr['arr']),
-              depTime: str(sr['dep_time']) ?? str(sr['dep']),
-              arrDate: str(sr['arr_date']),
-              depDate: str(sr['dep_date']),
-              legMin: parseDurationMin(sr['leg']),
-              waitMin: parseDurationMin(sr['wait']),
-            })),
-          note: str(frec['note']),
-        }
+      // 换乘明细不再写在事件上 —— 全部住在顶层 trip-transports，事件用 detail: 引用
+      if (m['transport'] !== undefined || m['transports'] !== undefined) {
+        bag.error(
+          re.line,
+          '`transport:` 已不再写在事件上',
+          '明细写进顶层 `trip-transports` 块，事件里写 `detail: 名字` 引用',
+        )
       }
 
-      const transports: TripEvent['transports'] = []
-      const transportRaw = m['transport'] ?? m['transports']
-      for (const item of Array.isArray(transportRaw) ? transportRaw : transportRaw ? [transportRaw] : []) {
-        const rec = asRecord(item)
-        if (!rec) {
-          bag.warn(re.line, `事件「${re.title}」的 transport 列表里有一项不是对象，已忽略`)
-          continue
+      // detail: 引用前置块（长途 / 住宿 / 长租），事件只留一根指针专注行程本身。
+      // 明细的灌入（长途时间轴）在天排序之后做 —— 「首次引用」按日期序判定
+      let detailRef: string | undefined
+      const detailRaw = m['detail']
+      if (detailRaw !== undefined) {
+        const name = str(detailRaw)
+        if (!name) {
+          bag.error(re.line, `事件「${re.title}」的 \`detail\` 是空的`, '写前置记录的名字，如 `detail: Astra Hotel`')
+        } else if (!detailNames.has(name)) {
+          const guess = suggest(name, [...detailNames.keys()])
+          bag.error(
+            re.line,
+            `事件「${re.title}」引用的「${name}」不在任何前置块里`,
+            guess ? `是否指「${guess}」？` : '先在顶层 trip-transports / trip-stays / trip-rentals 里声明',
+          )
+        } else {
+          detailRef = name
         }
-        const t = readTransport(rec)
-        if (t) transports.push(t)
       }
 
       const costRaw = str(m['cost'])
@@ -802,7 +883,8 @@ export function parse(src: string): ParseResult {
         flags: readFlags(bag, re.line, m['flags']),
         cost: costRaw ? parseCost(costRaw, num(meta['travelers']) ?? 1, str(meta['currency'])) : undefined,
         booking,
-        transports,
+        transports: [],
+        detailRef,
         summary,
         detail,
         notes,
@@ -926,6 +1008,30 @@ export function parse(src: string): ParseResult {
 
   days.sort((a, b) => a.date.localeCompare(b.date))
 
+  // 「首次引用」按日期序判定，所以必须排完序再灌 —— 若按书写序，
+  // Day 2 写在 Day 1 前面的文件往返一次后首卡会换人，破坏语义幂等
+  const seenRefs = new Set<string>()
+  for (const day of days) {
+    for (const ev of day.events) {
+      if (!ev.detailRef || seenRefs.has(ev.detailRef)) continue
+      seenRefs.add(ev.detailRef)
+      const journey = journeys.find((j) => j.what === ev.detailRef)
+      if (journey) ev.transports = journey.transports
+    }
+  }
+  // 没人引用的前置记录：信息模块不会出现在行程里，大概率是漏了 detail:
+  for (const list of [journeys, stays, rentals] as const) {
+    for (const item of list) {
+      if (!seenRefs.has(item.what)) {
+        bag.warn(
+          1,
+          `前置记录「${item.what}」没有任何事件用 \`detail:\` 引用`,
+          '它的信息模块不会出现在行程里；在对应事件上加 `detail: ' + item.what + '`',
+        )
+      }
+    }
+  }
+
   // ── 附录 ──
   const refs: Reference[] = []
   const refIds = new Set<string>()
@@ -954,6 +1060,7 @@ export function parse(src: string): ParseResult {
     travelers: num(meta['travelers']),
     currency: str(meta['currency']),
     constraints,
+    journeys,
     stays,
     rentals,
     places: [...places.values()],

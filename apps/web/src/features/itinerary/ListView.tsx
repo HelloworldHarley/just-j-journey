@@ -6,7 +6,7 @@ import { DayTimeline, type CardModules } from './DayTimeline.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
 import { shortDate } from '../../lib/format.ts'
 import { daySpan } from '../../lib/layout.ts'
-import { dedupIds, rentalModuleMap, stayModuleMap } from '../../lib/derive.ts'
+import { detailModules } from '../../lib/derive.ts'
 import { todayIso } from '../../lib/time.ts'
 import { useFavorites } from '../../data/useFavorites.ts'
 import { DayRail } from './DayRail.tsx'
@@ -29,15 +29,11 @@ export function ListView({ trip }: { trip: Trip }) {
     localStorage.setItem(DETAIL_KEY, d ? 'full' : 'brief')
   }
 
-  // 信息模块的归属：住宿区间挂在首晚入住卡上、租车区间挂在取车卡上。
-  // dup = 住/行视图里该藏起来的重复卡（回酒店、还车）
+  // 信息模块的归属：`detail:` 首次引用的卡片长出模块。
+  // dup = 之后的简单提及（回酒店、还车），住/行视图里藏起来
   const { modules, dup } = useMemo(() => {
-    const stay = stayModuleMap(trip)
-    const rental = rentalModuleMap(trip)
-    return {
-      modules: { stay, rental } satisfies CardModules,
-      dup: dedupIds(trip, stay, rental),
-    }
+    const { stay, rental, dup } = detailModules(trip)
+    return { modules: { stay, rental } satisfies CardModules, dup }
   }, [trip])
 
   // 筛选是「过滤事件」而不是「过滤天」：玩/吃保留天的骨架，只隐藏不匹配的卡片。

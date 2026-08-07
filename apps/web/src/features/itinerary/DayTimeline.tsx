@@ -224,6 +224,7 @@ function EventCard({
               {place ? (place.nameEn ?? place.name) : ''}
             </span>
             {event.cost && !rental && <CostText cost={event.cost} />}
+            {!event.cost && stay?.cost && <CostText cost={stay.cost} />}
           </div>
         )}
 
@@ -235,7 +236,7 @@ function EventCard({
           <TransportTimeline transports={[EMPTY_TRANSPORT]} date={date} />
         ) : null}
         {stay && <StayModule stay={stay} />}
-        {rental && <RentalModule rental={rental} places={places} cost={event.cost} />}
+        {rental && <RentalModule rental={rental} places={places} eventCost={event.cost} />}
         {event.booking && <BookingModule booking={event.booking} />}
 
         {/* 折叠区：简要介绍 / 正文 / 注意条目 / 如果条目。
@@ -374,6 +375,11 @@ function StayModule({ stay }: { stay: Stay }) {
           <span className="text-graphite">房型</span>
           <SlotText value={stay.room} hint="待填" />
         </span>
+        {stay.cost && (
+          <span className="ml-auto">
+            <CostText cost={stay.cost} />
+          </span>
+        )}
       </div>
       <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11.5px]">
         {[left, right].map((col, ci) => (
@@ -413,12 +419,14 @@ function StayModule({ stay }: { stay: Stay }) {
 function RentalModule({
   rental,
   places,
-  cost,
+  eventCost,
 }: {
   rental: Rental
   places: Map<string, Place>
-  cost?: TripEvent['cost']
+  /** 旧写法兜底：钱写在提车事件上时仍显示，新写法住在 rental.cost */
+  eventCost?: TripEvent['cost']
 }) {
+  const cost = rental.cost ?? eventCost
   const pickup = rental.pickupPlaceId ? places.get(rental.pickupPlaceId) : undefined
   const dropoff = rental.dropoffPlaceId ? places.get(rental.dropoffPlaceId) : undefined
   const sameSpot = Boolean(pickup && dropoff && pickup.id === dropoff.id)

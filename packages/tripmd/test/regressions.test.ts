@@ -68,26 +68,21 @@ describe('day.color 与书写顺序无关', () => {
 })
 
 describe('transport.stops 的宽容度', () => {
+  const journeyMd = (transport: string): string =>
+    wrap(
+      `## 长途\n\`\`\`trip-transports\n- what: 去程\n  ${transport}\n\`\`\`\n` +
+        '## Day 1 · 2026-10-01\n' +
+        ['### 航班', '```trip-event', 'time: "09:00"', 'category: flight', 'detail: 去程', '```', ''].join('\n'),
+    )
+
   it('单个中转写成 map 而非列表也能解析', () => {
     // 曾经：非数组直接丢成 []，整个中转段静默消失且零诊断；
-    // 而紧邻的 transport 字段本身是支持「单对象或列表」的，宽容度不一致
-    const md = wrap(
-      '## Day 1 · 2026-10-01\n' +
-        [
-          '### 航班',
-          '```trip-event',
-          'time: "09:00"',
-          'category: flight',
-          'transport: {mode: flight, from: A, to: B, stops: {airport: SEA, wait: 2h}}',
-          '```',
-          '',
-        ].join('\n'),
-    )
-    const trip = parse(md).trip
-    expect(trip).not.toBeNull()
-    const stops = trip!.days[0]!.events[0]!.transports[0]!.stops
-    expect(stops).toHaveLength(1)
-    expect(stops[0]).toMatchObject({ airport: 'SEA', waitMin: 120 })
+    // 而 transport 字段本身是支持「单对象或列表」的，宽容度不一致
+    const trip = parse(
+      journeyMd('transport: {mode: flight, from: A, to: B, stops: {airport: SEA, wait: 2h}}'),
+    ).trip!
+    expect(trip.journeys[0]!.transports[0]!.stops).toMatchObject([{ airport: 'SEA', waitMin: 120 }])
+    expect(trip.days[0]!.events[0]!.transports[0]!.stops).toHaveLength(1)
   })
 })
 
@@ -285,5 +280,83 @@ describe('trip-stays 不静默吞错', () => {
     expect(r.trip).not.toBeNull()
     expect(r.trip!.stays[0]!.stars).toBeUndefined()
     expect(r.diagnostics.some((d) => d.severity === 'warning' && d.message.includes('stars'))).toBe(true)
+  })
+})
+
+describe('前置声明与 detail 引用', () => {
+  const journeys = (block: string, evDetail: string): string =>
+    wrap(
+      `## 长途\n\`\`\`trip-transports\n${block}\n\`\`\`\n## Day 1 · 2026-10-01\n` +
+        `### 抵达\n\`\`\`trip-event\ntime: "13:11"\ncategory: flight\ndetail: ${evDetail}\n\`\`\`\n`,
+    )
+  const GOOD = '- what: 去程\n  cost: $842\n  transport: {mode: flight, from: PVG, to: SEA, arr_time: "13:11"}'
+
+  it('detail 引用把长途明细灌进首个引用事件，detailRef 记住名字', () => {
+    const trip = parse(journeys(GOOD, '去程')).trip!
+    const ev = trip.days[0]!.events[0]!
+    expect(ev.transports).toHaveLength(1)
+    expect(ev.transports[0]!.from).toBe('PVG')
+    expect(ev.detailRef).toBe('去程')
+    expect(trip.journeys[0]!.cost?.amount).toBe(842)
+  })
+
+  it('写回的是 detail: 名字而非内联明细，且往返幂等', () => {
+    const once = parse(journeys(GOOD, '去程')).trip!
+    const md2 = serialize(once)
+    const daysPart = md2.slice(md2.indexOf('## Day 1'))
+    expect(daysPart).toContain('detail: 去程')
+    expect(daysPart).not.toContain('transport:')
+    expect(parse(md2).trip).toEqual(once)
+  })
+
+  it('明细只灌给首次引用（按日期序）—— 之后的引用是简单提及', () => {
+    // Day 2 故意写在 Day 1 前面：首次引用按日期而非书写顺序判定，
+    // 否则乱序书写的文件往返一次后首卡会换人，破坏语义幂等
+    const md = wrap(
+      `## 长途\n\`\`\`trip-transports\n${GOOD}\n\`\`\`\n` +
+        `## Day 2 · 2026-10-02\n### 再提\n\`\`\`trip-event\ntime: "10:00"\ncategory: flight\ndetail: 去程\n\`\`\`\n` +
+        `## Day 1 · 2026-10-01\n### 抵达\n\`\`\`trip-event\ntime: "13:11"\ncategory: flight\ndetail: 去程\n\`\`\`\n`,
+    )
+    const once = parse(md).trip!
+    const [d1, d2] = once.days
+    expect(d1!.events[0]!.transports).toHaveLength(1)
+    expect(d2!.events[0]!.transports).toHaveLength(0)
+    expect(parse(serialize(once)).trip).toEqual(once)
+  })
+
+  it('引用不存在的名字报错并给建议，不静默丢时间轴', () => {
+    const r = parse(journeys(GOOD, '去呈'))
+    const err = r.diagnostics.find((d) => d.severity === 'error' && d.message.includes('去呈'))
+    expect(err?.hint).toContain('去程')
+  })
+
+  it('跨块重名报错 —— detail 会分不清指谁', () => {
+    const md = wrap(
+      `## 长途\n\`\`\`trip-transports\n${GOOD}\n\`\`\`\n` +
+        `## 住宿\n\`\`\`trip-stays\n- what: 去程\n  from: "2026-10-01 16:00"\n  to: "2026-10-02 10:00"\n\`\`\`\n` +
+        `## Day 1 · 2026-10-01\n### 抵达\n\`\`\`trip-event\ntime: "13:11"\ncategory: flight\ndetail: 去程\n\`\`\`\n`,
+    )
+    expect(
+      parse(md).diagnostics.some((d) => d.severity === 'error' && d.message.includes('已经声明过')),
+    ).toBe(true)
+  })
+
+  it('事件上的 transport: 已退役，报迁移错误', () => {
+    const md = wrap(
+      '## Day 1 · 2026-10-01\n### 航班\n\`\`\`trip-event\ntime: "09:00"\ncategory: flight\ntransport: {mode: flight, from: A, to: B}\n\`\`\`\n',
+    )
+    expect(
+      parse(md).diagnostics.some(
+        (d) => d.severity === 'error' && d.message.includes('不再写在事件上'),
+      ),
+    ).toBe(true)
+  })
+
+  it('没人引用的前置记录发警告', () => {
+    const md = wrap(
+      `## 长途\n\`\`\`trip-transports\n${GOOD}\n\`\`\`\n## Day 1 · 2026-10-01\n${event('闲逛', '"10:00"')}`,
+    )
+    const w = parse(md).diagnostics.find((d) => d.message.includes('没有任何事件'))
+    expect(w?.severity).toBe('warning')
   })
 })

@@ -32,6 +32,19 @@ currency: USD
   note: 12:40 前到航站楼。绝对底线 13:10，但别拿这个当计划
 ```
 
+## 长途
+
+```trip-transports
+- what: 去程 · 汇合
+  transport:
+    - {traveler: 她, mode: flight, from: PVG, to: SEA, arr_time: "13:11", note: 国际到达，过海关后行李转盘取行李}
+    - {traveler: 我, mode: flight, from: SNA, to: SEA, note: 尔湾出发，票未定}
+- what: 返程 · 各自起飞
+  transport:
+    - {traveler: 她, mode: flight, from: SEA, to: PVG, dep_time: "15:40", arr_day_offset: 1, note: 国际航班，12:40 前进航站楼}
+    - {traveler: 我, mode: flight, from: SEA, to: SNA, note: 回尔湾，票未定}
+```
+
 ## 住宿
 
 ```trip-stays
@@ -46,6 +59,7 @@ currency: USD
   platform: Airbnb
   from: "2026-10-03 20:30"
   to: "2026-10-04 07:15"
+  cost: $250–400
   room: 独栋木屋
   parking: 含 · 门口
 - what: Renaissance Seattle
@@ -63,6 +77,7 @@ currency: USD
   platform: Turo
   from: "2026-10-02 11:30"
   to: "2026-10-05 11:20"
+  cost: 保时捷 Macan 3 天 $310
   pickup: 唐人街提车点
   dropoff: 唐人街提车点
   mileage: 600 英里
@@ -214,9 +229,7 @@ time: "13:11"
 category: flight
 place: SEA 机场
 flags: [warning]
-transport:
-  - {traveler: 她, mode: flight, from: PVG, to: SEA, arr_time: "13:11", note: 国际到达，过海关后行李转盘取行李}
-  - {traveler: 我, mode: flight, from: SNA, to: SEA, note: 尔湾出发，票未定}
+detail: 去程 · 汇合
 to_next: {mode: rail, minutes: 38, label: 1 Line 到 Westlake，再换电车, note: 行李转盘走到轻轨站还要 12 分钟}
 ```
 
@@ -230,6 +243,7 @@ to_next: {mode: rail, minutes: 38, label: 1 Line 到 Westlake，再换电车, no
 time: 16:00–16:30
 category: hotel
 place: Astra Hotel
+detail: Astra Hotel
 to_next: {mode: walk, minutes: 22, km: 1.8, label: 平路好走}
 ```
 
@@ -303,6 +317,7 @@ to_next: {mode: rideshare, minutes: 10, label: Uber 回 Astra, note: 约 $15。�
 time: "20:55"
 category: hotel
 place: Astra Hotel
+detail: Astra Hotel
 ```
 
 早点睡，明天 08:45 出门。
@@ -336,8 +351,8 @@ to_next: {mode: walk, minutes: 20, label: 沿 1st Ave 向南穿过 Pioneer Squar
 time: 11:30–11:48
 category: drive
 place: 唐人街提车点
+detail: 保时捷 Macan
 flags: [warning]
-cost: 保时捷 Macan 3 天 $310
 notes:
   - "必须 11:20 之后提，才落进 3 天计费 —— 计费节点在 10/2 11:20，早于跳 4 天，晚于都算 3 天，11:30 把 3 天用得最满"
   - 先跟车主确认：按 24 小时块还是自然日计费 / 可否进国家公园
@@ -571,9 +586,9 @@ Bonney Lake 观景台，**日落 18:48**。零遮挡，巨大的雷尼尔怼在�
 time: "20:30"
 category: homestay
 place: Ashford 木屋
+detail: Ashford 木屋
 flags: [tentative, needs-booking]
 booking: {status: required, note: 5 选 1 未定，见附录。订前必须问泡池是独享还是公用}
-cost: $250–400
 notes:
   - 山区夜里 4–7°C，厚外套 + 拖鞋 + 泳衣
   - 睡前查一次 NPS 步道状况，决定明早走环线还是往返
@@ -714,6 +729,7 @@ to_next: {mode: drive, minutes: 30, label: Kent → 市中心}
 time: "20:45"
 category: hotel
 place: Renaissance Seattle
+detail: Renaissance Seattle
 flags: [tentative, needs-booking]
 booking: {status: required, note: 第三张 50K 券。换不出来退 Courtyard Pioneer Square}
 cost: SpotHero 停车 $20–35
@@ -759,6 +775,7 @@ to_next: {mode: walk, minutes: 8, label: 走回还车点}
 time: 11:20–11:35
 category: drive
 place: 唐人街提车点
+detail: 保时捷 Macan
 flags: [warning]
 notes:
   - "11:20 硬截止"
@@ -783,9 +800,7 @@ place: SEA 机场
 time: "15:40"
 category: flight
 place: SEA 机场
-transport:
-  - {traveler: 她, mode: flight, from: SEA, to: PVG, dep_time: "15:40", arr_day_offset: 1, note: 国际航班，12:40 前进航站楼}
-  - {traveler: 我, mode: flight, from: SEA, to: SNA, note: 回尔湾，票未定}
+detail: 返程 · 各自起飞
 ```
 
 各回各家。她 15:40 国际航班是全天倒推链的锚。

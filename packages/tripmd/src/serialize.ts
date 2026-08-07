@@ -82,6 +82,23 @@ function constraintsBlock(trip: Trip): string | null {
   return L.join('\n')
 }
 
+function journeysBlock(trip: Trip): string | null {
+  if (trip.journeys.length === 0) return null
+  const L = ['## 长途', '', '```trip-transports']
+  for (const j of trip.journeys) {
+    L.push(`- what: ${scalar(j.what)}`)
+    if (j.cost) L.push(`  cost: ${scalar(j.cost.raw)}`)
+    if (j.transports.length === 1) {
+      L.push(`  transport: ${transportValue(j.transports[0]!)}`)
+    } else if (j.transports.length > 1) {
+      L.push('  transport:')
+      for (const t of j.transports) L.push(`    - ${transportValue(t)}`)
+    }
+  }
+  L.push('```')
+  return L.join('\n')
+}
+
 function staysBlock(trip: Trip, placeById: Map<string, Place>): string | null {
   if (trip.stays.length === 0) return null
   const L = ['## 住宿', '', '```trip-stays']
@@ -90,6 +107,7 @@ function staysBlock(trip: Trip, placeById: Map<string, Place>): string | null {
     if (st.platform) L.push(`  platform: ${scalar(st.platform)}`)
     L.push(`  from: ${scalar(st.from.raw)}`)
     L.push(`  to: ${scalar(st.to.raw)}`)
+    if (st.cost) L.push(`  cost: ${scalar(st.cost.raw)}`)
     // 地点名与 what 相同时省掉这行 —— 解析器缺省就按 what 去找
     const place = st.placeId ? placeById.get(st.placeId) : undefined
     if (place && place.name !== st.what) L.push(`  place: ${scalar(place.name)}`)
@@ -112,6 +130,7 @@ function rentalsBlock(trip: Trip, placeById: Map<string, Place>): string | null 
     if (r.platform) L.push(`  platform: ${scalar(r.platform)}`)
     L.push(`  from: ${scalar(r.from.raw)}`)
     L.push(`  to: ${scalar(r.to.raw)}`)
+    if (r.cost) L.push(`  cost: ${scalar(r.cost.raw)}`)
     const pickup = r.pickupPlaceId ? placeById.get(r.pickupPlaceId) : undefined
     const dropoff = r.dropoffPlaceId ? placeById.get(r.dropoffPlaceId) : undefined
     if (pickup) L.push(`  pickup: ${scalar(pickup.name)}`)
@@ -216,12 +235,8 @@ function eventBlock(ev: TripEvent, placeById: Map<string, Place>, leg: Leg | und
     L.push('notes:')
     for (const n of ev.notes) L.push(`  - ${scalar(n)}`)
   }
-  if (ev.transports.length === 1) {
-    L.push(`transport: ${transportValue(ev.transports[0]!)}`)
-  } else if (ev.transports.length > 1) {
-    L.push('transport:')
-    for (const t of ev.transports) L.push(`  - ${transportValue(t)}`)
-  }
+  // 大段事务的明细全部住在前置块里，事件只留一根指针
+  if (ev.detailRef) L.push(`detail: ${scalar(ev.detailRef)}`)
   if (leg) {
     const to = leg.to ? placeById.get(leg.to) : undefined
     void to
@@ -248,6 +263,7 @@ export function serialize(trip: Trip): string {
   chunks.push(frontmatter(trip))
   chunks.push(`# ${trip.title}`)
   chunks.push(constraintsBlock(trip))
+  chunks.push(journeysBlock(trip))
   chunks.push(staysBlock(trip, placeById))
   chunks.push(rentalsBlock(trip, placeById))
   chunks.push(placesBlock(trip))

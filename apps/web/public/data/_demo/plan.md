@@ -35,12 +35,37 @@ currency: JPY
   label: 离开 KIX
 ```
 
+## 长途
+
+```trip-transports
+- what: 去程航班
+  cost: $842 + 她的票待定
+  transport:
+    - {traveler: 我, mode: flight, carrier: 达美 Delta, number: DL7, from: LAX, to: HND T3, dep_date: "2026-11-19", dep_time: "08:05", arr_time: "15:30", arr_day_offset: 1, duration: 14h25m, cabin: 经济舱, baggage: 2 件 23kg, through_check: 行李直挂, refund: 改签 $200 起, price: "$842", stops: [{airport: SEA, arr_time: "10:55", dep_time: "13:35", leg: 2h50m, wait: 2h40m}]}
+    - {traveler: 她, mode: flight, from: PVG, to: HND, note: 票未定，全部槽位等着填}
+- what: 新干线 · 小田原→京都
+  cost: "¥11,220 × 2 = ¥22,440"
+  transport: {mode: hsr, carrier: JR 东海, number: ひかり 635 → のぞみ 219, from: 小田原, to: 京都, dep_time: "09:12", arr_time: "11:14", duration: 2h02m, cabin: 指定席, baggage: 特大行李需预约行李位, price: "¥11,220/人", stops: [{station: 名古屋, arr_time: "10:19", dep_time: "10:31", leg: 1h07m, wait: 12m}]}
+- what: 浪漫特快 · 新宿→箱根汤本
+  transport: {mode: rail, carrier: 小田急, number: はこね 51 号, from: 新宿, to: 箱根汤本, dep_time: "09:00", arr_time: "10:25", duration: 1h25m, cabin: 展望席, refund: 发车前可免费改签, price: "¥2470/人"}
+- what: 高速巴士 · 京都→三宫
+  transport: {mode: bus, carrier: 阪急观光巴士, from: 京都站乌丸口, to: 三宫巴士总站, dep_time: "11:30", arr_time: "12:45", duration: 1h15m, cabin: 4 排标准席, refund: 开车前 30 分钟可免费取消, price: "¥1100", stops: [{airport: 大阪梅田 · 阪急三番街, dep_airport: 新阪急酒店前, arr_time: "12:10", dep_time: "12:20", leg: 40m, wait: 10m}]}
+- what: 海上巴士 · 神户→关西机场
+  transport: {mode: ferry, carrier: 神户-关空湾快线, from: 神户机场码头, to: 关西机场 T1, dep_time: "15:30", arr_time: "16:01", duration: 31m, cabin: 普通舱, price: "¥1880"}
+- what: 返程 · 各自起飞
+  cost: $715 + 她的票待定
+  transport:
+    - {traveler: 她, mode: flight, from: KIX, to: PVG, dep_time: "19:05", note: 票未定}
+    - {traveler: 我, mode: flight, carrier: 联合 United, number: UA34, from: KIX T1, to: SFO, dep_time: "18:30", arr_time: "11:10", duration: 9h40m, cabin: 经济舱, baggage: 2 件 23kg, refund: 不可退，改签 $150 起, price: "$715", note: 东行跨日期变更线，同日上午落地}
+```
+
 ## 住宿
 
 ```trip-stays
 - what: 浅草豪景酒店
   platform: 一休.com
   from: "2026-11-20 16:40"
+  cost: "¥36000"
   to: "2026-11-21 08:00"
   stars: 3
   room: 双床房 · 高层
@@ -49,6 +74,7 @@ currency: JPY
 - what: 强罗雪月花
   platform: 一休.com
   from: "2026-11-21 15:30"
+  cost: "¥52000"
   to: "2026-11-22 07:30"
   stars: 4
   room: 和洋室 · 半露天风吕
@@ -67,6 +93,7 @@ currency: JPY
 
 ```trip-rentals
 - what: 丰田 Yaris Cross
+  cost: "¥14800"
   platform: Times Car Rental
   from: "2026-11-21 10:30"
   to: "2026-11-22 08:40"
@@ -174,9 +201,7 @@ category: flight
 place: 羽田机场
 notes:
   - 国际到达高峰排队 30 分钟起，落地先连机场 Wi-Fi 报平安
-transport:
-  - {traveler: 我, mode: flight, carrier: 达美 Delta, number: DL7, from: LAX, to: HND T3, dep_date: "2026-11-19", dep_time: "08:05", arr_time: "15:30", arr_day_offset: 1, duration: 14h25m, cabin: 经济舱, baggage: 2 件 23kg, through_check: 行李直挂, refund: 改签 $200 起, price: "$842", stops: [{airport: SEA, arr_time: "10:55", dep_time: "13:35", leg: 2h50m, wait: 2h40m}]}
-  - {traveler: 她, mode: flight, from: PVG, to: HND, note: 票未定，全部槽位等着填}
+detail: 去程航班
 to_next: {mode: rail, minutes: 40, label: 京急线直通浅草线}
 ```
 
@@ -188,8 +213,8 @@ to_next: {mode: rail, minutes: 40, label: 京急线直通浅草线}
 time: 16:40–17:10
 category: hotel
 place: 浅草豪景酒店
+detail: 浅草豪景酒店
 booking: {status: required, deadline: 2026-11-01, note: 高层河景房要邮件单独确认}
-cost: "¥36000"
 to_next: {mode: walk, minutes: 12, label: 穿过传法院通}
 ```
 
@@ -256,7 +281,7 @@ category: logistics
 time: "09:00"
 category: rail
 place: 新宿站
-transport: {mode: rail, carrier: 小田急, number: はこね 51 号, from: 新宿, to: 箱根汤本, dep_time: "09:00", arr_time: "10:25", duration: 1h25m, cabin: 展望席, refund: 发车前可免费改签, price: "¥2470/人"}
+detail: 浪漫特快 · 新宿→箱根汤本
 to_next: {mode: walk, minutes: 5, label: 站前取车}
 ```
 
@@ -268,7 +293,7 @@ to_next: {mode: walk, minutes: 5, label: 站前取车}
 time: 10:30–10:50
 category: drive
 place: 箱根汤本站
-cost: "¥14800"
+detail: 丰田 Yaris Cross
 notes:
   - 山路弯多，大涌谷一带冬季可能要求雪胎或防滑链
   - 异地还车加收 ¥2200 · 免 ETC 卡需自带
@@ -315,8 +340,8 @@ to_next: {mode: bus, minutes: 20}
 time: "15:30"
 category: homestay
 place: 强罗雪月花
+detail: 强罗雪月花
 booking: {status: booked, note: 含晚餐会席，15:00 后可入住}
-cost: "¥52000"
 ```
 
 住宿模块五个字段全部填满 —— 对照 Day 1 的全待填。
@@ -346,6 +371,7 @@ sunset: "16:47"
 time: 08:40–08:55
 category: drive
 place: 小田原站
+detail: 丰田 Yaris Cross
 to_next: {mode: walk, minutes: 10, label: 走进新干线检票口}
 ```
 
@@ -357,7 +383,7 @@ to_next: {mode: walk, minutes: 10, label: 走进新干线检票口}
 time: "09:12"
 category: hsr
 place: 小田原站
-transport: {mode: hsr, carrier: JR 东海, number: ひかり 635 → のぞみ 219, from: 小田原, to: 京都, dep_time: "09:12", arr_time: "11:14", duration: 2h02m, cabin: 指定席, baggage: 特大行李需预约行李位, price: "¥11,220/人", stops: [{station: 名古屋, arr_time: "10:19", dep_time: "10:31", leg: 1h07m, wait: 12m}]}
+detail: 新干线 · 小田原→京都
 to_next: {mode: walk, minutes: 25, label: 出站顺乌丸通往北散步}
 ```
 
@@ -407,6 +433,7 @@ to_next: {mode: walk, minutes: 15}
 time: "18:10"
 category: hotel
 place: 京都格兰比亚酒店
+detail: 京都格兰比亚酒店
 to_next: {mode: walk, minutes: 15}
 ```
 
@@ -450,7 +477,7 @@ cost: 约 ¥800/人
 time: "11:30"
 category: bus
 place: 京都站
-transport: {mode: bus, carrier: 阪急观光巴士, from: 京都站乌丸口, to: 三宫巴士总站, dep_time: "11:30", arr_time: "12:45", duration: 1h15m, cabin: 4 排标准席, refund: 开车前 30 分钟可免费取消, price: "¥1100", stops: [{airport: 大阪梅田 · 阪急三番街, dep_airport: 新阪急酒店前, arr_time: "12:10", dep_time: "12:20", leg: 40m, wait: 10m}]}
+detail: 高速巴士 · 京都→三宫
 to_next: {mode: walk, minutes: 10}
 ```
 
@@ -477,7 +504,7 @@ to_next: {mode: rail, minutes: 20, label: Port Liner 到神户机场}
 time: "15:30"
 category: ferry
 place: 神户机场海上码头
-transport: {mode: ferry, carrier: 神户-关空湾快线, from: 神户机场码头, to: 关西机场 T1, dep_time: "15:30", arr_time: "16:01", duration: 31m, cabin: 普通舱, price: "¥1880"}
+detail: 海上巴士 · 神户→关西机场
 to_next: {mode: walk, minutes: 10, label: 码头接驳到 T1}
 ```
 
@@ -489,9 +516,7 @@ to_next: {mode: walk, minutes: 10, label: 码头接驳到 T1}
 time: "19:05"
 category: flight
 place: 关西机场
-transport:
-  - {traveler: 她, mode: flight, from: KIX, to: PVG, dep_time: "19:05", note: 票未定}
-  - {traveler: 我, mode: flight, carrier: 联合 United, number: UA34, from: KIX T1, to: SFO, dep_time: "18:30", arr_time: "11:10", duration: 9h40m, cabin: 经济舱, baggage: 2 件 23kg, refund: 不可退，改签 $150 起, price: "$715", note: 东行跨日期变更线，同日上午落地}
+detail: 返程 · 各自起飞
 ```
 
 我的航班 18:30 起飞、当天上午 11:10 落地 —— 东行赚回一天，观察右端日期仍是 11/23。
@@ -518,11 +543,12 @@ icon: 🧪
 
 ### Day 1 · 航班与待填
 
+- **前置声明 + `detail:` 引用**：所有长途/住宿/租车的明细都写在顶层块里，事件只写 `detail: 去程航班` 一句话；同一记录被多次引用时（还车、回酒店），只有首次引用的卡片长出信息模块
 - **中转航班**：我的 DL7 经 SEA 停 2h40m —— 每段上方标时长（2h50m + 停 2h40m + 8h55m = 全程 14h25m），中转两端标到发当地时间
 - **跨日出发**：`dep_date: 11-19` + `arr_day_offset: 1` —— 左端日期 11/19、右端 11/20 带红色 +1 角标
 - **描述行**：客舱/托运/直挂/退改四格（她的票全待填）
 - **多人一人一票**：她的票全空 —— 航司/航班号/时刻/预算全是待填槽
-- **住宿模块全待填**：入住卡五个槽位全空
+- **住宿模块全待填**：浅草的 trip-stays 记录只写了必填三项 —— 观察其余槽位「待填」的样子；房费写在记录的 `cost` 上，进预算统计
 - **预订两态**：酒店「需预订 + 截止日」琥珀，泥鳅锅「已预订」灰调
 - **模糊时段**：晚餐 `evening` → 时间列显示「傍晚」
 - **待定 + 可选**：屋顶酒吧同时有「待定」角标和虚线左边条
