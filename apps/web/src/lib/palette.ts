@@ -3,6 +3,7 @@ import {
   readSettings,
   updateSettings,
   type PaletteToken,
+  type ThemeMode,
   type TokenColor,
 } from './settings.ts'
 
@@ -38,6 +39,16 @@ function varName(token: PaletteToken): string {
   return (GROUP_KEYS as readonly string[]).includes(token) ? `--g-${token}` : `--a-${token}`
 }
 
+/**
+ * 外观三态落到 DOM：system 删掉 data-theme（媒体查询接管），
+ * light/dark 写死属性 —— index.css 的令牌层据此挑深浅档。
+ */
+export function applyTheme(mode: ThemeMode = readSettings().theme): void {
+  const root = document.documentElement
+  if (mode === 'system') root.removeAttribute('data-theme')
+  else root.setAttribute('data-theme', mode)
+}
+
 export function applyPalette(palette: Palette = currentPalette()): void {
   const root = document.documentElement
   for (const t of TOKEN_KEYS) {
@@ -52,6 +63,13 @@ export function applyPalette(palette: Palette = currentPalette()): void {
  */
 export function setPaletteColor(token: PaletteToken, color: TokenColor): void {
   updateSettings({ palette: { ...readSettings().palette, [token]: color } })
+}
+
+/** 单个令牌回默认 —— 从覆盖表里删掉这个键，深浅两档一起找回出厂调校 */
+export function resetPaletteColor(token: PaletteToken): void {
+  const next = { ...readSettings().palette }
+  delete next[token]
+  updateSettings({ palette: next })
 }
 
 export function resetPalette(): void {

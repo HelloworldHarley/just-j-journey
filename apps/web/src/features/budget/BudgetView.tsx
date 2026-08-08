@@ -65,7 +65,7 @@ export function BudgetView({ trip }: { trip: Trip }) {
               <span className="flex items-center gap-1.5">
                 <span
                   className="h-[8px] w-[8px] rounded-full"
-                  style={{ background: `var(--g-${g})`, opacity: g === 'other' ? 0.45 : 1 }}
+                  style={{ background: `var(--t-${g})`, opacity: g === 'other' ? 0.45 : 1 }}
                 />
                 {GROUPS[g].zh}
               </span>
@@ -85,7 +85,7 @@ export function BudgetView({ trip }: { trip: Trip }) {
               key={g}
               style={{
                 width: `${(model.byGroup[g] / model.total) * 100}%`,
-                background: `var(--g-${g})`,
+                background: `var(--t-${g})`,
                 opacity: g === 'other' ? 0.45 : 1,
               }}
               title={`${GROUPS[g].zh} ${fmtMoney(model.byGroup[g], model.currency)}`}
@@ -140,7 +140,7 @@ export function BudgetView({ trip }: { trip: Trip }) {
                       key={g}
                       style={{
                         width: `${(row.byGroup[g] / model.maxDay) * 100}%`,
-                        background: `var(--g-${g})`,
+                        background: `var(--t-${g})`,
                         opacity: g === 'other' ? 0.45 : 1,
                       }}
                     />

@@ -8,12 +8,16 @@ import { MarkdownTripRepository } from './data/MarkdownTripRepository.ts'
 import { HomePage } from './features/trip-list/HomePage.tsx'
 import { BudgetRoute, CalendarRoute, InfoRoute, ListRoute, TripPage } from './app/TripPage.tsx'
 import { Problem } from './components/States.tsx'
-import { applyPalette } from './lib/palette.ts'
+import { applyPalette, applyTheme } from './lib/palette.ts'
 import { subscribeSettings } from './lib/settings.ts'
 
-// 配色注入 :root，并跟着设置走 —— 将来设置面板只改设置，这条订阅负责重新注入，组件不动。
+// 配色与外观注入 :root，并跟着设置走 —— 设置面板只改设置，这条订阅负责重新应用，组件不动。
 applyPalette()
-subscribeSettings(() => applyPalette())
+applyTheme()
+subscribeSettings(() => {
+  applyPalette()
+  applyTheme()
+})
 
 // 数据源在这里注入，全应用只有这一处知道数据从哪来。
 // 单工件：浏览器直接吃 plan.md。Phase 6 接后端时换 HttpTripRepository，视图零改动。

@@ -160,7 +160,11 @@ function EventCard({
     <article
       id={event.id}
       className={`grid scroll-mt-[6.75rem] overflow-hidden rounded-xl border px-4 py-3.5 transition-colors ${
-        accented ? 'grp-card border-l-[3px]' : 'bg-raised'
+        /*
+          事务卡也走 grp-card：misc 没注入 --grp，底色落到 --fog 兜底 ——
+          正好是「白与米黄的中间色」。纯白反而比彩色粉彩更扎眼。
+        */
+        accented ? 'grp-card border-l-[3px]' : 'grp-card'
       } ${faved ? 'border-ink/30 shadow-[var(--shadow)]' : 'border-[var(--hairline)]'}`}
       style={{
         gridTemplateColumns: showTime ? `${TIME_COL} minmax(0,1fr)` : 'minmax(0,1fr)',

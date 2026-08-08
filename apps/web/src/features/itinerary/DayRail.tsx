@@ -113,7 +113,7 @@ function CompositionBar({ day, dim }: { day: Day; dim: boolean }) {
             key={g}
             style={{
               width: `${(acc[g] / total) * 100}%`,
-              background: `var(--g-${g})`,
+              background: `var(--t-${g})`,
               opacity: g === 'other' ? 0.3 : 1,
             }}
           />

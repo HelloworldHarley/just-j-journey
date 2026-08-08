@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Pencil, Star, X } from 'lucide-react'
+import { Check, Pencil, Settings2, Star, X } from 'lucide-react'
 import type { GroupKey, TripSummary } from '@jjj/schema'
 import { useTripList } from '../../data/hooks.ts'
 import { useTripTitle } from '../../data/useTripOverrides.ts'
@@ -8,9 +8,11 @@ import { useFavorites } from '../../data/useFavorites.ts'
 import { shortDate } from '../../lib/format.ts'
 import { daysUntil, todayIso } from '../../lib/time.ts'
 import { Loading, Problem } from '../../components/States.tsx'
+import { SettingsSheet } from './SettingsSheet.tsx'
 
 export function HomePage() {
   const { data, isPending, error } = useTripList()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   if (isPending) return <Loading />
   if (error) return <Problem title="行程列表加载失败" detail={String(error)} />
@@ -21,12 +23,25 @@ export function HomePage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-12">
-      <h1 className="display text-[34px] leading-none tracking-[-0.03em] text-ink sm:text-[40px]">
-        Just J Journey
-      </h1>
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="display text-[34px] leading-none tracking-[-0.03em] text-ink sm:text-[40px]">
+          Just J Journey
+        </h1>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="设置"
+          title="设置"
+          className="mt-1 rounded-full bg-sunken p-2 text-graphite transition-colors hover:text-ink"
+        >
+          <Settings2 size={16} aria-hidden />
+        </button>
+      </div>
       <p className="mt-3 max-w-md text-[14px] leading-relaxed text-graphite">
         把 Markdown 行程读成时间的形状。It's just a J thing.
       </p>
+
+      {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
 
       {data.length === 0 && (
         <Problem
@@ -286,7 +301,7 @@ function DayShapeBars({ shape }: { shape: TripSummary['dayShape'] }) {
                   key={g}
                   style={{
                     height: `${(mins / total) * 100}%`,
-                    background: `var(--g-${g})`,
+                    background: `var(--t-${g})`,
                     // 「其他」压暗，让玩/吃在条里也是主角
                     opacity: g === 'other' ? 0.22 : 1,
                   }}

@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Trip } from '@jjj/schema'
 import { shortDate } from '../../lib/format.ts'
 import { todayIso } from '../../lib/time.ts'
-import { useSettings } from '../../lib/settings.ts'
+import { updateSettings, useSettings } from '../../lib/settings.ts'
 import { WeekGrid } from './WeekGrid.tsx'
 import { MonthGrid } from './MonthGrid.tsx'
 
@@ -82,7 +82,22 @@ export function CalendarView({ trip }: { trip: Trip }) {
             ))}
           </div>
 
-          <span className="tnum ml-auto text-[12.5px] text-graphite">
+          {/* 租车底色是周视图专属的显示开关，就住在它作用的地方 —— 不进首页设置 */}
+          {mode === 'week' && trip.rentals.length > 0 && (
+            <label className="ml-auto flex cursor-pointer items-center gap-1.5 text-[12px] text-graphite">
+              租车底色
+              <Toggle
+                checked={rentalBand}
+                onChange={(v) => updateSettings({ rentalBand: v })}
+                label="租车底色"
+              />
+            </label>
+          )}
+          <span
+            className={`tnum text-[12.5px] text-graphite ${
+              mode === 'week' && trip.rentals.length > 0 ? '' : 'ml-auto'
+            }`}
+          >
             {mode === 'week' && days.length > 0
               ? `${shortDate(days[0]!.date)} – ${shortDate(days[days.length - 1]!.date)}`
               : `${shortDate(trip.dates.start)} – ${shortDate(trip.dates.end)}`}
@@ -143,6 +158,37 @@ function PageButton({
                  disabled:cursor-default disabled:opacity-30"
     >
       <Icon size={16} aria-hidden />
+    </button>
+  )
+}
+
+/** 迷你开关 —— 工具栏尺寸的 iOS 胶囊。「开」用固定蓝，不随主题与自定义配色变。 */
+function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={`relative h-[20px] w-[34px] shrink-0 rounded-full transition-colors ${
+        checked ? 'bg-[#2963d6]' : 'bg-fog'
+      }`}
+    >
+      <span
+        aria-hidden
+        className={`absolute top-[2px] h-4 w-4 rounded-full bg-white shadow transition-[left] ${
+          checked ? 'left-[16px]' : 'left-[2px]'
+        }`}
+      />
     </button>
   )
 }

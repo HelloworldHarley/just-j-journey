@@ -21,7 +21,12 @@ export interface TokenColor {
   dark: string
 }
 
+/** 外观：跟随系统 / 强制浅色 / 强制深色 */
+export type ThemeMode = 'system' | 'light' | 'dark'
+
 export interface Settings {
+  /** 外观三态。system = 不写 data-theme，交给媒体查询 */
+  theme: ThemeMode
   /** 配色覆盖，只存改过的 token，其余落回 DEFAULT_PALETTE */
   palette: Partial<Record<PaletteToken, TokenColor>>
   /** 周视图里租车期间铺一层底色。默认关 —— 一天的信息密度已经不低。 */
@@ -29,6 +34,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  theme: 'system',
   palette: {},
   rentalBand: false,
 }

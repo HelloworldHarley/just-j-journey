@@ -14,22 +14,51 @@
  */
 
 :root {
-  --paper: #f7f8f7; /* 微冷白，读作涂布纸而非奶油纸 */
-  --paper-raised: #ffffff;
-  --paper-sunken: #eef1f0;
-  --ink: #12161c; /* 近黑，偏冷，非纯黑 */
-  --ink-soft: #3a424e;
-  --graphite: #5a6472;
-  --fog: #dfe4e3;
-  --hairline: rgb(18 22 28 / 0.09);
-  --shadow: 0 1px 2px rgb(18 22 28 / 0.04), 0 8px 24px -12px rgb(18 22 28 / 0.12);
-  --tight: #c0392b; /* 余量告急 */
+  /* 纸 —— 米白/米黄，写字的纸而不是屏幕的白（Harley 定的方向：纸质 note 质感） */
+  /*
+   * 米黄信笺纸 —— 亮而干净的奶油色页底，卡片是更亮的暖白；
+   * 玩/吃/住/行卡靠「主色自然变淡」的粉彩底认身份（见 --grp-mix）。
+   */
+  --paper: #f9f2df;
+  --paper-raised: #fffdf6;
+  --paper-sunken: #f1e9d2;
+  --ink: #201a11; /* 暖近黑，像墨水不像 #000 */
+  --ink-soft: #4a4336;
+  --graphite: #7a7263;
+  --fog: #e6dcc0;
+  --hairline: rgb(32 26 17 / 0.13);
+  --shadow: 0 1px 2px rgb(32 26 17 / 0.05), 0 8px 24px -12px rgb(32 26 17 / 0.16);
+  --tight: var(--a-tight, #c0392b); /* 余量告急 —— 色值可在设置里覆盖 */
   /* 顶栏高度。筛选栏要 sticky 在它下面，锚点滚动也要让开它 */
   --nav-h: 3.25rem;
+
+  /*
+   * 语义切换令牌 —— 深浅两档的挑选发生在这一层，组件规则只写一份。
+   * --t-* 挑 --g-* 与 --a-* 的浅档或深档；其余是随主题变的杂项。
+   */
+  --t-play: var(--g-play);
+  --t-food: var(--g-food);
+  --t-other: var(--g-other);
+  --t-stay: var(--a-stay);
+  --t-move: var(--a-move);
+  --t-faved: var(--a-faved);
+  --chip-ink: #fff;            /* 实色块上的文字 */
+  --grp-mix: 10%;              /* .grp-card 底色浓度 —— 主色自然变淡的粉彩 */
+  --band-tint-mix: 8%;         /* 租车衬垫浓度 —— 混透明，网格线要能透出来 */
+  --cal-mix: 12%;              /* 周视图事件块底色浓度 */
+  --fuzzy-mix: 15%;            /* 斜纹块浓度 */
+  --todo-bg: color-mix(in srgb, #b8802a 15%, transparent);
+  --todo-ink: #8a5f18;
 }
 
+/*
+ * 深色档。三态外观（浅 / 深 / 跟随系统）用 data-theme 覆盖：
+ * 没有属性 = 跟随系统（媒体查询生效）；data-theme 一旦写死则无条件生效。
+ *
+ * ⚠ 下面两处的赋值必须逐行同步 —— CSS 没法在媒体查询内外共享同一段声明。
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --paper: #0f1216;
     --paper-raised: #171b21;
     --paper-sunken: #0a0c0f;
@@ -39,8 +68,49 @@
     --fog: #262c34;
     --hairline: rgb(236 239 242 / 0.10);
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
-    --tight: #ff7a6b;
+    --tight: var(--a-tight-dark, #ff7a6b);
+
+    --t-play: var(--g-play-dark);
+    --t-food: var(--g-food-dark);
+    --t-other: var(--g-other-dark);
+    --t-stay: var(--a-stay-dark);
+    --t-move: var(--a-move-dark);
+    --t-faved: var(--a-faved-dark);
+    --chip-ink: #0f1216;
+    --grp-mix: 9%;
+  --band-tint-mix: 10%;
+    --band-tint-mix: 10%;
+    --cal-mix: 13%;
+    --fuzzy-mix: 16%;
+    --todo-bg: color-mix(in srgb, #e0ac5c 18%, transparent);
+    --todo-ink: #e0ac5c;
   }
+}
+
+:root[data-theme='dark'] {
+  --paper: #0f1216;
+  --paper-raised: #171b21;
+  --paper-sunken: #0a0c0f;
+  --ink: #eceff2;
+  --ink-soft: #aeb8c3;
+  --graphite: #7d8894;
+  --fog: #262c34;
+  --hairline: rgb(236 239 242 / 0.10);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  --tight: var(--a-tight-dark, #ff7a6b);
+
+  --t-play: var(--g-play-dark);
+  --t-food: var(--g-food-dark);
+  --t-other: var(--g-other-dark);
+  --t-stay: var(--a-stay-dark);
+  --t-move: var(--a-move-dark);
+  --t-faved: var(--a-faved-dark);
+  --chip-ink: #0f1216;
+  --grp-mix: 9%;
+  --cal-mix: 13%;
+  --fuzzy-mix: 16%;
+  --todo-bg: color-mix(in srgb, #e0ac5c 18%, transparent);
+  --todo-ink: #e0ac5c;
 }
 
 @theme inline {
@@ -120,89 +190,78 @@ body {
 }
 
 /*
- * 分组圆片。深浅色各一套色值 —— 深色模式下浅底必须配深色图标才有对比度。
- * 「其他」组走描边款，视觉上退到背景。
+ * 分组色消费层 —— 组件只写一份规则。
+ *
+ * 元素级变量（--grp/--grp-dark 由 kindVars 成对注入）的深浅挑选走 --grp-cur：
+ * 在元素自己的作用域里切换，misc 没注入时落回 --fog（深浅两档它都合适）。
+ * 全局变量（--g-* 与 --a-*）的挑选在 :root 的 --t-* 令牌层完成。
  */
+.grp-card,
+.grp-chip,
+.grp-chip-outline,
+.cal-block,
+.cal-block-fuzzy {
+  --grp-cur: var(--grp, var(--fog));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) :is(.grp-card, .grp-chip, .grp-chip-outline, .cal-block, .cal-block-fuzzy) {
+    --grp-cur: var(--grp-dark, var(--fog));
+  }
+}
+:root[data-theme='dark'] :is(.grp-card, .grp-chip, .grp-chip-outline, .cal-block, .cal-block-fuzzy) {
+  --grp-cur: var(--grp-dark, var(--fog));
+}
+
 /*
  * 「玩 / 吃」的卡片：极淡的同色底 + 分组色左边条。
- * 底色只有 5%，不能再重了 —— 正文可读性优先，颜色只负责让卡片在扫读时被认出来。
+ * 浅色档底色只有 5%，不能再重了 —— 正文可读性优先，颜色只负责让卡片在扫读时被认出来。
  */
 .grp-card {
-  background: color-mix(in srgb, var(--grp) 5%, var(--paper-raised));
-  border-left-color: var(--grp) !important;
+  background: color-mix(in srgb, var(--grp-cur) var(--grp-mix), var(--paper-raised));
+  border-left-color: var(--grp-cur) !important;
 }
 
+/* 分组圆片。深色模式换深档色值 —— 浅底必须配深色图标才有对比度 */
 .grp-chip {
-  background: var(--grp);
-  color: #fff;
+  background: var(--grp-cur);
+  color: var(--chip-ink);
 }
 .grp-chip-outline {
-  border: 1.5px solid color-mix(in srgb, var(--grp) 55%, transparent);
-  color: var(--grp);
+  border: 1.5px solid color-mix(in srgb, var(--grp-cur) 55%, transparent);
+  color: var(--grp-cur);
 }
+
 /*
  * 语义色着色类。组件写 .tint-x，色值来自可覆盖的 CSS 变量 ——
- * 将来用户自定义配色时这些类自动跟随，组件零改动。
+ * 用户自定义配色时这些类自动跟随，组件零改动。
  */
-.tint-play { color: var(--g-play); }
-.tint-food { color: var(--g-food); }
-.tint-stay { color: var(--a-stay); }
-.tint-move { color: var(--a-move); }
-.tint-faved { color: var(--a-faved); }
+.tint-play { color: var(--t-play); }
+.tint-food { color: var(--t-food); }
+.tint-stay { color: var(--t-stay); }
+.tint-move { color: var(--t-move); }
+.tint-faved { color: var(--t-faved); }
 
-@media (prefers-color-scheme: dark) {
-  .tint-play { color: var(--g-play-dark); }
-  .tint-food { color: var(--g-food-dark); }
-  .tint-stay { color: var(--a-stay-dark); }
-  .tint-move { color: var(--a-move-dark); }
-  .tint-faved { color: var(--a-faved-dark); }
-}
-
-/*
- * 日历的事件块与区间带。和 .grp-card 一样：浅深两套规则由媒体查询挑，
- * 组件只注入 --grp/--grp-dark（kindVars），自己不碰色值。
- */
+/* 日历的事件块与区间带 —— 同一套 --grp-cur / --t-* 语言 */
 .cal-block {
-  border-left-color: var(--grp, var(--fog));
-  background: color-mix(in srgb, var(--grp, var(--fog)) 9%, var(--paper-raised));
-}
-/* 时间点事件：没占用时长，填成方块就是撒谎 —— 只留左色条 */
-.cal-block-point {
-  background: transparent;
+  border-left-color: var(--grp-cur);
+  background: color-mix(in srgb, var(--grp-cur) var(--cal-mix), var(--paper-raised));
 }
 /* 模糊时段（上午/下午）：斜纹，与确切时间的实底区分 */
 .cal-block-fuzzy {
   background: repeating-linear-gradient(
     135deg,
-    color-mix(in srgb, var(--grp, var(--fog)) 13%, var(--paper-raised)) 0 5px,
+    color-mix(in srgb, var(--grp-cur) var(--fuzzy-mix), var(--paper-raised)) 0 5px,
     var(--paper-raised) 5px 10px
   );
 }
 /* 月视图住/行区间带：实色底，文字颜色跟 .grp-chip 同一约定 */
-.band-stay { background: var(--a-stay); color: #fff; }
-.band-move { background: var(--a-move); color: #fff; }
-/* 周视图租车期间的底色衬垫 */
-.band-move-tint { background: color-mix(in srgb, var(--a-move) 8%, transparent); }
-
-@media (prefers-color-scheme: dark) {
-  .cal-block {
-    border-left-color: var(--grp-dark, var(--fog));
-    background: color-mix(in srgb, var(--grp-dark, var(--fog)) 13%, var(--paper-raised));
-  }
-  .cal-block-point {
-    background: transparent;
-  }
-  .cal-block-fuzzy {
-    background: repeating-linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--grp-dark, var(--fog)) 16%, var(--paper-raised)) 0 5px,
-      var(--paper-raised) 5px 10px
-    );
-  }
-  .band-stay { background: var(--a-stay-dark); color: #0f1216; }
-  .band-move { background: var(--a-move-dark); color: #0f1216; }
-  .band-move-tint { background: color-mix(in srgb, var(--a-move-dark) 10%, transparent); }
-}
+.band-stay { background: var(--t-stay); color: var(--chip-ink); }
+.band-move { background: var(--t-move); color: var(--chip-ink); }
+/*
+ * 周视图租车期间的底色衬垫 —— 混**透明**而非纸色：
+ * 它压在网格线上面、事件块下面，不透明会把整点线糊掉。
+ */
+.band-move-tint { background: color-mix(in srgb, var(--t-move) var(--band-tint-mix), transparent); }
 
 /* 红色只用在「注意」上 —— 它是唯一表示「会出事」的颜色 */
 .tight-badge {
@@ -211,29 +270,37 @@ body {
 }
 /* 待办用琥珀：需要行动，但不是危险 */
 .todo-badge {
-  background: color-mix(in srgb, #b8802a 15%, transparent);
-  color: #8a5f18;
-}
-@media (prefers-color-scheme: dark) {
-  .todo-badge {
-    background: color-mix(in srgb, #e0ac5c 18%, transparent);
-    color: #e0ac5c;
-  }
+  background: var(--todo-bg);
+  color: var(--todo-ink);
 }
 
-@media (prefers-color-scheme: dark) {
-  .grp-card {
-    background: color-mix(in srgb, var(--grp-dark) 9%, var(--paper-raised));
-    border-left-color: var(--grp-dark) !important;
-  }
-  .grp-chip {
-    background: var(--grp-dark);
-    color: #0f1216;
-  }
-  .grp-chip-outline {
-    border-color: color-mix(in srgb, var(--grp-dark) 55%, transparent);
-    color: var(--grp-dark);
-  }
+/*
+ * 设置抽屉的滚动条：平时隐形，滚动时只浮现内部的圆角矩形滑块
+ * （.scrolling 由组件在 onScroll 时挂上、停 600ms 摘掉）。
+ */
+.sheet-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.sheet-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.sheet-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sheet-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  /* 透明描边把滑块从轨道边缘缩进来，露出抽屉自己的圆角 */
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.sheet-scroll.scrolling {
+  scrollbar-color: color-mix(in srgb, var(--ink) 28%, transparent) transparent;
+}
+.sheet-scroll.scrolling::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink) 28%, transparent);
+  background-clip: padding-box;
 }
 
 /* 宽内容（表格、代码块）在自己的容器里横向滚动，页面本身永不横向滚动 */

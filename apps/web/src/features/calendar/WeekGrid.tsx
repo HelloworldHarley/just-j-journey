@@ -17,7 +17,10 @@ import { shortDate } from '../../lib/format.ts'
  */
 
 const PX_PER_HOUR = 56
-/** 时间点事件（时长 0）的固定高度 —— 它没占用时长，填成方块就是撒谎 */
+/**
+ * 时间点事件（时长 0）的固定高度 —— 高度不按时长撒谎，
+ * 但保留族色粉彩底：全透明会被读成「这块漏画了」。
+ */
 const POINT_H = 18
 /** POINT_H 换算成分钟 —— 分道时按屏幕上真正占的高度算，而不是名义时长 0 */
 const POINT_MIN = Math.round((POINT_H / PX_PER_HOUR) * 60)
@@ -211,7 +214,7 @@ function Column({
               key={e.id}
               type="button"
               onClick={() => onOpen(e.id)}
-              className={`cal-block ${fuzzy ? 'cal-block-fuzzy' : point ? 'cal-block-point' : ''}
+              className={`cal-block ${fuzzy ? 'cal-block-fuzzy' : ''}
                           absolute overflow-hidden rounded-[4px] border-l-[3px]
                           px-1 text-[10.5px] leading-[13px] text-ink ${point ? '' : 'py-[2px]'}`}
               style={{

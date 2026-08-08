@@ -261,7 +261,7 @@ function Cell({
                 key={g}
                 style={{
                   width: `${(comp[g] / total) * 100}%`,
-                  background: `var(--g-${g})`,
+                  background: `var(--t-${g})`,
                   opacity: g === 'other' ? 0.3 : 1,
                 }}
               />
