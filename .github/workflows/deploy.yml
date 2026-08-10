@@ -35,6 +35,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # vite build 只做转译不查类型 —— 不跑这步的话，类型错误会一路绿灯上线
+      - name: Typecheck
+        run: pnpm typecheck
+
       - name: Validate TripMD fixtures
         run: pnpm data:check
 
@@ -43,7 +47,7 @@ jobs:
 
       # 项目页挂在 https://<user>.github.io/<repo>/ 下
       - name: Build
-        run: pnpm --filter web build --base=/${{ github.event.repository.name }}/
+        run: pnpm --filter @jjj/web build --base=/${{ github.event.repository.name }}/
 
       - name: Strip dev-only fixtures (_demo / _example / _broken)
         run: find apps/web/dist/data -maxdepth 1 -type d -name '_*' -exec rm -rf {} +

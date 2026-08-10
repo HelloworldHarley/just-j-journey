@@ -508,17 +508,18 @@ seattle/plan.md:64  警告  地点 "Kery Park" 未在 `trip-places` 中声明
 
 ---
 
-## 双向导出
+## 双向往返
 
-`pnpm data:export <trip-id>` 从 `trip.json` 生成规范 TripMD，可拿去继续和任意 LLM 聊，聊完再导回来。
+`@jjj/tripmd` 的 `serialize(trip)` 从 `Trip` 对象生成规范 TripMD（没有 JSON 中间层 ——
+浏览器直接解析 `plan.md`，所有写操作走 `applyPatch` → `serialize` → 重新 `parse`）。
 
-**保证语义幂等，不保证字节一致：**
+**保证语义幂等，不保证字节一致**（由 `packages/tripmd/test/roundtrip.test.ts` 钉死）：
 
 ```
-import(export(import(md)))  深等于  import(md)
+parse(serialize(parse(md)))  深等于  parse(md)
 ```
 
-导出会丢失：注释、非规范排版、区块顺序（按规范顺序重排）、`## 硬约束` 这类自定义分区标题的文字。**这不是无损往返。**
+序列化会丢失：注释、非规范排版、区块顺序（按规范顺序重排）、`## 硬约束` 这类自定义分区标题的文字。**这不是无损往返。**
 
 ---
 
