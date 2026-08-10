@@ -47,27 +47,5 @@ export const PERIOD_ALIASES: Record<string, PeriodKey> = {
   夜里: 'night',
 }
 
-export function resolvePeriod(raw: string): PeriodKey | null {
-  const k = raw.trim().toLowerCase()
-  if ((PERIOD_KEYS as readonly string[]).includes(k)) return k as PeriodKey
-  return PERIOD_ALIASES[k] ?? null
-}
-
-/** 分钟数 → "HH:MM"。跨午夜的 1500 会渲染成 "01:00"（次日）。 */
-export function formatMinutes(min: number): string {
-  const m = ((min % 1440) + 1440) % 1440
-  const h = Math.floor(m / 60)
-  const mm = m % 60
-  return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
-}
-
-/** "18:25" → 1105。不合法返回 null。 */
-export function parseClock(raw: string): number | null {
-  const m = /^(\d{1,2})\s*[:：]\s*(\d{2})$/.exec(raw.trim())
-  if (!m) return null
-  const h = Number(m[1])
-  const mi = Number(m[2])
-  if (!Number.isFinite(h) || !Number.isFinite(mi)) return null
-  if (h > 24 || mi > 59) return null
-  return h * 60 + mi
-}
+// 归一化（resolvePeriod / parseClock）与格式化（formatMinutes）住在
+// @jjj/tripmd 的 values.ts —— schema 只描述形状、不做决定。

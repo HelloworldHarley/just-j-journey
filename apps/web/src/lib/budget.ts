@@ -6,6 +6,7 @@ import {
   type TransportMode,
   type Trip,
 } from '@jjj/schema'
+import { detailIndex } from '@jjj/tripmd'
 
 /**
  * 预算模型 —— 从结构化 cost 现算，不依赖作者单独维护一张预算表。
@@ -77,12 +78,13 @@ export function buildBudget(trip: Trip) {
   for (const [i, r] of trip.rentals.entries()) {
     if (r.cost) push(`rental-${i}`, r.from.date, r.what, 'drive', r.cost)
   }
+  // 长途本身没有日期 —— 记到首次引用它的事件那天；没人引用就记到行程首日。
+  // 「首次引用」与解析器灌明细、列表挂模块是同一份扫描（resolve.ts），口径不可能漂
+  const { firstRefDate } = detailIndex(trip.days)
   for (const [i, j] of trip.journeys.entries()) {
     if (!j.cost) continue
-    // 长途本身没有日期 —— 记到第一个引用它的事件那天；没人引用就记到行程首日
-    const day = trip.days.find((d) => d.events.some((e) => e.detailRef === j.what))
     const category = MODE_CATEGORY[j.transports[0]?.mode ?? 'flight'] ?? 'transit'
-    push(`journey-${i}`, day?.date ?? trip.dates.start, j.what, category, j.cost)
+    push(`journey-${i}`, firstRefDate.get(j.what) ?? trip.dates.start, j.what, category, j.cost)
   }
 
   // 明细按日期排 —— 前置块的行插回它们发生的那天，而不是拖在表尾

@@ -2,6 +2,8 @@ export { parse, type ParseResult } from './parse.ts'
 export { serialize } from './serialize.ts'
 export { applyPatch, type PatchResult } from './patch.ts'
 export { summarize, dayComposition } from './summary.ts'
+export { detailIndex, type DetailIndex } from './resolve.ts'
+export { timelineDates, dayOffsetOf, type TimelineDates } from './transport-dates.ts'
 export {
   DiagnosticBag,
   formatDiagnostics,

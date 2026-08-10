@@ -1,9 +1,9 @@
 import type React from 'react'
-import { formatMinutes, type Day, type Rental } from '@jjj/schema'
+import type { Day, Rental } from '@jjj/schema'
 import { computeWeekAxis, minuteToPct, rentalBandsForWeek } from '../../lib/week-axis.ts'
 import { kindVars } from '../../components/CategoryChip.tsx'
 import { packLanes } from '../../lib/lanes.ts'
-import { shortDate } from '../../lib/format.ts'
+import { formatMinutes, shortDate } from '../../lib/format.ts'
 
 /**
  * 周视图 —— 把几天并排，纵轴是时间。

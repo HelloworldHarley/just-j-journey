@@ -1,5 +1,5 @@
 import type { Transport } from '@jjj/schema'
-import { addDays, daysBetween } from '@jjj/tripmd'
+import { addDays, daysBetween, parseClock } from './values.ts'
 
 /**
  * 换乘时间轴上每个节点落在哪一天 —— **时刻是输入，日期是派生**。
@@ -7,6 +7,9 @@ import { addDays, daysBetween } from '@jjj/tripmd'
  * 作者照票面写时刻（出发 / 中转到达 / 中转再出发 / 最终到达），
  * 这里沿时间轴走一遍把日期推出来，界面据此自动补红色 `+n` 角标。
  * 所有节点用同一条规则、同一个基准（出发日）算偏移，不存在两套口径。
+ *
+ * 住在 @jjj/tripmd 而非 web —— 这是 TRIPMD_SPEC「时刻是输入，日期是派生」
+ * 一节的实现，任何前端（含将来的 .ics 中转段导出）都得用同一份。
  *
  * 推导优先级，每个节点都一样：
  *   1. 作者显式写的日期（`dep_date` / `arr_date` / 中转的 `arr_date`·`dep_date`）—— 锚点，后续从这里继续走
@@ -30,20 +33,16 @@ export interface TimelineDates {
 
 const DAY = 1440
 
-/** "HH:MM" → 距零点分钟数；不合法返回 null */
-export function clockMin(t?: string): number | null {
-  const m = t ? /^(\d{1,2}):(\d{2})$/.exec(t.trim()) : null
-  if (!m) return null
-  const h = Number(m[1])
-  const mi = Number(m[2])
-  return h <= 24 && mi <= 59 ? h * 60 + mi : null
+/** "HH:MM" → 分钟；undefined / 不合法 → null。parseClock 的可空适配。 */
+function clockOf(t?: string): number | null {
+  return t === undefined ? null : parseClock(t)
 }
 
 export function timelineDates(t: Transport, eventDate?: string): TimelineDates {
   // 出发日：作者写的优先，否则就是事件所在那天
   const dep = t.depDate ?? eventDate
   let cur = dep
-  let prevClock = clockMin(t.depTime)
+  let prevClock = clockOf(t.depTime)
 
   /**
    * 走一步。authored 是锚点；elapsedMin 只在「同地点停留」时给
@@ -54,7 +53,7 @@ export function timelineDates(t: Transport, eventDate?: string): TimelineDates {
     time: string | undefined,
     elapsedMin: number | null,
   ): string | undefined => {
-    const clock = clockMin(time)
+    const clock = clockOf(time)
     if (authored) {
       cur = authored
       if (clock !== null) prevClock = clock

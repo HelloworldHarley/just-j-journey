@@ -1,4 +1,4 @@
-import { formatDurationCompact } from '@jjj/tripmd'
+import { formatDurationCompact, formatMinutes } from '@jjj/tripmd'
 
 /**
  * 展示层的格式化，全站唯一去处。
@@ -7,11 +7,11 @@ import { formatDurationCompact } from '@jjj/tripmd'
  * `lib/time.ts` 里曾有个 `shortDate` 导出着却零调用，同时「MM/DD」在别处被重写了 6 遍。
  * 加视图前先收敛，免得日历变成第 7 份。
  *
- * 紧凑时长（"11h55m"）住在 `@jjj/tripmd` 的 `values.ts` —— 它是 `parseDurationMin`
- * 的逆运算，而且作者格式的序列化也要用，不能只放在前端。这里转出来，
- * 让前端只需要认识一个格式化模块。
+ * 紧凑时长（"11h55m"）与钟点（"18:25"）住在 `@jjj/tripmd` 的 `values.ts` ——
+ * 它们是 `parseDurationMin` / `parseClock` 的逆运算，.ics 导出也要用，
+ * 不能只放在前端。这里转出来，让前端只需要认识一个格式化模块。
  */
-export { formatDurationCompact }
+export { formatDurationCompact, formatMinutes }
 
 /** "2026-10-01" → "10/01" */
 export function shortDate(iso: string): string {

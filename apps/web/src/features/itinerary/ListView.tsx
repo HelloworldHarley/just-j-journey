@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { ChevronDown, MoveRight, Sunrise as SunriseIcon, Sunset as SunsetIcon } from 'lucide-react'
-import { CATEGORIES, formatMinutes, type Day, type Trip } from '@jjj/schema'
+import { CATEGORIES, type Day, type Trip } from '@jjj/schema'
 import { DayTimeline, type CardModules } from './DayTimeline.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
-import { shortDate } from '../../lib/format.ts'
+import { formatMinutes, shortDate } from '../../lib/format.ts'
 import { daySpan } from '../../lib/layout.ts'
 import { detailModules } from '../../lib/derive.ts'
 import { todayIso } from '../../lib/time.ts'
@@ -12,6 +12,7 @@ import { useFavorites } from '../../data/useFavorites.ts'
 import { DayRail } from './DayRail.tsx'
 import { RailLayout } from '../../components/RailLayout.tsx'
 import { SPY_SCROLL_MARGIN, useScrollSpy } from '../../lib/useScrollSpy.ts'
+import { readViewState, writeViewState } from '../../lib/settings.ts'
 import { FilterBar, type EventFilter } from './FilterBar.tsx'
 
 const DETAIL_KEY = 'jjj:detail'
@@ -23,10 +24,10 @@ export function ListView({ trip }: { trip: Trip }) {
   const spy = useScrollSpy(trip.days.length)
   const [filter, setFilter] = useState<EventFilter>('all')
   // 全局详略。默认「详」；选择记住，下次打开还是你上次的读法
-  const [detail, setDetail] = useState(() => localStorage.getItem(DETAIL_KEY) !== 'brief')
+  const [detail, setDetail] = useState(() => readViewState(DETAIL_KEY) !== 'brief')
   const setDetailPersist = (d: boolean) => {
     setDetail(d)
-    localStorage.setItem(DETAIL_KEY, d ? 'full' : 'brief')
+    writeViewState(DETAIL_KEY, d ? 'full' : 'brief')
   }
 
   // 信息模块的归属：`detail:` 首次引用的卡片长出模块。
@@ -63,7 +64,8 @@ export function ListView({ trip }: { trip: Trip }) {
     }
     const i = trip.days.findIndex((d) => d.date === today)
     if (i >= 0) spy.jumpTo(i)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // 只在换行程 / 换锚点时跑：把 spy、today 加进依赖会在每次 spy 重建时把
+    // 视图弹回今天，用户滚动的位置就保不住了。仓库里没有 ESLint，不需要抑制注释。
   }, [trip.id, focus])
 
   return (

@@ -1,5 +1,5 @@
 import { shortDate } from '../../lib/format.ts'
-import { dayOffsetOf } from '../../lib/transport-dates.ts'
+import { dayOffsetOf } from '@jjj/tripmd'
 
 /**
  * 票面共用零件。换乘时间轴（机票/火车/巴士/轮渡）和租车区间卡共用同一套 ——

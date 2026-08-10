@@ -2,13 +2,12 @@ import {
   CATEGORIES,
   CONSTRAINTS,
   TRANSPORTS,
-  formatMinutes,
   type Day,
   type Place,
   type Trip,
   type TripEvent,
 } from '@jjj/schema'
-import { addDays } from './values.ts'
+import { addDays, formatMinutes } from './values.ts'
 
 /**
  * RFC 5545 日历导出。

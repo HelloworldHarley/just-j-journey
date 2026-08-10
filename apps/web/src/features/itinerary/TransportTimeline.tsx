@@ -1,7 +1,7 @@
 import { Luggage } from 'lucide-react'
 import { TRANSPORTS, type Transport, type TransportMode, type TransportStop } from '@jjj/schema'
 import { iconFor } from '../../lib/icons.tsx'
-import { dayOffsetOf, timelineDates } from '../../lib/transport-dates.ts'
+import { dayOffsetOf, timelineDates } from '@jjj/tripmd'
 import { formatDurationCompact, shortDate } from '../../lib/format.ts'
 import { Arrow, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
 
@@ -71,7 +71,6 @@ export function TransportTimeline({
  * 没提供的段按「全程 − Σ停留 − Σ已填段」均分 —— 各段与停留加起来恒等于全程。
  */
 function segFlyDurations(t: Transport): (number | null)[] {
-  const n = t.stops.length + 1
   const perSeg: (number | null)[] = [...t.stops.map((s) => s.legMin), null]
   if (t.durationMin === null || t.stops.some((s) => s.waitMin === null)) return perSeg
 
@@ -85,7 +84,6 @@ function segFlyDurations(t: Transport): (number | null)[] {
   unknown.forEach((idx, k) => {
     perSeg[idx] = k === unknown.length - 1 ? remaining - each * (unknown.length - 1) : each
   })
-  void n
   return perSeg
 }
 

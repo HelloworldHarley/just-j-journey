@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Transport } from '@jjj/schema'
-import { dayOffsetOf, timelineDates } from './transport-dates.ts'
+import { dayOffsetOf, timelineDates } from '../src/transport-dates.ts'
 
 const t = (over: Partial<Transport>): Transport => ({
   mode: 'flight',

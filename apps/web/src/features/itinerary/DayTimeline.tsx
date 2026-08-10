@@ -13,8 +13,6 @@ import {
   CATEGORIES,
   PERIOD_ZH,
   TRANSPORTS,
-  formatMinutes,
-  resolvePeriod,
   type Booking,
   type Day,
   type Place,
@@ -24,12 +22,12 @@ import {
   type TripEvent,
 } from '@jjj/schema'
 import { buildTimeline, isConflict, type LegRow } from '../../lib/layout.ts'
-import { daysBetween } from '@jjj/tripmd'
+import { daysBetween, resolvePeriod } from '@jjj/tripmd'
 import type { Favorites } from '../../data/useFavorites.ts'
 import { iconFor } from '../../lib/icons.tsx'
 import { CategoryChip, kindVars } from '../../components/CategoryChip.tsx'
 import { TransportTimeline } from './TransportTimeline.tsx'
-import { fmtDurationZh, fmtMoney, shortDate } from '../../lib/format.ts'
+import { fmtDurationZh, fmtMoney, formatMinutes, shortDate } from '../../lib/format.ts'
 import { Arrow, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
 import { MapLinkButton } from './MapLinkButton.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
@@ -498,9 +496,13 @@ function BookingModule({ booking }: { booking: Booking }) {
       className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg
                  bg-[var(--paper-sunken)] px-3 py-2 text-[12px]"
     >
+      {/*
+        走 --todo-ink 而非 Tailwind 的 dark: 变体 —— 后者只认 prefers-color-scheme，
+        强制主题（data-theme）时不跟随。旁边的 .todo-badge 用的就是这个令牌，两者本该同色。
+      */}
       <CalendarCheck
         size={13}
-        className={`shrink-0 ${booked ? 'text-graphite' : 'text-[#8a5f18] dark:text-[#e0ac5c]'}`}
+        className={`shrink-0 ${booked ? 'text-graphite' : 'text-[var(--todo-ink)]'}`}
         aria-hidden
       />
       <span

@@ -28,6 +28,7 @@ import {
 import { parse as parseYaml, YAMLParseError } from 'yaml'
 import { DiagnosticBag, suggest, suggestEnum, type Diagnostic } from './diagnostics.ts'
 import { parseCost, splitBody } from './cost.ts'
+import { detailIndex } from './resolve.ts'
 import { lex, proseOf, type Token } from './lexer.ts'
 import {
   addDays,
@@ -1008,21 +1009,20 @@ export function parse(src: string): ParseResult {
 
   days.sort((a, b) => a.date.localeCompare(b.date))
 
-  // 「首次引用」按日期序判定，所以必须排完序再灌 —— 若按书写序，
-  // Day 2 写在 Day 1 前面的文件往返一次后首卡会换人，破坏语义幂等
-  const seenRefs = new Set<string>()
-  for (const day of days) {
-    for (const ev of day.events) {
-      if (!ev.detailRef || seenRefs.has(ev.detailRef)) continue
-      seenRefs.add(ev.detailRef)
-      const journey = journeys.find((j) => j.what === ev.detailRef)
-      if (journey) ev.transports = journey.transports
-    }
+  // 「首次引用」按日期序判定，所以必须排完序再算 —— 若按书写序，
+  // Day 2 写在 Day 1 前面的文件往返一次后首卡会换人，破坏语义幂等。
+  // 扫描本身在 resolve.ts —— 前端挂信息模块、预算记账日用的是同一份。
+  const refIndex = detailIndex(days)
+  const eventById = new Map(days.flatMap((d) => d.events).map((e) => [e.id, e]))
+  for (const journey of journeys) {
+    const evId = refIndex.firstRef.get(journey.what)
+    const ev = evId === undefined ? undefined : eventById.get(evId)
+    if (ev) ev.transports = journey.transports
   }
   // 没人引用的前置记录：信息模块不会出现在行程里，大概率是漏了 detail:
   for (const list of [journeys, stays, rentals] as const) {
     for (const item of list) {
-      if (!seenRefs.has(item.what)) {
+      if (!refIndex.firstRef.has(item.what)) {
         bag.warn(
           1,
           `前置记录「${item.what}」没有任何事件用 \`detail:\` 引用`,
