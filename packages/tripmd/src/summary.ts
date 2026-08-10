@@ -37,6 +37,7 @@ export function summarize(trip: Trip): TripSummary {
     title: trip.title,
     subtitle: trip.subtitle,
     destination: trip.destination,
+    timezone: trip.timezone,
     dates: trip.dates,
     travelers: trip.travelers,
     dayCount: trip.days.length,

@@ -3,11 +3,12 @@ import { CATEGORY_KEYS, CONSTRAINT_KINDS, FLAG_KEYS, TRANSPORT_MODES } from './c
 import { TIME_KINDS } from './time.ts'
 
 /**
- * 运行时行程 schema（trip.json）。
+ * 运行时行程 schema。
  *
  * 这是 **运行时格式**，不是作者格式。TripMD 是作者写的东西，
  * 解析器负责把它规范化成这里：分配 id、去重地点、把 to_next 展开成 legs、
  * 把时段关键字解析成分钟窗、把 #### 变体收进 variants。
+ * 没有 JSON 中间层 —— 浏览器直接解析 plan.md，这个对象只活在内存里。
  *
  * 前端、CLI、（将来的）后端共用本文件。改一处，三处编译期报错。
  */
@@ -315,8 +316,8 @@ export const DEFAULT_CHECK_OUT = 10 * 60
  * 长途 —— 一段带票面明细的跨城移动：去程航班、新干线、跨城巴士、轮渡。
  *
  * 和住宿/租车一样是**前置声明**：细节（承运方、时刻、票价、行李、退改）
- * 全部写在顶层块里，每日行程中的事件用 `transport: 名字` 一句话引用。
- * 解析时明细灌进事件的 transports，票面时间轴/日历/导出零改动。
+ * 全部写在顶层块里，每日行程中的事件用 `detail: 名字` 一句话引用。
+ * 解析时明细灌进首次引用的事件的 transports，票面时间轴/日历/导出零改动。
  *
  * 多人从不同地方出发汇合 = 一段长途里的多条 transport，各带 traveler。
  */
@@ -361,6 +362,8 @@ export const TripSummarySchema = TripSchema.pick({
   subtitle: true,
   destination: true,
   dates: true,
+  /** 首页的倒计时要按目的地的「今天」算，和行程内视图同一口径 */
+  timezone: true,
 }).extend({
   travelers: z.number().int().positive().optional(),
   dayCount: z.number().int().positive(),

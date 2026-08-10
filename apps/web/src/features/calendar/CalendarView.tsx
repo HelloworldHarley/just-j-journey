@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Trip } from '@jjj/schema'
 import { shortDate } from '../../lib/format.ts'
 import { todayIso } from '../../lib/time.ts'
-import { updateSettings, useSettings } from '../../lib/settings.ts'
+import { readViewState, updateSettings, useSettings, writeViewState } from '../../lib/settings.ts'
 import { WeekGrid } from './WeekGrid.tsx'
 import { MonthGrid } from './MonthGrid.tsx'
 
@@ -27,7 +27,7 @@ export function CalendarView({ trip }: { trip: Trip }) {
   const navigate = useNavigate()
   const { rentalBand } = useSettings()
   const [mode, setMode] = useState<'week' | 'month'>(() =>
-    localStorage.getItem(MODE_KEY) === 'month' ? 'month' : 'week',
+    readViewState(MODE_KEY) === 'month' ? 'month' : 'week',
   )
   const today = todayIso(trip.timezone)
   const todayPage = Math.max(0, Math.floor(trip.days.findIndex((d) => d.date === today) / PAGE))
@@ -35,7 +35,7 @@ export function CalendarView({ trip }: { trip: Trip }) {
 
   const setModePersist = (m: 'week' | 'month'): void => {
     setMode(m)
-    localStorage.setItem(MODE_KEY, m)
+    writeViewState(MODE_KEY, m)
   }
 
   /*

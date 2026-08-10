@@ -124,14 +124,13 @@ export function clipSpanToGrid(grid: MonthGrid, span: TimedSpan): RowSegment[] {
   }
 
   const out: RowSegment[] = []
-  for (const [weekIndex, week] of grid.weeks.entries()) {
+  for (let weekIndex = 0; weekIndex < grid.weeks.length; weekIndex++) {
     const rowFrom = weekIndex * 7
     const rowTo = rowFrom + 7
     const segFrom = Math.max(from, rowFrom)
     const segTo = Math.min(to, rowTo)
     // 严格小于：区间正好收在周日 24:00 时，不给下一行留一段零宽
     if (segTo <= segFrom) continue
-    void week
     out.push({
       weekIndex,
       leftPct: ((segFrom - rowFrom) / 7) * 100,

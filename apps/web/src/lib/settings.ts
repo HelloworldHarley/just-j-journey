@@ -92,3 +92,27 @@ export function subscribeSettings(fn: () => void): () => void {
 export function useSettings(): Settings {
   return useSyncExternalStore(subscribeSettings, readSettings)
 }
+
+/**
+ * 视图状态的存取（简/详、周/月这类跟着视图走的开关）。
+ *
+ * 上面那段文档把「视图状态」划在了设置之外，却没给它一个去处，于是各视图
+ * 直接裸调 localStorage —— 而 `useState(() => localStorage.getItem(...))`
+ * 在隐私模式下抛出，是在初始化器里抛，整条路由白屏。
+ * 兜底口径与 readSettings/updateSettings 完全一致，只是不进那个共享对象。
+ */
+export function readViewState(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+export function writeViewState(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // 隐私模式 / 配额满：写不进磁盘不影响本次会话
+  }
+}

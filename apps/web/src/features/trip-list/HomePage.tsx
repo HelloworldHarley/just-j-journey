@@ -17,9 +17,10 @@ export function HomePage() {
   if (isPending) return <Loading />
   if (error) return <Problem title="行程列表加载失败" detail={String(error)} />
 
-  const today = todayIso('UTC')
-  const upcoming = data.filter((t) => t.dates.end >= today)
-  const past = data.filter((t) => t.dates.end < today)
+  // 「过没过」按各自目的地的今天判 —— 与行程内视图同一口径。
+  // 统一用 'UTC' 会在跨日界的那几小时把还在进行的行程归进「已完成」。
+  const upcoming = data.filter((t) => t.dates.end >= todayIso(t.timezone))
+  const past = data.filter((t) => t.dates.end < todayIso(t.timezone))
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-12">
@@ -93,7 +94,7 @@ function TripCard({ trip, muted }: { trip: TripSummary; muted?: boolean }) {
   const favorites = useFavorites(trip.id)
   const [editing, setEditing] = useState(false)
 
-  const left = daysUntil(trip.dates.start, 'UTC')
+  const left = daysUntil(trip.dates.start, trip.timezone)
   const countdown =
     left > 0 ? `${left} 天后` : left === 0 ? '今天出发' : muted ? '已结束' : '进行中'
 
