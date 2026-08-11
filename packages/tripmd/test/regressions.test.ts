@@ -360,3 +360,86 @@ describe('前置声明与 detail 引用', () => {
     expect(w?.severity).toBe('warning')
   })
 })
+
+describe('未知字段警告覆盖所有块（不只前置三块）', () => {
+  // 曾经：checkKeys 只挂在 trip-transports / trip-stays / trip-rentals 上，
+  // 事件里写 `flgs:` 会被静默吞掉 —— 卡片少个徽标，作者以为自己标了
+
+  const diag = (md: string) => parse(md).diagnostics
+
+  it('trip-event：flgs → 建议 flags', () => {
+    const md = wrap(
+      '## Day 1 · 2026-10-01\n### 逛\n```trip-event\ntime: "10:00"\ncategory: sight\nflgs: 待订\n```\n',
+    )
+    const w = diag(md).find((d) => d.message.includes('`flgs`'))
+    expect(w?.severity).toBe('warning')
+    expect(w?.hint).toContain('flags')
+  })
+
+  it('trip-day：sunries → 建议 sunrise', () => {
+    const md = wrap(
+      '## Day 1 · 2026-10-01\n```trip-day\nsunries: "07:07"\n```\n' + event('逛', '"10:00"'),
+    )
+    const w = diag(md).find((d) => d.message.includes('`sunries`'))
+    expect(w?.severity).toBe('warning')
+    expect(w?.hint).toContain('sunrise')
+  })
+
+  it('trip-places：cord → 建议 coord', () => {
+    const md = wrap(
+      '## 地点表\n```trip-places\n- name: 樱桃街\n  cord: 47.6, -122.3\n```\n## Day 1 · 2026-10-01\n' +
+        event('逛', '"10:00"', 'place: 樱桃街'),
+    )
+    const w = diag(md).find((d) => d.message.includes('`cord`'))
+    expect(w?.severity).toBe('warning')
+    expect(w?.hint).toContain('coord')
+  })
+
+  it('trip-constraints：lable → 建议 label', () => {
+    const md = wrap(
+      '## 硬约束\n```trip-constraints\n- kind: depart\n  at: 2026-10-02 11:20\n  label: 还车\n  lable: 重复写歪\n```\n## Day 1 · 2026-10-01\n' +
+        event('逛', '"10:00"'),
+    )
+    const w = diag(md).find((d) => d.message.includes('`lable`'))
+    expect(w?.severity).toBe('warning')
+    expect(w?.hint).toContain('label')
+  })
+
+  it('booking 子记录：deadlin → 建议 deadline', () => {
+    const md = wrap(
+      '## Day 1 · 2026-10-01\n### 门票\n```trip-event\ntime: "10:00"\ncategory: sight\nbooking: {status: required, deadlin: 2026-09-20}\n```\n',
+    )
+    const w = diag(md).find((d) => d.message.includes('`deadlin`'))
+    expect(w?.severity).toBe('warning')
+    expect(w?.hint).toContain('deadline')
+  })
+
+  it('to_next 子记录：mins → 有建议', () => {
+    const md = wrap(
+      '## Day 1 · 2026-10-01\n### A\n```trip-event\ntime: "10:00"\ncategory: sight\nto_next: {mode: walk, mins: 15}\n```\n' +
+        event('B', '"11:00"'),
+    )
+    const w = diag(md).find((d) => d.message.includes('`mins`'))
+    expect(w?.severity).toBe('warning')
+    expect(w?.hint).toBeTruthy()
+  })
+
+  it('transport 记录：dep_tme → 建议 dep_time', () => {
+    const md = wrap(
+      '## 长途\n```trip-transports\n- what: 去程\n  transport: {mode: flight, dep_tme: "09:00"}\n```\n## Day 1 · 2026-10-01\n' +
+        ['### 航班', '```trip-event', 'time: "09:00"', 'category: flight', 'detail: 去程', '```', ''].join('\n'),
+    )
+    const w = diag(md).find((d) => d.message.includes('`dep_tme`'))
+    expect(w?.severity).toBe('warning')
+    expect(w?.hint).toContain('dep_time')
+  })
+
+  it('迁移错误键不叠加「无法识别」警告 —— 专门的迁移报错说话', () => {
+    const md = wrap(
+      '## Day 1 · 2026-10-01\n### 航班\n```trip-event\ntime: "09:00"\ncategory: flight\ntransport: {mode: flight}\n```\n',
+    )
+    const ds = diag(md)
+    expect(ds.some((d) => d.message.includes('不再写在事件上'))).toBe(true)
+    expect(ds.some((d) => d.message.includes('`transport` 无法识别'))).toBe(false)
+  })
+})

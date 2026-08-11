@@ -61,6 +61,17 @@ place: Kerry Park
 
 时间写成了自然语言。
 
+### 字段名拼错了
+
+```trip-event
+time: 14:00–15:00
+category: sight
+place: Space Needle
+flgs: 待订
+```
+
+flags 拼成了 flgs —— 必须报警告并给建议，静默吞掉就是徽标凭空消失。
+
 ### 地点没声明
 
 ```trip-event
