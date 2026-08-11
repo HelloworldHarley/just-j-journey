@@ -160,3 +160,50 @@ const EPOCH = '2000-01-01'
 function keyOf(date: string, frac: number): number {
   return daysBetween(EPOCH, date) + frac
 }
+
+/**
+ * 月视图格子的纵向堆叠常量。集中在这里而非组件里 ——
+ * 带层偏移、格子最小高度、泳道纵坐标**三处必须彼此吻合**，
+ * 分散在组件里时改一处漏两处（`cellMetrics` 的测试钉住它们的一致性）。
+ */
+export const MONTH_CELL = {
+  /** 单条区间带高度 */
+  LANE_H: 13,
+  /** 带与带的间距 */
+  LANE_GAP: 4,
+  /** 日期数字那一行 */
+  HEAD_H: 22,
+  /** 格子的上内边距。带层的绝对定位偏移要用它 —— 藏在 pt-* 类里两边会对不上账 */
+  CELL_PT: 6,
+  /** 日期行与第一条区间带之间的呼吸空隙 —— 带贴着日期数字会显得整格顶得很满 */
+  LANE_TOP: 8,
+  /**
+   * 长途换乘（航班/火车/轮渡）固定占一行 —— **空着也保留**。
+   * 没有这一行时，有换乘的格子会把主题往下推一截，
+   * 一排格子扫过去主题忽高忽低；行高固定后主题永远落在同一条线上。
+   */
+  TRANSFER_H: 20,
+} as const
+
+export interface CellMetrics {
+  /** 泳道区总高（住 + 行两个槽位的所有道） */
+  laneAreaH: number
+  /** 区间带层的绝对定位偏移（相对格子顶） */
+  bandTop: number
+  /** 渐隐周压缩格的最小高度（日期行 + 泳道区 + 底部余量） */
+  compactMinHeight: number
+  /** 某条带在带层里的纵坐标 */
+  laneTop: (lane: number) => number
+}
+
+/** 月视图格子的堆叠算术 —— 组件里三处偏移都从同一个返回值取。 */
+export function cellMetrics(stayDepth: number, rentalDepth: number): CellMetrics {
+  const { LANE_H, LANE_GAP, HEAD_H, CELL_PT, LANE_TOP } = MONTH_CELL
+  const laneAreaH = (stayDepth + rentalDepth) * (LANE_H + LANE_GAP)
+  return {
+    laneAreaH,
+    bandTop: CELL_PT + HEAD_H + LANE_TOP,
+    compactMinHeight: CELL_PT + HEAD_H + laneAreaH + 8,
+    laneTop: (lane) => lane * (LANE_H + LANE_GAP),
+  }
+}

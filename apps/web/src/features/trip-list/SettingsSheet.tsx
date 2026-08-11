@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, Moon, Pipette, RotateCcw, Sun, SunMoon, X } from 'lucide-react'
 import { CATEGORIES, CATEGORIES_BY_KIND, type KindKey } from '@jjj/schema'
+import { segItem } from '../../components/Segmented.tsx'
 import {
   DEFAULT_PALETTE,
   currentPalette,
@@ -179,12 +180,7 @@ export function SettingsSheet({ onClose }: { onClose: () => void }) {
                   role="radio"
                   aria-checked={active}
                   onClick={() => updateSettings({ theme: key })}
-                  className={`flex flex-1 flex-col items-center gap-1 rounded-[10px] py-2 text-[12px]
-                              transition-colors ${
-                                active
-                                  ? 'bg-raised font-medium text-ink shadow-sm'
-                                  : 'text-graphite hover:text-ink'
-                              }`}
+                  className={`flex flex-1 flex-col items-center gap-1 rounded-[10px] py-2 text-[12px] ${segItem(active)}`}
                 >
                   <Icon size={16} aria-hidden />
                   {label}

@@ -1,5 +1,6 @@
 import { BedDouble, Compass, Route, Star, UtensilsCrossed } from 'lucide-react'
 import { KINDS } from '@jjj/schema'
+import { Segmented, segChip } from '../../components/Segmented.tsx'
 
 /**
  * 列表筛选。全部显示全量；玩/吃/住/行按族过滤同一套卡片
@@ -39,7 +40,7 @@ export function FilterBar({
   onDetailChange: (d: boolean) => void
 }) {
   return (
-    <div className="sticky top-[var(--nav-h)] z-20 border-b border-[var(--hairline)] bg-paper/92 backdrop-blur-sm">
+    <div className="toolbar-sticky">
       <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-2">
         <div
           role="radiogroup"
@@ -56,12 +57,7 @@ export function FilterBar({
                 role="radio"
                 aria-checked={active}
                 onClick={() => onChange(o.key)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px]
-                            transition-colors ${
-                              active
-                                ? 'bg-ink font-medium text-paper'
-                                : 'bg-sunken text-graphite hover:text-ink'
-                            }`}
+                className={`flex shrink-0 items-center gap-1.5 px-3 py-1 text-[12.5px] ${segChip(active)}`}
               >
                 {o.Icon && (
                   <o.Icon
@@ -78,31 +74,18 @@ export function FilterBar({
         </div>
 
         {/* 详略开关：左右两档 —— 简（折叠）/ 详（全开） */}
-        <div
-          role="radiogroup"
-          aria-label="详略"
-          className="ml-auto flex shrink-0 rounded-full bg-sunken p-[2px]"
-        >
-          {(
-            [
-              { d: false, label: '简' },
-              { d: true, label: '详' },
-            ] as const
-          ).map(({ d, label }) => (
-            <button
-              key={label}
-              type="button"
-              role="radio"
-              aria-checked={detail === d}
-              onClick={() => onDetailChange(d)}
-              className={`rounded-full px-2.5 py-[3px] text-[11.5px] transition-colors ${
-                detail === d ? 'bg-ink font-medium text-paper' : 'text-graphite hover:text-ink'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          ariaLabel="详略"
+          className="ml-auto"
+          tone="ink"
+          options={[
+            { key: false, label: '简' },
+            { key: true, label: '详' },
+          ] as const}
+          value={detail}
+          onChange={onDetailChange}
+          itemClass="px-2.5 py-[3px] text-[11.5px]"
+        />
       </div>
     </div>
   )

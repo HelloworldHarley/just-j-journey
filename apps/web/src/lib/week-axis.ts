@@ -50,6 +50,38 @@ export function computeWeekAxis(days: Day[]): WeekAxis {
   return { from, to: Math.max(to, from + 60) }
 }
 
+/** 一小时在屏幕上的高度。周视图唯一按时长成比例的换算基准。 */
+export const PX_PER_HOUR = 56
+/**
+ * 时间点事件（时长 0）的固定高度 —— 高度不按时长撒谎，
+ * 但保留族色粉彩底：全透明会被读成「这块漏画了」。
+ */
+export const POINT_H = 18
+/** POINT_H 换算成分钟 —— 分道时按屏幕上真正占的高度算，而不是名义时长 0 */
+export const POINT_MIN = Math.round((POINT_H / PX_PER_HOUR) * 60)
+
+/** 轴的总像素高 */
+export function axisHeightPx(axis: WeekAxis): number {
+  return ((axis.to - axis.from) / 60) * PX_PER_HOUR
+}
+
+/** 整点刻度（分钟值），首尾都含 */
+export function hourTicks(axis: WeekAxis): number[] {
+  const out: number[] = []
+  for (let m = axis.from; m <= axis.to; m += 60) out.push(m)
+  return out
+}
+
+/** 事件在分道计算里的视觉占位区间 —— 时间点事件按 POINT_H 折算的分钟数占位 */
+export function visualSpan(e: { startMin: number; endMin: number }): { from: number; to: number } {
+  return { from: e.startMin, to: Math.max(e.endMin, e.startMin + POINT_MIN) }
+}
+
+/** 撞在一起的事件并排摊开时，第 lane/n 道的横向位置（百分比，不含缝隙修正） */
+export function laneSlot(lane: number, n: number): { leftPct: number; widthPct: number } {
+  return { leftPct: (lane / n) * 100, widthPct: 100 / n }
+}
+
 /** 分钟 → 轴上的百分比。超出轴的钳到 0 / 100。 */
 export function minuteToPct(minute: number, axis: WeekAxis): number {
   const pct = ((minute - axis.from) / (axis.to - axis.from)) * 100

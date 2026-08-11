@@ -1,6 +1,7 @@
-import type { Day, GroupKey } from '@jjj/schema'
+import type { Day } from '@jjj/schema'
 import { dayComposition } from '@jjj/tripmd'
 import { shortDate } from '../../lib/format.ts'
+import { CompositionBar } from '../../components/CompositionBar.tsx'
 
 /**
  * 左侧日程轨。
@@ -84,7 +85,7 @@ export function DayRail({
                   >
                     {shortDate(day.date)} {day.weekday}
                   </span>
-                  <CompositionBar day={day} dim={!active} />
+                  <DayCompositionStrip day={day} dim={!active} />
                 </span>
               </button>
             </li>
@@ -96,29 +97,15 @@ export function DayRail({
 }
 
 /** 当天玩/吃/其他的占比，一条 3px 的小横条 */
-function CompositionBar({ day, dim }: { day: Day; dim: boolean }) {
+function DayCompositionStrip({ day, dim }: { day: Day; dim: boolean }) {
   const acc = dayComposition(day)
-  const total = acc.play + acc.food + acc.other || 1
-
   return (
-    <span
-      aria-hidden
-      className={`mt-1.5 flex h-[3px] w-full overflow-hidden rounded-full transition-opacity ${
+    <CompositionBar
+      comp={acc}
+      total={acc.play + acc.food + acc.other || 1}
+      className={`mt-1.5 h-[3px] w-full rounded-full transition-opacity ${
         dim ? 'opacity-45' : 'opacity-100'
       }`}
-    >
-      {(['play', 'food', 'other'] as GroupKey[]).map((g) =>
-        acc[g] > 0 ? (
-          <span
-            key={g}
-            style={{
-              width: `${(acc[g] / total) * 100}%`,
-              background: `var(--t-${g})`,
-              opacity: g === 'other' ? 0.3 : 1,
-            }}
-          />
-        ) : null,
-      )}
-    </span>
+    />
   )
 }

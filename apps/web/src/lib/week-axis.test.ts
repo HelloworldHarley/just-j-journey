@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import type { Day, Rental, TripEvent } from '@jjj/schema'
 import {
+  POINT_H,
+  POINT_MIN,
+  PX_PER_HOUR,
+  axisHeightPx,
   computeWeekAxis,
+  hourTicks,
+  laneSlot,
   minuteToPct,
   rentalBandForColumn,
   rentalBandsForWeek,
+  visualSpan,
   type WeekAxis,
 } from './week-axis.ts'
 
@@ -133,5 +140,28 @@ describe('rentalBandsForWeek', () => {
     const r = rental('2026-10-02', 11 * 60 + 30, '2026-10-05', 11 * 60 + 20)
     const cols = ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05']
     expect(rentalBandsForWeek(r, cols, axis).map((b) => b.col)).toEqual([1, 2, 3, 4])
+  })
+})
+
+describe('像素换算层', () => {
+  it('轴高 = 小时数 × PX_PER_HOUR', () => {
+    expect(axisHeightPx({ from: 8 * 60, to: 22 * 60 })).toBe(14 * PX_PER_HOUR)
+  })
+
+  it('整点刻度首尾都含', () => {
+    const ticks = hourTicks({ from: 480, to: 660 })
+    expect(ticks).toEqual([480, 540, 600, 660])
+  })
+
+  it('时间点事件按 POINT_H 折算的分钟数占道 —— 不占道会被邻块盖住', () => {
+    const span = visualSpan({ startMin: 600, endMin: 600 })
+    expect(span.to - span.from).toBe(POINT_MIN)
+    expect(POINT_MIN).toBe(Math.round((POINT_H / PX_PER_HOUR) * 60))
+  })
+
+  it('并排分道的横向位置', () => {
+    expect(laneSlot(0, 2)).toEqual({ leftPct: 0, widthPct: 50 })
+    expect(laneSlot(1, 2)).toEqual({ leftPct: 50, widthPct: 50 })
+    expect(laneSlot(0, 1)).toEqual({ leftPct: 0, widthPct: 100 })
   })
 })

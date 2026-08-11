@@ -8,6 +8,7 @@ import { CalendarView } from '../features/calendar/CalendarView.tsx'
 import { InfoView } from '../features/reference/InfoView.tsx'
 import { BudgetView } from '../features/budget/BudgetView.tsx'
 import { Loading, Problem } from '../components/States.tsx'
+import { SEG_PILL, segItem } from '../components/Segmented.tsx'
 
 /**
  * 现有视图：列表 / 日历 / 资料 / 预算。
@@ -42,18 +43,12 @@ export function TripPage() {
           <h1 className="display min-w-0 flex-1 truncate text-[17px] tracking-[-0.01em] text-ink">
             {title}
           </h1>
-          <nav className="flex shrink-0 gap-0.5 rounded-full bg-sunken p-0.5">
+          <nav className={SEG_PILL}>
             {TABS.map((t) => (
               <NavLink
                 key={t.to}
                 to={t.to}
-                className={({ isActive }) =>
-                  `rounded-full px-3.5 py-1 text-[13.5px] transition-colors ${
-                    isActive
-                      ? 'bg-raised font-medium text-ink shadow-sm'
-                      : 'text-graphite hover:text-ink'
-                  }`
-                }
+                className={({ isActive }) => `rounded-full px-3.5 py-1 text-[13.5px] ${segItem(isActive)}`}
               >
                 {t.label}
               </NavLink>

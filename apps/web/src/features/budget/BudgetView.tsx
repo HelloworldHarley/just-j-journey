@@ -5,6 +5,7 @@ import { fmtMoney, shortDate } from '../../lib/format.ts'
 import { Markdown } from '../../components/Markdown.tsx'
 import { isBudgetRef } from '../../lib/derive.ts'
 import { buildBudget } from '../../lib/budget.ts'
+import { CompositionBar, OTHER_DIM } from '../../components/CompositionBar.tsx'
 
 /**
  * 预算页 —— 从事件的结构化 cost 现算，不依赖作者单独维护一张预算表。
@@ -65,7 +66,7 @@ export function BudgetView({ trip }: { trip: Trip }) {
               <span className="flex items-center gap-1.5">
                 <span
                   className="h-[8px] w-[8px] rounded-full"
-                  style={{ background: `var(--t-${g})`, opacity: g === 'other' ? 0.45 : 1 }}
+                  style={{ background: `var(--t-${g})`, opacity: g === 'other' ? OTHER_DIM : 1 }}
                 />
                 {GROUPS[g].zh}
               </span>
@@ -78,21 +79,13 @@ export function BudgetView({ trip }: { trip: Trip }) {
       </div>
 
       {/* 分组占比条：一根 100% 堆叠条，分段之间 2px 表面缝 */}
-      <div className="mt-5 flex h-[14px] gap-[2px] overflow-hidden rounded-[4px]" aria-hidden>
-        {(['play', 'food', 'other'] as GroupKey[]).map((g) =>
-          model.byGroup[g] > 0 ? (
-            <span
-              key={g}
-              style={{
-                width: `${(model.byGroup[g] / model.total) * 100}%`,
-                background: `var(--t-${g})`,
-                opacity: g === 'other' ? 0.45 : 1,
-              }}
-              title={`${GROUPS[g].zh} ${fmtMoney(model.byGroup[g], model.currency)}`}
-            />
-          ) : null,
-        )}
-      </div>
+      <CompositionBar
+        comp={model.byGroup}
+        total={model.total}
+        gapPx={2}
+        className="mt-5 h-[14px] rounded-[4px]"
+        segmentTitle={(g) => `${GROUPS[g].zh} ${fmtMoney(model.byGroup[g], model.currency)}`}
+      />
 
       {/* 按类型的横向条形图。一趟行程实际出现的类型远少于 18 个上限，每根直接标注，不需要图例 */}
       <section className="mt-10">
@@ -133,20 +126,13 @@ export function BudgetView({ trip }: { trip: Trip }) {
                 <span className="signage text-[10px] text-graphite">Day {row.index}</span>
                 <span className="tnum ml-1.5">{shortDate(row.date)}</span>
               </span>
-              <div className="flex h-[10px] gap-[2px] overflow-hidden rounded-r-[3px]">
-                {(['play', 'food', 'other'] as GroupKey[]).map((g) =>
-                  row.byGroup[g] > 0 ? (
-                    <span
-                      key={g}
-                      style={{
-                        width: `${(row.byGroup[g] / model.maxDay) * 100}%`,
-                        background: `var(--t-${g})`,
-                        opacity: g === 'other' ? 0.45 : 1,
-                      }}
-                    />
-                  ) : null,
-                )}
-              </div>
+              {/* 分母是全局 maxDay —— 行与行按同一把尺子比长短，条故意不撑满 */}
+              <CompositionBar
+                comp={row.byGroup}
+                total={model.maxDay}
+                gapPx={2}
+                className="h-[10px] rounded-r-[3px]"
+              />
               <span className="tnum text-right text-[13px] text-ink">
                 {fmtMoney(row.total, model.currency)}
               </span>

@@ -3,6 +3,7 @@ import type { Trip } from '@jjj/schema'
 import { Markdown } from '../../components/Markdown.tsx'
 import { RailLayout } from '../../components/RailLayout.tsx'
 import { isBudgetRef } from '../../lib/derive.ts'
+import { segChip } from '../../components/Segmented.tsx'
 
 /**
  * 资料页：打包、住宿备选、雨天预案、出发前清单…
@@ -38,12 +39,9 @@ export function InfoView({ trip }: { trip: Trip }) {
             type="button"
             onClick={() => setActive(r.id)}
             aria-current={r.id === current?.id}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px]
-                        transition-colors ${
-                          r.id === current?.id
-                            ? 'bg-ink font-medium text-paper'
-                            : 'bg-sunken text-graphite hover:text-ink'
-                        }`}
+            className={`flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-[13px] ${segChip(
+              r.id === current?.id,
+            )}`}
           >
             {r.icon && <span aria-hidden>{r.icon}</span>}
             <span className="whitespace-nowrap">{r.title}</span>

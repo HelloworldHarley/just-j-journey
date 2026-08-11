@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Trip } from '@jjj/schema'
 import { shortDate } from '../../lib/format.ts'
-import { todayIso } from '../../lib/time.ts'
+import { nowMinuteIn, todayIso } from '../../lib/time.ts'
 import { readViewState, updateSettings, useSettings, writeViewState } from '../../lib/settings.ts'
+import { Segmented } from '../../components/Segmented.tsx'
 import { WeekGrid } from './WeekGrid.tsx'
 import { MonthGrid } from './MonthGrid.tsx'
 
@@ -56,31 +57,18 @@ export function CalendarView({ trip }: { trip: Trip }) {
 
   return (
     <div className="pb-24">
-      <div className="sticky top-[var(--nav-h)] z-20 border-b border-[var(--hairline)] bg-paper/92 backdrop-blur-sm">
+      <div className="toolbar-sticky">
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-2">
-          <div role="radiogroup" aria-label="日历粒度" className="flex gap-0.5 rounded-full bg-sunken p-0.5">
-            {(
-              [
-                ['week', '周'],
-                ['month', '月'],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                role="radio"
-                aria-checked={mode === key}
-                onClick={() => setModePersist(key)}
-                className={`rounded-full px-3 py-[3px] text-[12.5px] transition-colors ${
-                  mode === key
-                    ? 'bg-raised font-medium text-ink shadow-sm'
-                    : 'text-graphite hover:text-ink'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            ariaLabel="日历粒度"
+            options={[
+              { key: 'week', label: '周' },
+              { key: 'month', label: '月' },
+            ] as const}
+            value={mode}
+            onChange={setModePersist}
+            itemClass="px-3 py-[3px] text-[12.5px]"
+          />
 
           {/* 租车底色是周视图专属的显示开关，就住在它作用的地方 —— 不进首页设置 */}
           {mode === 'week' && trip.rentals.length > 0 && (
@@ -193,20 +181,3 @@ function Toggle({
   )
 }
 
-/** 目的地当地此刻的分钟数。取不到时区就返回 null，不画那条红线。 */
-function nowMinuteIn(timeZone: string): number | null {
-  try {
-    const [h, m] = new Intl.DateTimeFormat('en-GB', {
-      timeZone,
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
-      .format(new Date())
-      .split(':')
-      .map(Number)
-    return (h ?? 0) * 60 + (m ?? 0)
-  } catch {
-    return null
-  }
-}

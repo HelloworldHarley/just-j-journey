@@ -17,3 +17,21 @@ export function daysUntil(iso: string, timeZone: string): number {
   const to = Date.parse(`${iso}T00:00:00Z`)
   return Math.round((to - from) / 86_400_000)
 }
+
+/** 目的地当地此刻的分钟数。取不到时区就返回 null，周视图不画那条红线。 */
+export function nowMinuteIn(timeZone: string): number | null {
+  try {
+    const [h, m] = new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+      .format(new Date())
+      .split(':')
+      .map(Number)
+    return (h ?? 0) * 60 + (m ?? 0)
+  } catch {
+    return null
+  }
+}

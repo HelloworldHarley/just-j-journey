@@ -1,6 +1,16 @@
 import type React from 'react'
+import { useMemo } from 'react'
 import type { Day, Rental } from '@jjj/schema'
-import { computeWeekAxis, minuteToPct, rentalBandsForWeek } from '../../lib/week-axis.ts'
+import {
+  POINT_H,
+  axisHeightPx,
+  computeWeekAxis,
+  hourTicks,
+  laneSlot,
+  minuteToPct,
+  rentalBandsForWeek,
+  visualSpan,
+} from '../../lib/week-axis.ts'
 import { kindVars } from '../../components/CategoryChip.tsx'
 import { packLanes } from '../../lib/lanes.ts'
 import { formatMinutes, shortDate } from '../../lib/format.ts'
@@ -16,14 +26,6 @@ import { formatMinutes, shortDate } from '../../lib/format.ts'
  * 反而看不出空档在哪 —— 路上耗时归列表的连接线，那里有地点、方式和导航。
  */
 
-const PX_PER_HOUR = 56
-/**
- * 时间点事件（时长 0）的固定高度 —— 高度不按时长撒谎，
- * 但保留族色粉彩底：全透明会被读成「这块漏画了」。
- */
-const POINT_H = 18
-/** POINT_H 换算成分钟 —— 分道时按屏幕上真正占的高度算，而不是名义时长 0 */
-const POINT_MIN = Math.round((POINT_H / PX_PER_HOUR) * 60)
 const GUTTER_W = 44
 
 export function WeekGrid({
@@ -47,10 +49,11 @@ export function WeekGrid({
    */
   onOpen: (anchorId: string) => void
 }) {
-  const axis = computeWeekAxis(days)
-  const height = ((axis.to - axis.from) / 60) * PX_PER_HOUR
-  const hours: number[] = []
-  for (let m = axis.from; m <= axis.to; m += 60) hours.push(m)
+  // 轴随当前页自适应 —— 跟 days 一起 memo，切租车底色开关时不用重算
+  const { axis, height, hours } = useMemo(() => {
+    const axis = computeWeekAxis(days)
+    return { axis, height: axisHeightPx(axis), hours: hourTicks(axis) }
+  }, [days])
 
   const columns = days.map((d) => d.date)
   const bands = rentalBand
@@ -137,9 +140,7 @@ function Column({
     「15:00 清水寺」整个盖住 —— 确定的那件事反而看不见了。
     按视觉占位算重叠：时间点事件本身时长为 0，但它在屏幕上仍占 POINT_H。
   */
-  const lanes = packLanes(
-    timed.map((e) => ({ from: e.startMin, to: Math.max(e.endMin, e.startMin + POINT_MIN) })),
-  )
+  const lanes = useMemo(() => packLanes(day.events.filter((e) => !isAllday(e)).map(visualSpan)), [day])
 
   return (
     <div className="min-w-[88px] flex-1 border-l border-[var(--hairline)]">
@@ -209,6 +210,7 @@ function Column({
           const point = e.endMin <= e.startMin
           const fuzzy = e.timeKind === 'period'
           const { lane, lanes: n } = lanes[i]!
+          const slot = laneSlot(lane, n)
           return (
             <button
               key={e.id}
@@ -219,8 +221,8 @@ function Column({
                           px-1 text-[10.5px] leading-[13px] text-ink ${point ? '' : 'py-[2px]'}`}
               style={{
                 ...blockVars(e.category),
-                left: `calc(${(lane / n) * 100}% + 3px)`,
-                width: `calc(${100 / n}% - 6px)`,
+                left: `calc(${slot.leftPct}% + 3px)`,
+                width: `calc(${slot.widthPct}% - 6px)`,
                 top: `${top}%`,
                 height: point ? POINT_H : `${minuteToPct(e.endMin, axis) - top}%`,
                 minHeight: point ? undefined : POINT_H,

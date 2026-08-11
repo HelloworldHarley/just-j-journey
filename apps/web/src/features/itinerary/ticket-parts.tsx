@@ -86,24 +86,33 @@ export function TimeStack({
   base?: string
   align: 'left' | 'right'
 }) {
-  const offset = base ? dayOffsetOf(base, date) : 0
   return (
     <span
       className={`flex min-w-0 flex-col ${align === 'right' ? 'items-end text-right' : 'items-start'}`}
     >
       <SlotText value={time} hint="--:--" mono strong />
-      {date && (
-        <span className="tnum text-[10.5px] leading-4 text-graphite">
-          {shortDate(date)}
-          {offset > 0 && (
-            <sup
-              className="tnum ml-px text-[9px] font-semibold text-[var(--tight)]"
-              title={`${offset} 天后`}
-            >
-              +{offset}
-            </sup>
-          )}
-        </span>
+      <DateLine date={date} base={base} />
+    </span>
+  )
+}
+
+/**
+ * 时刻下的小日期行，与出发日不同天时标红色 `+n`。
+ * 端点（TimeStack）和中转点共用 —— `+n` 的画法全站只有这一份。
+ */
+export function DateLine({ date, base }: { date?: string; base?: string }) {
+  if (!date) return null
+  const offset = base ? dayOffsetOf(base, date) : 0
+  return (
+    <span className="tnum text-[10.5px] leading-4 text-graphite">
+      {shortDate(date)}
+      {offset > 0 && (
+        <sup
+          className="tnum ml-px text-[9px] font-semibold text-[var(--tight)]"
+          title={`${offset} 天后`}
+        >
+          +{offset}
+        </sup>
       )}
     </span>
   )

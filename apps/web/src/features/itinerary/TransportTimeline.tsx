@@ -1,9 +1,10 @@
 import { Luggage } from 'lucide-react'
 import { TRANSPORTS, type Transport, type TransportMode, type TransportStop } from '@jjj/schema'
 import { iconFor } from '../../lib/icons.tsx'
-import { dayOffsetOf, timelineDates } from '@jjj/tripmd'
-import { formatDurationCompact, shortDate } from '../../lib/format.ts'
-import { Arrow, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
+import { timelineDates } from '@jjj/tripmd'
+import { formatDurationCompact } from '../../lib/format.ts'
+import { segFlyDurations } from '../../lib/segment-durations.ts'
+import { Arrow, DateLine, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
 
 /**
  * 长途换乘时间轴 —— 电子客票的版式，不钉死为航班（mode 决定图标与槽位文案）：
@@ -64,27 +65,6 @@ export function TransportTimeline({
       ))}
     </div>
   )
-}
-
-/**
- * 每个行进段的显示时长。中转前的段可由作者用 `leg` 提供（跨时区没法算），
- * 没提供的段按「全程 − Σ停留 − Σ已填段」均分 —— 各段与停留加起来恒等于全程。
- */
-function segFlyDurations(t: Transport): (number | null)[] {
-  const perSeg: (number | null)[] = [...t.stops.map((s) => s.legMin), null]
-  if (t.durationMin === null || t.stops.some((s) => s.waitMin === null)) return perSeg
-
-  const totalFly = t.durationMin - t.stops.reduce((a, s) => a + (s.waitMin ?? 0), 0)
-  const authoredSum = perSeg.reduce<number>((a, m) => a + (m ?? 0), 0)
-  const unknown = perSeg.flatMap((m, i) => (m === null ? [i] : []))
-  const remaining = totalFly - authoredSum
-  if (unknown.length === 0 || remaining <= 0) return perSeg
-
-  const each = Math.floor(remaining / unknown.length)
-  unknown.forEach((idx, k) => {
-    perSeg[idx] = k === unknown.length - 1 ? remaining - each * (unknown.length - 1) : each
-  })
-  return perSeg
 }
 
 type Seg =
@@ -173,13 +153,13 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
                 {s.stop.arrTime && (
                   <span className="absolute bottom-0 left-0 flex -translate-x-1/2 flex-col items-center">
                     <span className="tnum text-[11px] leading-4 text-soft">{s.stop.arrTime}</span>
-                    <StopDate date={d?.arr} base={depDate} />
+                    <DateLine date={d?.arr} base={depDate} />
                   </span>
                 )}
                 {s.stop.depTime && (
                   <span className="absolute bottom-0 right-0 flex translate-x-1/2 flex-col items-center">
                     <span className="tnum text-[11px] leading-4 text-soft">{s.stop.depTime}</span>
-                    <StopDate date={d?.dep} base={depDate} />
+                    <DateLine date={d?.dep} base={depDate} />
                   </span>
                 )}
               </span>
@@ -349,19 +329,3 @@ function joinSlot(a?: string, b?: string): string | undefined {
   return parts.length ? parts.join(' ') : undefined
 }
 
-
-/** 中转点时刻下的小日期：与出发日不同天时标红色 +n（与两端同一套口径） */
-function StopDate({ date, base }: { date?: string; base?: string }) {
-  if (!date) return null
-  const offset = dayOffsetOf(base, date)
-  return (
-    <span className="tnum text-[10.5px] leading-4 text-graphite">
-      {shortDate(date)}
-      {offset > 0 && (
-        <sup className="tnum ml-px text-[9px] font-semibold text-[var(--tight)]" title={`${offset} 天后`}>
-          +{offset}
-        </sup>
-      )}
-    </span>
-  )
-}

@@ -1,15 +1,20 @@
+import { useMemo } from 'react'
 import { TRANSPORTS, type Day, type Rental, type Stay, type Trip } from '@jjj/schema'
 import { dayComposition } from '@jjj/tripmd'
 import {
+  MONTH_CELL,
   assignLanes,
   buildMonthGrid,
+  cellMetrics,
   clipSpanToGrid,
   reservationToTimed,
   tripCalendarRange,
+  type CellMetrics,
   type RowSegment,
 } from '../../lib/calendar-grid.ts'
 import { buildBudget } from '../../lib/budget.ts'
 import { fmtMoney } from '../../lib/format.ts'
+import { CompositionBar } from '../../components/CompositionBar.tsx'
 import { iconFor } from '../../lib/icons.tsx'
 
 /**
@@ -22,20 +27,6 @@ import { iconFor } from '../../lib/icons.tsx'
  */
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
-const LANE_H = 13
-const LANE_GAP = 4
-/** 日期数字那一行 */
-const HEAD_H = 22
-/** 格子的上内边距。带层的绝对定位偏移要用它 —— 藏在 pt-* 类里两边会对不上账 */
-const CELL_PT = 6
-/** 日期行与第一条区间带之间的呼吸空隙 —— 带贴着日期数字会显得整格顶得很满 */
-const LANE_TOP = 8
-/**
- * 长途换乘（航班/火车/轮渡）固定占一行 —— **空着也保留**。
- * 没有这一行时，有换乘的格子会把主题往下推一截，
- * 一排格子扫过去主题忽高忽低；行高固定后主题永远落在同一条线上。
- */
-const TRANSFER_H = 20
 
 export function MonthGrid({
   trip,
@@ -46,35 +37,40 @@ export function MonthGrid({
   todayDate: string
   onPickDay?: (date: string) => void
 }) {
-  const reservations = [...trip.stays, ...trip.rentals]
-  const range = tripCalendarRange(trip.dates, reservations)
-  const grid = buildMonthGrid(range.start, range.end)
-  const budget = buildBudget(trip)
-  const dayByDate = new Map(trip.days.map((d) => [d.date, d]))
-  const budgetByDate = new Map(budget.byDay.map((b) => [b.date, b.total]))
+  // 网格/泳道/预算模型全在这里现算，跟 trip 一起 memo ——
+  // 翻页/切模式/切租车底色都会重渲染日历，这些跟页码无关的模型不该跟着算
+  const model = useMemo(() => {
+    const reservations = [...trip.stays, ...trip.rentals]
+    const range = tripCalendarRange(trip.dates, reservations)
+    const grid = buildMonthGrid(range.start, range.end)
+    const budget = buildBudget(trip)
+    const dayByDate = new Map(trip.days.map((d) => [d.date, d]))
+    const budgetByDate = new Map(budget.byDay.map((b) => [b.date, b.total]))
 
-  // 住和行各占一个外层槽位；槽位内部再按重叠分道
-  // （住由构造保证不重叠；租车可能重叠 —— 两人各租一辆）
-  const stayLanes = assignLanes(trip.stays.map(reservationToTimed))
-  const rentalLanes = assignLanes(trip.rentals.map(reservationToTimed))
-  const stayDepth = Math.max(0, ...stayLanes.map((l) => l + 1))
-  const rentalDepth = Math.max(0, ...rentalLanes.map((l) => l + 1))
-  const laneAreaH = (stayDepth + rentalDepth) * (LANE_H + LANE_GAP)
+    // 住和行各占一个外层槽位；槽位内部再按重叠分道
+    // （住由构造保证不重叠；租车可能重叠 —— 两人各租一辆）
+    const stayLanes = assignLanes(trip.stays.map(reservationToTimed))
+    const rentalLanes = assignLanes(trip.rentals.map(reservationToTimed))
+    const stayDepth = Math.max(0, ...stayLanes.map((l) => l + 1))
+    const rentalDepth = Math.max(0, ...rentalLanes.map((l) => l + 1))
 
-  const bars = [
-    ...trip.stays.map((s, i) => ({
-      res: s as Stay | Rental,
-      lane: stayLanes[i]!,
-      accent: 'stay' as const,
-    })),
-    ...trip.rentals.map((r, i) => ({
-      res: r as Stay | Rental,
-      lane: stayDepth + rentalLanes[i]!,
-      accent: 'move' as const,
-    })),
-  ].flatMap(({ res, lane, accent }) =>
-    clipSpanToGrid(grid, reservationToTimed(res)).map((seg) => ({ seg, res, lane, accent })),
-  )
+    const bars = [
+      ...trip.stays.map((s, i) => ({
+        res: s as Stay | Rental,
+        lane: stayLanes[i]!,
+        accent: 'stay' as const,
+      })),
+      ...trip.rentals.map((r, i) => ({
+        res: r as Stay | Rental,
+        lane: stayDepth + rentalLanes[i]!,
+        accent: 'move' as const,
+      })),
+    ].flatMap(({ res, lane, accent }) =>
+      clipSpanToGrid(grid, reservationToTimed(res)).map((seg) => ({ seg, res, lane, accent })),
+    )
+    return { grid, dayByDate, budgetByDate, currency: budget.currency, bars, metrics: cellMetrics(stayDepth, rentalDepth) }
+  }, [trip])
+  const { grid, dayByDate, budgetByDate, currency, bars, metrics } = model
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-4">
@@ -100,9 +96,9 @@ export function MonthGrid({
                 day={dayByDate.get(date)}
                 compact={week.outside}
                 isToday={date === todayDate}
-                laneAreaH={laneAreaH}
+                metrics={metrics}
                 budget={budgetByDate.get(date)}
-                currency={budget.currency}
+                currency={currency}
                 onPick={onPickDay}
               />
             ))}
@@ -112,11 +108,11 @@ export function MonthGrid({
             区间带层：跨格必须绝对定位，但只落在每格预留出来的泳道区里 ——
             月视图没有任何覆盖在文字之上的效果。
           */}
-          <div className="pointer-events-none absolute inset-x-0" style={{ top: CELL_PT + HEAD_H + LANE_TOP }}>
+          <div className="pointer-events-none absolute inset-x-0" style={{ top: metrics.bandTop }}>
             {bars
               .filter((b) => b.seg.weekIndex === wi)
               .map(({ seg, res, lane, accent }, i) => (
-                <Bar key={`${res.what}-${i}`} seg={seg} lane={lane} accent={accent} what={res.what} />
+                <Bar key={`${res.what}-${i}`} seg={seg} lane={lane} accent={accent} what={res.what} metrics={metrics} />
               ))}
           </div>
         </div>
@@ -130,12 +126,14 @@ function Bar({
   lane,
   accent,
   what,
+  metrics,
 }: {
   seg: RowSegment
   lane: number
   /** 语义键，.band-* 类负责深浅两套底色和配套文字色 */
   accent: 'stay' | 'move'
   what: string
+  metrics: CellMetrics
 }) {
   return (
     <div
@@ -143,8 +141,8 @@ function Bar({
       style={{
         left: `${seg.leftPct}%`,
         width: `${seg.widthPct}%`,
-        top: lane * (LANE_H + LANE_GAP),
-        height: LANE_H,
+        top: metrics.laneTop(lane),
+        height: MONTH_CELL.LANE_H,
         // 圆角只在区间真正的起止处；被周行边界切断的那端齐平
         borderTopLeftRadius: seg.capStart ? 999 : 0,
         borderBottomLeftRadius: seg.capStart ? 999 : 0,
@@ -165,7 +163,7 @@ function Cell({
   day,
   compact,
   isToday,
-  laneAreaH,
+  metrics,
   budget,
   currency,
   onPick,
@@ -174,7 +172,7 @@ function Cell({
   day?: Day
   compact: boolean
   isToday: boolean
-  laneAreaH: number
+  metrics: CellMetrics
   budget?: number
   currency?: string
   onPick?: (date: string) => void
@@ -201,11 +199,11 @@ function Cell({
         渐隐周不参与：它压到只剩日期 + 泳道（区间照常绘制，但不占正文的高度）。
       */
       style={{
-        paddingTop: CELL_PT,
-        ...(compact ? { minHeight: CELL_PT + HEAD_H + laneAreaH + 8 } : { aspectRatio: '1 / 2' }),
+        paddingTop: MONTH_CELL.CELL_PT,
+        ...(compact ? { minHeight: metrics.compactMinHeight } : { aspectRatio: '1 / 2' }),
       }}
     >
-      <div className="flex items-baseline justify-between gap-1" style={{ height: HEAD_H }}>
+      <div className="flex items-baseline justify-between gap-1" style={{ height: MONTH_CELL.HEAD_H }}>
         <span
           className={`tnum text-[13px] ${
             isToday
@@ -225,12 +223,12 @@ function Cell({
       </div>
 
       {/* 泳道预留区。带层绝对定位落在这里，文字从它下面开始 —— 永不互相压 */}
-      <div style={{ height: laneAreaH, marginTop: LANE_TOP }} aria-hidden />
+      <div style={{ height: metrics.laneAreaH, marginTop: MONTH_CELL.LANE_TOP }} aria-hidden />
 
       {!compact && (
         <div
           className="tint-move mt-1 flex items-center gap-1 text-[10.5px]"
-          style={{ height: TRANSFER_H }}
+          style={{ height: MONTH_CELL.TRANSFER_H }}
         >
           {transfer && (
             <>
@@ -253,21 +251,8 @@ function Cell({
         </span>
       )}
 
-      {comp && total > 0 && (
-        <span className="mt-auto flex h-[3px] w-full overflow-hidden rounded-full pt-0" aria-hidden>
-          {(['play', 'food', 'other'] as const).map((g) =>
-            comp[g] > 0 ? (
-              <span
-                key={g}
-                style={{
-                  width: `${(comp[g] / total) * 100}%`,
-                  background: `var(--t-${g})`,
-                  opacity: g === 'other' ? 0.3 : 1,
-                }}
-              />
-            ) : null,
-          )}
-        </span>
+      {comp && (
+        <CompositionBar comp={comp} total={total} className="mt-auto h-[3px] w-full rounded-full" />
       )}
     </button>
   )

@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, Pencil, Settings2, Star, X } from 'lucide-react'
-import type { GroupKey, TripSummary } from '@jjj/schema'
+import type { TripSummary } from '@jjj/schema'
 import { useTripList } from '../../data/hooks.ts'
 import { useTripTitle } from '../../data/useTripOverrides.ts'
 import { useFavorites } from '../../data/useFavorites.ts'
 import { shortDate } from '../../lib/format.ts'
 import { daysUntil, todayIso } from '../../lib/time.ts'
 import { Loading, Problem } from '../../components/States.tsx'
+import { CompositionBar } from '../../components/CompositionBar.tsx'
+import { dayBarLayout } from '../../lib/day-bars.ts'
+import { useIsNarrow } from '../../lib/useMediaQuery.ts'
 import { SettingsSheet } from './SettingsSheet.tsx'
 
 export function HomePage() {
@@ -260,10 +263,7 @@ const BAR_MIN_PCT = 34
 
 function DayShapeBars({ shape }: { shape: TripSummary['dayShape'] }) {
   const longest = Math.max(...shape.map((d) => d.span), 1)
-  const gap = shape.length > 12 ? 1 : 3
-  // 窄屏让出更多空间给标题
-  const blockW = typeof window !== 'undefined' && window.innerWidth < 640 ? 80 : 104
-  const barW = Math.max(3, Math.min(20, (blockW - gap * (shape.length - 1)) / shape.length))
+  const { blockW, gap, barW } = dayBarLayout(shape.length, useIsNarrow())
 
   return (
     /*
@@ -277,39 +277,22 @@ function DayShapeBars({ shape }: { shape: TripSummary['dayShape'] }) {
       aria-hidden
     >
       {shape.map((d, i) => {
-        const total = d.play + d.food + d.other || 1
         const heightPct = BAR_MIN_PCT + (100 - BAR_MIN_PCT) * (d.span / longest)
-        const segments: [GroupKey, number][] = [
-          ['play', d.play],
-          ['food', d.food],
-          ['other', d.other],
-        ]
         return (
-          <div
+          <CompositionBar
             key={i}
+            vertical
+            comp={d}
+            total={d.play + d.food + d.other || 1}
             /*
               圆角压到 2px：overflow-hidden 只削最上和最下两端的角，
               而「玩」永远在底、「吃」多数时候夹在中间 —— 3px 时绿色被切掉缺口、
               桃红却是完整矩形，看上去就像桃红更宽。
             */
-            className="flex flex-col-reverse overflow-hidden rounded-[2px] bg-[var(--paper-sunken)]"
+            className="rounded-[2px] bg-[var(--paper-sunken)]"
             style={{ width: barW, height: `${heightPct}%` }}
             title={`Day ${i + 1}`}
-          >
-            {segments.map(([g, mins]) =>
-              mins > 0 ? (
-                <span
-                  key={g}
-                  style={{
-                    height: `${(mins / total) * 100}%`,
-                    background: `var(--t-${g})`,
-                    // 「其他」压暗，让玩/吃在条里也是主角
-                    opacity: g === 'other' ? 0.22 : 1,
-                  }}
-                />
-              ) : null,
-            )}
-          </div>
+          />
         )
       })}
     </div>
