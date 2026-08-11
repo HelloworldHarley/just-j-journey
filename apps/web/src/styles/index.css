@@ -13,104 +13,74 @@
  * 让时间的形状看得见。
  */
 
+/*
+ * 深浅两档在**同一行**成对写：色值走 `light-dark(浅, 深)`，由 color-scheme 挑档。
+ * 三态外观（浅 / 深 / 跟随系统）只翻转 color-scheme 与 --dark 标志位：
+ * 没有 data-theme = 跟随系统；写死则无条件生效。
+ * 从前深色档是整块复制的两份（媒体查询版 + data-theme 版），真的漂移过
+ * （--band-tint-mix 只在其中一份里）—— 现在没有第二份可漂了。
+ */
 :root {
-  /* 纸 —— 米白/米黄，写字的纸而不是屏幕的白（Harley 定的方向：纸质 note 质感） */
+  color-scheme: light dark;
   /*
-   * 米黄信笺纸 —— 亮而干净的奶油色页底，卡片是更亮的暖白；
-   * 玩/吃/住/行卡靠「主色自然变淡」的粉彩底认身份（见 --grp-mix）。
+   * 主题标志位：0 = 浅，1 = 深。唯一需要在媒体查询 / 强制主题里翻转的声明 ——
+   * light-dark() 管不了非颜色值，四个混合浓度用它 calc 出来。
    */
-  --paper: #f9f2df;
-  --paper-raised: #fffdf6;
-  --paper-sunken: #f1e9d2;
-  --ink: #201a11; /* 暖近黑，像墨水不像 #000 */
-  --ink-soft: #4a4336;
-  --graphite: #7a7263;
-  --fog: #e6dcc0;
-  --hairline: rgb(32 26 17 / 0.13);
-  --shadow: 0 1px 2px rgb(32 26 17 / 0.05), 0 8px 24px -12px rgb(32 26 17 / 0.16);
-  --tight: var(--a-tight, #c0392b); /* 余量告急 —— 色值可在设置里覆盖 */
+  --dark: 0;
+
+  /* 纸 —— 米白/米黄，写字的纸而不是屏幕的白（Harley 定的方向：纸质 note 质感）。
+     米黄信笺纸：亮而干净的奶油色页底，卡片是更亮的暖白；
+     玩/吃/住/行卡靠「主色自然变淡」的粉彩底认身份（见 --grp-mix）。 */
+  --paper: light-dark(#f9f2df, #0f1216);
+  --paper-raised: light-dark(#fffdf6, #171b21);
+  --paper-sunken: light-dark(#f1e9d2, #0a0c0f);
+  --ink: light-dark(#201a11, #eceff2); /* 暖近黑，像墨水不像 #000 */
+  --ink-soft: light-dark(#4a4336, #aeb8c3);
+  --graphite: light-dark(#7a7263, #7d8894);
+  --fog: light-dark(#e6dcc0, #262c34);
+  --hairline: light-dark(rgb(32 26 17 / 0.13), rgb(236 239 242 / 0.1));
+  --shadow: 0 1px 2px light-dark(rgb(32 26 17 / 0.05), rgb(0 0 0 / 0.4)),
+    0 8px 24px -12px light-dark(rgb(32 26 17 / 0.16), rgb(0 0 0 / 0.6));
+  /* 余量告急 —— 色值可在设置里覆盖 */
+  --tight: light-dark(var(--a-tight, #c0392b), var(--a-tight-dark, #ff7a6b));
   /* 顶栏高度。筛选栏要 sticky 在它下面，锚点滚动也要让开它 */
   --nav-h: 3.25rem;
 
   /*
    * 语义切换令牌 —— 深浅两档的挑选发生在这一层，组件规则只写一份。
-   * --t-* 挑 --g-* 与 --a-* 的浅档或深档；其余是随主题变的杂项。
+   * --t-* 挑 --g-* 与 --a-* 的浅档或深档（palette.ts 成对注入）。
    */
-  --t-play: var(--g-play);
-  --t-food: var(--g-food);
-  --t-other: var(--g-other);
-  --t-stay: var(--a-stay);
-  --t-move: var(--a-move);
-  --t-faved: var(--a-faved);
-  --chip-ink: #fff;            /* 实色块上的文字 */
-  --grp-mix: 10%;              /* .grp-card 底色浓度 —— 主色自然变淡的粉彩 */
-  --band-tint-mix: 8%;         /* 租车衬垫浓度 —— 混透明，网格线要能透出来 */
-  --cal-mix: 12%;              /* 周视图事件块底色浓度 */
-  --fuzzy-mix: 15%;            /* 斜纹块浓度 */
-  --todo-bg: color-mix(in srgb, #b8802a 15%, transparent);
-  --todo-ink: #8a5f18;
+  --t-play: light-dark(var(--g-play), var(--g-play-dark));
+  --t-food: light-dark(var(--g-food), var(--g-food-dark));
+  --t-other: light-dark(var(--g-other), var(--g-other-dark));
+  --t-stay: light-dark(var(--a-stay), var(--a-stay-dark));
+  --t-move: light-dark(var(--a-move), var(--a-move-dark));
+  --t-faved: light-dark(var(--a-faved), var(--a-faved-dark));
+  --chip-ink: light-dark(#fff, #0f1216); /* 实色块上的文字 */
+  --grp-mix: calc(10% - 1% * var(--dark)); /* .grp-card 底色浓度 —— 主色自然变淡的粉彩 */
+  --band-tint-mix: calc(8% + 2% * var(--dark)); /* 租车衬垫浓度 —— 混透明，网格线要能透出来 */
+  --cal-mix: calc(12% + 1% * var(--dark)); /* 周视图事件块底色浓度 */
+  --fuzzy-mix: calc(15% + 1% * var(--dark)); /* 斜纹块浓度 */
+  --todo-bg: color-mix(
+    in srgb,
+    light-dark(#b8802a, #e0ac5c) calc(15% + 3% * var(--dark)),
+    transparent
+  );
+  --todo-ink: light-dark(#8a5f18, #e0ac5c);
 }
 
-/*
- * 深色档。三态外观（浅 / 深 / 跟随系统）用 data-theme 覆盖：
- * 没有属性 = 跟随系统（媒体查询生效）；data-theme 一旦写死则无条件生效。
- *
- * ⚠ 下面两处的赋值必须逐行同步 —— CSS 没法在媒体查询内外共享同一段声明。
- */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --dark: 0;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --dark: 1;
+}
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --paper: #0f1216;
-    --paper-raised: #171b21;
-    --paper-sunken: #0a0c0f;
-    --ink: #eceff2;
-    --ink-soft: #aeb8c3;
-    --graphite: #7d8894;
-    --fog: #262c34;
-    --hairline: rgb(236 239 242 / 0.10);
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
-    --tight: var(--a-tight-dark, #ff7a6b);
-
-    --t-play: var(--g-play-dark);
-    --t-food: var(--g-food-dark);
-    --t-other: var(--g-other-dark);
-    --t-stay: var(--a-stay-dark);
-    --t-move: var(--a-move-dark);
-    --t-faved: var(--a-faved-dark);
-    --chip-ink: #0f1216;
-    --grp-mix: 9%;
-  --band-tint-mix: 10%;
-    --band-tint-mix: 10%;
-    --cal-mix: 13%;
-    --fuzzy-mix: 16%;
-    --todo-bg: color-mix(in srgb, #e0ac5c 18%, transparent);
-    --todo-ink: #e0ac5c;
+    --dark: 1;
   }
-}
-
-:root[data-theme='dark'] {
-  --paper: #0f1216;
-  --paper-raised: #171b21;
-  --paper-sunken: #0a0c0f;
-  --ink: #eceff2;
-  --ink-soft: #aeb8c3;
-  --graphite: #7d8894;
-  --fog: #262c34;
-  --hairline: rgb(236 239 242 / 0.10);
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
-  --tight: var(--a-tight-dark, #ff7a6b);
-
-  --t-play: var(--g-play-dark);
-  --t-food: var(--g-food-dark);
-  --t-other: var(--g-other-dark);
-  --t-stay: var(--a-stay-dark);
-  --t-move: var(--a-move-dark);
-  --t-faved: var(--a-faved-dark);
-  --chip-ink: #0f1216;
-  --grp-mix: 9%;
-  --cal-mix: 13%;
-  --fuzzy-mix: 16%;
-  --todo-bg: color-mix(in srgb, #e0ac5c 18%, transparent);
-  --todo-ink: #e0ac5c;
 }
 
 @theme inline {
@@ -201,15 +171,7 @@ body {
 .grp-chip-outline,
 .cal-block,
 .cal-block-fuzzy {
-  --grp-cur: var(--grp, var(--fog));
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) :is(.grp-card, .grp-chip, .grp-chip-outline, .cal-block, .cal-block-fuzzy) {
-    --grp-cur: var(--grp-dark, var(--fog));
-  }
-}
-:root[data-theme='dark'] :is(.grp-card, .grp-chip, .grp-chip-outline, .cal-block, .cal-block-fuzzy) {
-  --grp-cur: var(--grp-dark, var(--fog));
+  --grp-cur: light-dark(var(--grp, var(--fog)), var(--grp-dark, var(--fog)));
 }
 
 /*
@@ -262,6 +224,17 @@ body {
  * 它压在网格线上面、事件块下面，不透明会把整点线糊掉。
  */
 .band-move-tint { background: color-mix(in srgb, var(--t-move) var(--band-tint-mix), transparent); }
+
+/* 顶栏下的 sticky 工具条（筛选栏、日历工具条）—— 类名串曾在两处逐字节重复 */
+.toolbar-sticky {
+  position: sticky;
+  top: var(--nav-h);
+  z-index: 20;
+  border-bottom: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
 
 /* 红色只用在「注意」上 —— 它是唯一表示「会出事」的颜色 */
 .tight-badge {
