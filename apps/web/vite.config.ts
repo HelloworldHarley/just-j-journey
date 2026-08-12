@@ -7,6 +7,12 @@ import tailwindcss from '@tailwindcss/vite'
 // 路由是 HashRouter —— 静态托管零 rewrite 配置。
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  optimizeDeps: {
+    // maplibre-gl 的瓦片解析跑在 web worker 里；dev 的依赖预打包
+    // 不会带上它的 worker 文件（maplibre-gl-worker.mjs 404 → 画布空白）。
+    // 排除出预打包让浏览器直接吃它的 ESM。生产构建不受影响。
+    exclude: ['maplibre-gl'],
+  },
   server: {
     port: 5173,
     // 监听所有网卡，这样 SSH 端口转发 / VS Code 端口转发都能接上

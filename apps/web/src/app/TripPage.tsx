@@ -1,22 +1,26 @@
+import { Suspense, lazy } from 'react'
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import type { Trip } from '@jjj/schema'
 import { useTrip } from '../data/hooks.ts'
 import { useTripTitle } from '../data/useTripOverrides.ts'
-import { ListView } from '../features/itinerary/ListView.tsx'
-import { CalendarView } from '../features/calendar/CalendarView.tsx'
-import { InfoView } from '../features/reference/InfoView.tsx'
-import { BudgetView } from '../features/budget/BudgetView.tsx'
 import { Loading, Problem } from '../components/States.tsx'
+
+// 五个视图统一按路由分包 —— 首页/壳不背任何视图的依赖
+// （react-markdown 随列表/资料/预算走，maplibre-gl 随地图走）。
+// 地图不是「那个特殊的重路由」，只是五个平等 chunk 之一。
+const ListView = lazy(() => import('../features/itinerary/ListView.tsx'))
+const CalendarView = lazy(() => import('../features/calendar/CalendarView.tsx'))
+const InfoView = lazy(() => import('../features/reference/InfoView.tsx'))
+const BudgetView = lazy(() => import('../features/budget/BudgetView.tsx'))
+const MapView = lazy(() => import('../features/map/MapView.tsx'))
 import { SEG_PILL, segItem } from '../components/Segmented.tsx'
 
-/**
- * 现有视图：列表 / 日历 / 资料 / 预算。
- * 地图做好之前不放灰掉的占位 —— 点不动的 tab 比没有更让人困惑。
- */
+/** 五视图到齐：列表 / 日历 / 地图 / 资料 / 预算。 */
 const TABS = [
   { to: 'list', label: '列表' },
   { to: 'calendar', label: '日历' },
+  { to: 'map', label: '地图' },
   { to: 'info', label: '资料' },
   { to: 'budget', label: '预算' },
 ]
@@ -40,10 +44,15 @@ export function TripPage() {
           >
             <ChevronLeft size={18} />
           </Link>
-          <h1 className="display min-w-0 flex-1 truncate text-[17px] tracking-[-0.01em] text-ink">
+          {/*
+            五个页签占满 287px，390px 手机上留给标题只剩 10px —— 半个字比不显示更糟。
+            sm(640px) 正是标题能完整展开的宽度，以下藏起来把宽度整个让给页签；
+            行程名在个人空间页刚点过，不至于丢失上下文。
+          */}
+          <h1 className="display hidden min-w-0 flex-1 truncate text-[17px] tracking-[-0.01em] text-ink sm:block">
             {title}
           </h1>
-          <nav className={SEG_PILL}>
+          <nav className={`ml-auto ${SEG_PILL}`}>
             {TABS.map((t) => (
               <NavLink
                 key={t.to}
@@ -63,7 +72,9 @@ export function TripPage() {
         解析 —— 在 /trip/x/list 上点 to="list" 会变成 /trip/x/list/list，可以无限叠加。
         真正的嵌套路由把基准固定在 /trip/:id，相对路径才稳。
       */}
-      <Outlet context={trip} />
+      <Suspense fallback={<Loading />}>
+        <Outlet context={trip} />
+      </Suspense>
     </>
   )
 }
@@ -87,4 +98,8 @@ export function InfoRoute() {
 
 export function BudgetRoute() {
   return <BudgetView trip={useTripContext()} />
+}
+
+export function MapRoute() {
+  return <MapView trip={useTripContext()} />
 }

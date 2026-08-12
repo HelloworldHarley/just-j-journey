@@ -17,7 +17,7 @@ import { FilterBar, type EventFilter } from './FilterBar.tsx'
 
 const DETAIL_KEY = 'jjj:detail'
 
-export function ListView({ trip }: { trip: Trip }) {
+export default function ListView({ trip }: { trip: Trip }) {
   const places = useMemo(() => new Map(trip.places.map((p) => [p.id, p])), [trip.places])
   const favorites = useFavorites(trip.id)
   const today = todayIso(trip.timezone)

@@ -396,3 +396,22 @@ body {
 .prose-trip tbody tr:last-child td {
   border-bottom: 0;
 }
+
+/* 地图 pin：天色圆点 + 白描边 + 当日序号。DOM marker，随主题不变（压在底图上） */
+.map-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid #fffdf6;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  box-shadow: 0 1px 3px rgb(32 26 17 / 0.35);
+  cursor: pointer;
+  transition: opacity 0.2s;
+}

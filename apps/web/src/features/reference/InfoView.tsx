@@ -12,7 +12,7 @@ import { segChip } from '../../components/Segmented.tsx'
  * 但它们占了原始行程近三分之一的篇幅，不能丢。所以单开一页。
  * 预算类附录不在这里 —— 它们渲染在预算页底部，和自动统计放在一起。
  */
-export function InfoView({ trip }: { trip: Trip }) {
+export default function InfoView({ trip }: { trip: Trip }) {
   const refs = trip.reference.filter((r) => !isBudgetRef(r))
   const [active, setActive] = useState(refs[0]?.id ?? '')
 

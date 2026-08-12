@@ -15,7 +15,7 @@ import { CompositionBar, OTHER_DIM } from '../../components/CompositionBar.tsx'
  * 图表遵循 dataviz 规范：单轴、细 mark、数据端 2px 圆角、分段间 2px 表面缝、
  * 文字永远用文字色而非系列色、每根条直接标注（≤12 根时）。
  */
-export function BudgetView({ trip }: { trip: Trip }) {
+export default function BudgetView({ trip }: { trip: Trip }) {
   const model = useMemo(() => buildBudget(trip), [trip])
   // 预算类附录（点数策略、砍价顺序、风险变量）在这页底部，不在资料页
   const budgetRefs = trip.reference.filter(isBudgetRef)

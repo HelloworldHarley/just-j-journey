@@ -6,7 +6,7 @@ import './styles/index.css'
 import { RepositoryContext } from './data/hooks.ts'
 import { MarkdownTripRepository } from './data/MarkdownTripRepository.ts'
 import { HomePage } from './features/trip-list/HomePage.tsx'
-import { BudgetRoute, CalendarRoute, InfoRoute, ListRoute, TripPage } from './app/TripPage.tsx'
+import { BudgetRoute, CalendarRoute, InfoRoute, ListRoute, MapRoute, TripPage } from './app/TripPage.tsx'
 import { Problem } from './components/States.tsx'
 import { applyPalette, applyTheme } from './lib/palette.ts'
 import { subscribeSettings } from './lib/settings.ts'
@@ -40,6 +40,7 @@ createRoot(document.getElementById('root') as HTMLElement).render(
               <Route index element={<Navigate to="list" replace />} />
               <Route path="list" element={<ListRoute />} />
               <Route path="calendar" element={<CalendarRoute />} />
+              <Route path="map" element={<MapRoute />} />
               <Route path="info" element={<InfoRoute />} />
               <Route path="budget" element={<BudgetRoute />} />
               <Route path="*" element={<Navigate to="/" replace />} />

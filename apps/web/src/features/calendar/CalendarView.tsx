@@ -24,7 +24,7 @@ const MODE_KEY = 'jjj:calmode'
 /** 一页放几天。按**行程顺序**分页，不按自然周边界切 —— 见下方注释 */
 const PAGE = 7
 
-export function CalendarView({ trip }: { trip: Trip }) {
+export default function CalendarView({ trip }: { trip: Trip }) {
   const navigate = useNavigate()
   const { rentalBand } = useSettings()
   const [mode, setMode] = useState<'week' | 'month'>(() =>
