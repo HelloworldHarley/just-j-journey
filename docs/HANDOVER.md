@@ -47,12 +47,12 @@
 ```
 apps/web/src/
   lib/          纯函数层：layout / calendar-grid / week-axis / lanes / budget / format /
-                derive / segment-durations / day-bars（以上全部有单测）
+                derive / segment-durations / day-bars / map-scene（以上全部有单测）
                 + settings / palette / time / maplink / useScrollSpy / useMediaQuery（依赖 DOM，无单测）
   features/     视图专属：trip-list(首页+设置面板) / itinerary(列表) / calendar(周月) /
-                budget / reference
+                map(地图) / budget / reference
   components/   只放 ≥2 个视图共用的：CategoryChip / CompositionBar / Segmented /
-                Markdown / RailLayout / States
+                Markdown / MapLinkButton / RailLayout / States
 ```
 
 - 「时刻是输入、日期是派生」的实现（`timelineDates`）与「首次引用」扫描（`detailIndex`）
@@ -63,9 +63,26 @@ apps/web/src/
 - 浅色 = 亮米黄信笺纸（`--paper: #f9f2df`），玩吃住行卡是主色变淡的粉彩底（`--grp-mix` 10%），事务卡走 `--fog` 兜底中间色；深色档基本没动过。「注意红」也是可自定义令牌（`--tight` → `--a-tight`）。
 - 设置面板（首页齿轮）：外观三态 + 7 个色令牌（固定 3×7 标准色板，先选行再点色，默认色内嵌网格）。租车底色开关**在周视图工具栏**，不在设置里。
 
-## 六、当前状态（2026-08-11 架构收敛轮之后）
+## 六、当前状态（2026-08-12 地图视图落地之后）
 
-- 测试基线：**15 个套件 / 177 个测试全绿**，`data:check` 4 fixtures 全过（`_broken` 恰好 6 错），typecheck/build 绿。
+- 测试基线：**16 个套件 / 197 个测试全绿**，`data:check` 4 fixtures 全过（`_broken` 恰好 6 错），typecheck/build 绿。
+- **五视图收官**：地图视图已落地（MapLibre GL + OpenFreeMap 瓦片，运行时零 API 调用）。
+  五个视图路由统一懒加载 —— maplibre 独立 chunk（gzip 254KB，只有进地图页才下载），
+  react-markdown 落共享 chunk，主包不含二者。设计与实现记录见
+  `docs/superpowers/specs/2026-08-11-map-view-design.md`。
+- 地图这轮修的真问题（都是 390px 上跑出来的，见 spec 的实现记录）：dev 下 maplibre worker
+  404 导致画布全白（`optimizeDeps.exclude`）、底部 chip 压住 OSM 版权行、透明浮层容器吃掉
+  相邻按钮点击、降级警告条压住页签。**第五个页签还挤爆了头部标题**——390px 上只剩 10px，
+  经 Harley 定夺改为 640px 以下隐藏标题。
+- 第二轮（08-12，Harley 试用后）：左下角改成抽屉式样式切换器（收起只占一枚 chip）；
+  OSM 版权收成 ⓘ，底部整行还给地图，两组 chip 落回 `bottom-2`；点选地点后镜头居中
+  （偏移量走 `cardFocusOffset` 纯函数 + 单测）。**顺带修掉一个一直没生效的淡化**：
+  maplibre 的 `Marker` 每次重绘都会重写 `element.style.opacity`，必须走 `setOpacity()`。
+- 第三轮（08-12）：小卡加序号徽章（复用 `.map-pin` 外观 + 当天动线色），并支持换站 ——
+  桌面端卡片左右两侧按钮、手机端直接滑动卡片；邻站查找走 `stopNeighbors` 纯函数 + 单测，
+  只在当天之内走、到头不循环。
+
+### 上一轮（2026-08-11 架构收敛）
 - 这一轮做了什么（细节见 git log 的三个收敛 commit）：
   - 「首次引用」三处合一（`tripmd/resolve.ts` 的 `detailIndex`）；`timelineDates` 等日期派生上移 `@jjj/tripmd`；schema 回到纯形状。
   - 未知字段警告覆盖**所有**块与子记录（曾只有前置三块）。
@@ -76,7 +93,7 @@ apps/web/src/
 
 ## 七、Backlog（按 Harley 的优先级感觉排序）
 
-1. **地图视图** —— 五视图收官。地基全埋好了：地点表坐标 + 离群检测、`day.color` 路径色环（`DAY_COLORS`）、`legs.geometry` 留了 polyline 字段（null 画虚线弧）、`gmaps_place_id`。照日历的套路来：纯函数层 + 单测先行。
+1. **enrich 管道** —— 地图落地后最该做的一件事。两个缺口：`legs.geometry` 全是 null（现画虚线直连，填了 polyline 就能升级实线；路由 API 禁批量调用，只能离线预计算），以及地点坐标缺失（seattle 现为 7/30，地图右下角的「N 个地点缺坐标」chip 点开就是这份工作清单）。
 2. **`.ics` 接线** —— `toIcs()` 在 `packages/tripmd/src/ics.ts` 早写完（LOCATION 喂「该出发了」、待订提醒），差页面入口。
 3. **硬约束露出** —— `trip-constraints` 解析着但没有视图渲染（SPEC 已如实说明）。周视图画约束线是最自然的归宿。
 4. **编辑模式** —— `applyPatch` 阀门就绪（含 `set_transports` 写进被引用 journey 的逻辑）；行程改名已做，事件编辑/日历拖拽都等它。
@@ -91,5 +108,18 @@ apps/web/src/
 - vitest 全仓扫描：`apps/web/src/**/*.test.ts` 自动收录，新纯函数记得配测试。
 - 月视图格子按 `aspect-ratio: 1/2` 自适应，别写死像素高；周视图「首次引用」的事件才有 transports，别假设每个引用事件都有票面。
 - serialize 输出顺序 = 规范顺序（硬约束→长途→住宿→租车→地点表→天），改块结构时 roundtrip 测试会替你把关。
+- **maplibre 在 dev 下的两个坑**：worker 文件不在 vite 预打包里（404 → 画布全白，靠 `optimizeDeps.exclude` 解），
+  它的 CSS 随懒加载 chunk 在 Tailwind 之后注入（同特异性后来者赢 → 容器定位得写内联 style）。
+  两者都只在 dev / 真浏览器里现形，单测和 build 全绿。
+- **maplibre 的 `Marker` 会重写你写进 `element.style.opacity` 的值**（每次重绘都用内部
+  `_opacity` 覆盖，地形遮挡用的），必须走 `marker.setOpacity()`。硬写 style 在静止时看着
+  是对的，一到 `fitBounds` 动画就被抹掉 —— 「切天了但没淡化」就是这么来的。`filter` 它不碰。
+- **OSM 版权行默认是展开的**（compact 形态 ≠ 收起），390px 上占满一整行。要收成 ⓘ 得等
+  归属信息落定之后再摘 `maplibregl-compact-show`，建图那一刻摘无效，会被加回来。
+- **手势的判定值不能放 state**：`touchend` 读到的是本次渲染闭包里的值，一串 touch 事件挤在
+  同一个任务里时 React 还没重渲染，永远读到初始值。真值放 ref，state 只用来画。
+- **绝对定位的浮层容器会吃掉相邻按钮的点击**：`items-end` 之类让容器盒子有最宽子元素那么宽，
+  透明区域照样吞事件，截图完全看不出来。地图上用 `pointer-events-none` + 子元素 `auto` 解。
+  这类问题要靠 `elementFromPoint` hit-test，不能只靠肉眼看图。
 
 祝顺利。有不确定的先看 `docs/superpowers/specs/2026-08-04-calendar-view-design.md` 的「实现记录」—— 设计和实现的每次偏差都记了原因。

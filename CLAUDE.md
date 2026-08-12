@@ -58,11 +58,12 @@ Fixtures in `apps/web/public/data/`: `seattle-2026-10` (real trip, stress test) 
 ```
 apps/web/src/
   lib/        pure functions: layout / calendar-grid / week-axis / lanes / budget / format /
-              derive / segment-durations / day-bars (all unit-tested) + settings / palette /
-              time / maplink / useScrollSpy / useMediaQuery (DOM-bound, untested)
-  features/   view-specific: trip-list (home + settings sheet) / itinerary / calendar / budget / reference
+              derive / segment-durations / day-bars / map-scene (all unit-tested) + settings /
+              palette / time / maplink / useScrollSpy / useMediaQuery (DOM-bound, untested)
+  features/   view-specific: trip-list (home + settings sheet) / itinerary / calendar / map /
+              budget / reference
   components/ only what ≥2 views share: CategoryChip / CompositionBar / Segmented / Markdown /
-              RailLayout / States
+              MapLinkButton / RailLayout / States
 ```
 
 **Layout math lives in pure functions with tests; components only draw.** This is a hard rule. When adding such a test, verify it fails against a deliberately broken formula before trusting it green. `apps/web/src/**/*.test.ts` is auto-collected by the root vitest run.
@@ -73,7 +74,9 @@ apps/web/src/
 
 **Never write `*/` inside a CSS comment** (e.g. `--g-*/--a-*`) — it terminates the comment early, 500s the dev server, and is silently swallowed by `build`. Write `--g-* 与 --a-*`.
 
-Routing is HashRouter (`/#/trip/seattle-2026-10/list`) so static hosting needs no rewrites. Views: list ✓ calendar ✓ info ✓ budget ✓ — **map is the unbuilt fifth**.
+Routing is HashRouter (`/#/trip/seattle-2026-10/list`) so static hosting needs no rewrites. All five views are built: list ✓ calendar ✓ map ✓ info ✓ budget ✓ — **every view route is lazy-loaded**, so the shell carries none of their dependencies (maplibre-gl rides with the map chunk, react-markdown with the shared one).
+
+The map (MapLibre GL + OpenFreeMap tiles) makes **zero API calls at runtime** — tiles are static, routes are dashed straight lines until `legs.geometry` gets pre-computed polylines. The OSM attribution is collapsed to its compact ⓘ at startup (it ships *expanded*, eating a full 351px row on a phone) — collapse it only after attributions settle, or MapLibre re-expands it. Marker opacity must go through `marker.setOpacity()`; writing `element.style.opacity` is silently overwritten on every redraw. See `docs/superpowers/specs/2026-08-11-map-view-design.md` for these and the other overlay rules.
 
 ## Conventions
 
@@ -83,6 +86,6 @@ Routing is HashRouter (`/#/trip/seattle-2026-10/list`) so static hosting needs n
 
 ## Backlog
 
-Map view (foundations exist: place coordinates + outlier detection, `day.color` / `DAY_COLORS`, `legs.geometry` polyline slot, `gmaps_place_id`) → wire up `toIcs()` (written, no UI entry) → render `trip-constraints` (parsed, never displayed; the week view is the natural home) → edit mode on `applyPatch` → agent authoring pipeline (`docs/AUTHORING_PROMPT.md`).
+Enrich pipeline (fill `legs.geometry` with real road polylines — routing APIs forbid runtime batching, so it must be pre-computed; the dashed lines upgrade to solid once filled — and fill the coordinates the map reports as missing) → wire up `toIcs()` (written, no UI entry) → render `trip-constraints` (parsed, never displayed; the week view is the natural home) → edit mode on `applyPatch` → agent authoring pipeline (`docs/AUTHORING_PROMPT.md`).
 
 `docs/HANDOVER.md` holds the cross-machine handover state; `docs/superpowers/specs/2026-08-04-calendar-view-design.md` records every deviation between the calendar design and its implementation, with reasons.
