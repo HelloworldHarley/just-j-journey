@@ -14,15 +14,21 @@ import { TRANSPORTS, type Place, type TransportMode } from '@jjj/schema'
 
 export type MapProvider = 'google' | 'apple'
 
-/** iOS / iPadOS / macOS 默认 Apple 地图，其余默认 Google。两者始终都给，不锁死。 */
+/**
+ * iOS / iPadOS / macOS 默认 Apple 地图，其余默认 Google。两者始终都给，不锁死。
+ * 结果模块级缓存 —— UA 在页面生命周期内不变，不必每次 render 重新嗅探。
+ */
+let cachedProvider: MapProvider | null = null
 export function preferredProvider(): MapProvider {
+  if (cachedProvider) return cachedProvider
   if (typeof navigator === 'undefined') return 'google'
   const ua = navigator.userAgent
   const isApple =
     /iPhone|iPad|iPod|Macintosh/.test(ua) ||
     // iPadOS 13+ 的 UA 伪装成 Mac，靠触点数区分
     (navigator.maxTouchPoints > 1 && /Mac/.test(ua))
-  return isApple ? 'apple' : 'google'
+  cachedProvider = isApple ? 'apple' : 'google'
+  return cachedProvider
 }
 
 export const PROVIDER_LABEL: Record<MapProvider, string> = {

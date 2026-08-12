@@ -19,7 +19,7 @@ import { CategoryChip, kindVars } from '../../components/CategoryChip.tsx'
 import { TransportTimeline } from './TransportTimeline.tsx'
 import { fmtDurationZh, formatMinutes, shortDate } from '../../lib/format.ts'
 import { BookingModule, CostText, RentalModule, StayModule } from './modules.tsx'
-import { MapLinkButton } from './MapLinkButton.tsx'
+import { MapLinkButton } from '../../components/MapLinkButton.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
 
 /** flight 事件没写 transport 块时的空骨架 —— 所有槽位都显示「待填」 */
