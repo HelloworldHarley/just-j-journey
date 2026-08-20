@@ -158,8 +158,10 @@ export function PlaceCard({
           </button>
         </div>
 
+        {/* 开场站没有事件可列 —— 说清它为什么在这儿，否则是一张空卡 */}
         <div className="mt-1 text-[11.5px] text-graphite">
           Day {dayIndex} · 第 {stop.seq} 站
+          {stop.origin === 'stay' && ' · 今天从这里出发'}
         </div>
 
         {events.length > 0 && (

@@ -415,3 +415,27 @@ body {
   cursor: pointer;
   transition: opacity 0.2s;
 }
+
+/*
+  起点旗：黑白格子旗，旗杆插在当天 1 号 pin 上，像赛车要发车。
+  **不用 pin 的形状与配色** —— 长得像标签就又混进一排彩色圆点里了。
+  透明底、无边框：它是插在图上的一面旗，不是又一枚标签。
+  尺寸与抬升量在 map-scene.ts 的 PIN_SIZE / FLAG_SIZE，改这里要一起改。
+*/
+.map-flag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 33px;
+  height: 33px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.map-flag svg {
+  width: 33px;
+  height: 33px;
+  filter: drop-shadow(0 1px 2px rgb(32 26 17 / 0.4));
+}
