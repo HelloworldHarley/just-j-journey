@@ -161,11 +161,14 @@ function placesBlock(trip: Trip): string | null {
   return L.join('\n')
 }
 
-function dayBlock(day: Day): string | null {
+function dayBlock(day: Day, opening: Leg | undefined): string | null {
   const L: string[] = []
   if (day.theme) L.push(`theme: ${scalar(day.theme)}`)
   if (day.sunrise) L.push(`sunrise: ${scalar(day.sunrise)}`)
   if (day.sunset) L.push(`sunset: ${scalar(day.sunset)}`)
+  // 开场通勤住在天上而不是首个事件上：删掉当天第一个事件时它不会跟着烂，
+  // 重新 parse 就自动指向新的第一站
+  if (opening) L.push(`from_stay: ${legFlow(opening)}`)
   if (L.length === 0) return null
   return ['```trip-day', ...L, '```'].join('\n')
 }
@@ -237,21 +240,23 @@ function eventBlock(ev: TripEvent, placeById: Map<string, Place>, leg: Leg | und
   }
   // 大段事务的明细全部住在前置块里，事件只留一根指针
   if (ev.detailRef) L.push(`detail: ${scalar(ev.detailRef)}`)
-  if (leg) {
-    const to = leg.to ? placeById.get(leg.to) : undefined
-    void to
-    L.push(
-      `to_next: ${flowMap([
-        ['mode', leg.mode],
-        ['minutes', leg.durationMin ?? undefined],
-        ['km', leg.distanceKm ?? undefined],
-        ['label', leg.label],
-        ['note', leg.note],
-      ])}`,
-    )
-  }
+  if (leg) L.push(`to_next: ${legFlow(leg)}`)
   L.push('```')
   return L.join('\n')
+}
+
+/**
+ * 通勤记录的值。`to_next`（事件上）与 `from_stay`（天上）形状完全相同，
+ * 只有键名不同 —— 起点在两处都不写：前者由位置决定，后者认领当晚住处。
+ */
+function legFlow(leg: Leg): string {
+  return flowMap([
+    ['mode', leg.mode],
+    ['minutes', leg.durationMin ?? undefined],
+    ['km', leg.distanceKm ?? undefined],
+    ['label', leg.label],
+    ['note', leg.note],
+  ])
 }
 
 // ── 主入口 ──────────────────────────────────────────────────────
@@ -269,11 +274,15 @@ export function serialize(trip: Trip): string {
   chunks.push(placesBlock(trip))
 
   for (const day of trip.days) {
+    // 开场段（afterEventId === null）不挂在任何事件上，它回写进 trip-day 块
+    const opening = day.legs.find((l) => l.afterEventId === null)
     const parts: (string | null)[] = [`## Day ${day.index} · ${day.date}`]
-    parts.push(dayBlock(day))
+    parts.push(dayBlock(day, opening))
     if (day.intro) parts.push(day.intro)
 
-    const legByEvent = new Map(day.legs.map((l) => [l.afterEventId, l]))
+    const legByEvent = new Map(
+      day.legs.flatMap((l) => (l.afterEventId === null ? [] : [[l.afterEventId, l] as const])),
+    )
     for (const ev of day.events) {
       parts.push(`### ${ev.title}`)
       parts.push(eventBlock(ev, placeById, legByEvent.get(ev.id)))

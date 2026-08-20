@@ -330,7 +330,12 @@ function VariantList({ variants }: { variants: TripEvent['variants'] }) {
 
 // ── 连接件 ──────────────────────────────────────────────────────
 
-/** 两张卡片之间的通勤条：一段虚线 + 交通方式 + 时长 + 导航 */
+/**
+ * 两张卡片之间的通勤条：一段虚线 + 交通方式 + 时长 + 导航。
+ *
+ * 当天的开场段（`afterEventId === null`，昨晚住处 → 第一站）也走这里，
+ * 只是多说一句起点是谁 —— 它前面没有卡片，不说就不知道人是从哪儿出门的。
+ */
 function LegConnector({ row, places }: { row: LegRow; places: Map<string, Place> }) {
   const { leg, slackMin } = row
   const t = TRANSPORTS[leg.mode]
@@ -345,6 +350,9 @@ function LegConnector({ row, places }: { row: LegRow; places: Map<string, Place>
         <span aria-hidden className="w-px border-l border-dashed border-[var(--fog)]" />
       </div>
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 py-2.5 pl-1 text-[12px] text-graphite">
+        {leg.afterEventId === null && from && (
+          <span className="min-w-0 truncate text-soft">{from.name} 出发</span>
+        )}
         <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap">
           <Icon size={13} aria-hidden />
           {t.zh}

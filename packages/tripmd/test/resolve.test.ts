@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { detailIndex } from '../src/resolve.ts'
+import { detailIndex, missingCoords, stayOfMorning } from '../src/resolve.ts'
 import { parse } from '../src/parse.ts'
 import { serialize } from '../src/serialize.ts'
-import type { Day, TripEvent } from '@jjj/schema'
+import type { Day, Place, Stay, Trip, TripEvent } from '@jjj/schema'
 
 /** 造一个只有 detail 引用相关字段有意义的事件 */
-function ev(id: string, detailRef?: string): TripEvent {
+function ev(id: string, detailRef?: string, placeId: string | null = null): TripEvent {
   return {
     id,
     title: id,
@@ -14,7 +14,7 @@ function ev(id: string, detailRef?: string): TripEvent {
     endMin: 660,
     timeKind: 'range',
     timeRaw: '10:00–11:00',
-    placeId: null,
+    placeId,
     flags: [],
     transports: [],
     detailRef,
@@ -27,6 +27,35 @@ function ev(id: string, detailRef?: string): TripEvent {
 
 function day(index: number, date: string, events: TripEvent[]): Day {
   return { index, date, weekday: '周四', color: '#000', intro: '', events, legs: [] }
+}
+
+function place(id: string, coord: [number, number] | null): Place {
+  return {
+    id,
+    name: id,
+    coord,
+    category: 'sight',
+    tentative: false,
+    geo: { source: coord ? 'authored' : 'none', confidence: coord ? 'high' : 'unknown' },
+  }
+}
+
+function trip(days: Day[], places: Place[], over: Partial<Trip> = {}): Trip {
+  return {
+    id: 't',
+    title: 'T',
+    destination: 'X',
+    timezone: 'UTC',
+    dates: { start: '2026-10-01', end: '2026-10-05' },
+    constraints: [],
+    journeys: [],
+    stays: [],
+    rentals: [],
+    places,
+    days,
+    reference: [],
+    ...over,
+  }
 }
 
 describe('detailIndex', () => {
@@ -124,5 +153,98 @@ detail: 去程航班
     const b = detailIndex(twice.days)
     expect(b.firstRefDate.get('去程航班')).toBe(a.firstRefDate.get('去程航班'))
     expect([...b.dup].length).toBe([...a.dup].length)
+  })
+})
+
+describe('stayOfMorning', () => {
+  /** Astra：10-01 16:00 入住 → 10-03 09:45 退房 */
+  const astra: Stay = {
+    what: 'Astra Hotel',
+    placeId: 'p-astra',
+    from: { raw: '2026-10-01 16:00', date: '2026-10-01', minute: 960 },
+    to: { raw: '2026-10-03 09:45', date: '2026-10-03', minute: 585 },
+  }
+  /** Ashford 木屋：10-03 20:30 → 10-04 07:15 */
+  const cabin: Stay = {
+    what: 'Ashford 木屋',
+    placeId: 'p-cabin',
+    from: { raw: '2026-10-03 20:30', date: '2026-10-03', minute: 1230 },
+    to: { raw: '2026-10-04 07:15', date: '2026-10-04', minute: 435 },
+  }
+  const stays = [astra, cabin]
+
+  it('入住当天没有住处 —— 那天早上你还没到', () => {
+    expect(stayOfMorning(stays, '2026-10-01')).toBeNull()
+  })
+
+  it('入住次日在住处醒来', () => {
+    expect(stayOfMorning(stays, '2026-10-02')?.what).toBe('Astra Hotel')
+  })
+
+  it('退房当天仍算 —— 早上人还在房里', () => {
+    expect(stayOfMorning(stays, '2026-10-03')?.what).toBe('Astra Hotel')
+  })
+
+  it('换住处那天认新的那条', () => {
+    expect(stayOfMorning(stays, '2026-10-04')?.what).toBe('Ashford 木屋')
+  })
+
+  it('全部退完之后没有住处', () => {
+    expect(stayOfMorning(stays, '2026-10-05')).toBeNull()
+  })
+
+  it('没有住宿记录时返回 null', () => {
+    expect(stayOfMorning([], '2026-10-02')).toBeNull()
+  })
+
+  it('只比日期不比时刻 —— 凌晨退房也算你在那儿醒的', () => {
+    const redEye: Stay = {
+      ...astra,
+      to: { raw: '2026-10-03 04:00', date: '2026-10-03', minute: 240 },
+    }
+    expect(stayOfMorning([redEye], '2026-10-03')?.what).toBe('Astra Hotel')
+  })
+})
+
+describe('missingCoords', () => {
+  const SEA: [number, number] = [-122.33, 47.6]
+
+  it('被事件引用且无坐标的入列；有坐标或没人引用的不入', () => {
+    const t = trip(
+      [day(1, '2026-10-01', [ev('e1', undefined, 'a'), ev('e2', undefined, 'nc')])],
+      [place('a', SEA), place('nc', null), place('orphan', null)],
+    )
+    expect(missingCoords(t).map((p) => p.id)).toEqual(['nc'])
+  })
+
+  it('住宿与租车取还点也算引用', () => {
+    const t = trip(
+      [day(1, '2026-10-01', [ev('e1', undefined, 'a')])],
+      [place('a', SEA), place('h', null), place('lot', null)],
+      {
+        stays: [
+          {
+            what: 'H',
+            placeId: 'h',
+            from: { raw: '', date: '2026-10-01', minute: 1080 },
+            to: { raw: '', date: '2026-10-02', minute: 600 },
+          },
+        ],
+        rentals: [
+          {
+            what: 'Car',
+            pickupPlaceId: 'lot',
+            dropoffPlaceId: null,
+            from: { raw: '', date: '2026-10-01', minute: 0 },
+            to: { raw: '', date: '2026-10-02', minute: 0 },
+          },
+        ],
+      },
+    )
+    expect(
+      missingCoords(t)
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(['h', 'lot'])
   })
 })

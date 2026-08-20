@@ -19,7 +19,7 @@ const ev = (id: string, startMin: number, endMin: number, timeKind: TripEvent['t
   variants: [],
 })
 
-const leg = (afterEventId: string, durationMin: number | null): Leg => ({
+const leg = (afterEventId: string | null, durationMin: number | null): Leg => ({
   id: `leg-${afterEventId}`,
   afterEventId,
   from: null,
@@ -44,6 +44,22 @@ describe('buildTimeline', () => {
   it('行序：事件-连接-事件，首事件之前没有连接行', () => {
     const rows = buildTimeline(day([ev('a', 600, 660), ev('b', 720, 780)]))
     expect(rows.map((r) => r.kind)).toEqual(['event', 'idle', 'event'])
+  })
+
+  it('开场段排在首事件之前，且不多出一张事件卡', () => {
+    const rows = buildTimeline(day([ev('a', 600, 660), ev('b', 720, 780)], [leg(null, 20)]))
+    expect(rows.map((r) => r.kind)).toEqual(['leg', 'event', 'idle', 'event'])
+    expect(rows.filter((r) => r.kind === 'event')).toHaveLength(2)
+  })
+
+  it('开场段不算余量 —— 前面没有事件的结束时刻可减', () => {
+    const rows = buildTimeline(day([ev('a', 600, 660)], [leg(null, 20)]))
+    const l = rows[0]!
+    expect(l.kind).toBe('leg')
+    if (l.kind === 'leg') {
+      expect(l.slackMin).toBeNull()
+      expect(l.gapMin).toBe(0)
+    }
   })
 
   it('有通勤段走 leg 行并算余量：空档 60 − 路上 45 = 15', () => {

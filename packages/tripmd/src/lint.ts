@@ -48,6 +48,8 @@ export function lintDayFlow(bag: DiagnosticBag, flows: DayFlow[]): void {
     // 这正是原始 MD 逼着人在脑子里算的东西 —— 算错了整天崩盘，而且自己极难看出来。
     for (const leg of legs) {
       if (leg.durationMin === null) continue
+      // 开场段（住处 → 第一站）没有「上一个事件的结束时刻」可减，余量无从算起
+      if (leg.afterEventId === null) continue
       const fromIdx = events.findIndex((e) => e.id === leg.afterEventId)
       const from = events[fromIdx]
       const to = events[fromIdx + 1]
@@ -64,6 +66,29 @@ export function lintDayFlow(bag: DiagnosticBag, flows: DayFlow[]): void {
         )
       }
     }
+  }
+}
+
+/**
+ * 少了开场那一段路：当天在住处醒来，第一个事件却在别处，也没写 `from_stay`。
+ *
+ * 这是「静默丢数据」的一种 —— 一天凭空从半路开始，列表和地图都看不出
+ * 你是怎么到那儿的。作者自己极难发现，因为缺的东西本来就不在纸上。
+ *
+ * 该不该有全从 `trip-stays` 推（见 `stayOfMorning`）：落地当天没有住宿区间覆盖，
+ * 首个事件就在住处的日子也不需要 —— 例外不用作者手工标，所以这条警告不会误伤。
+ */
+export function lintDayOpening(bag: DiagnosticBag, flows: DayFlow[]): void {
+  for (const flow of flows) {
+    const { stay, declared } = flow.opening
+    const first = flow.events[0]
+    if (declared || !stay || !first) continue
+    if (stay.placeId && stay.placeId === first.placeId) continue
+    bag.warn(
+      flow.line,
+      `Day ${flow.index} 在「${stay.what}」醒来，第一个事件却是「${first.title}」—— 中间这段路没有交代`,
+      '在 ```trip-day 里加 `from_stay: {mode: walk, minutes: 20}`（起点自动认领当晚住处）',
+    )
   }
 }
 

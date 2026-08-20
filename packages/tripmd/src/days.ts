@@ -5,6 +5,8 @@ import {
   resolveTransport,
   type Day,
   type Leg,
+  type Stay,
+  type TransportMode,
   type TripEvent,
 } from '@jjj/schema'
 import { suggest, suggestEnum } from './diagnostics.ts'
@@ -23,6 +25,7 @@ import {
 import { parseCost, splitBody } from './cost.ts'
 import type { ParseCtx, PlaceResolver } from './blocks.ts'
 import type { RawDay } from './sections.ts'
+import { stayOfMorning } from './resolve.ts'
 import { addDays, daysBetween, isIsoDate, parseTimeSpec, stableId, weekdayOf } from './values.ts'
 
 /**
@@ -35,6 +38,39 @@ import { addDays, daysBetween, isIsoDate, parseTimeSpec, stableId, weekdayOf } f
 
 const BOOKING_STATUSES = ['required', 'booked', 'none'] as const
 
+/**
+ * 通勤记录（`to_next` / `from_stay`）的 mode。两处形状完全相同，
+ * 连诊断都该一模一样 —— 只有报错文案里的字段名不同。
+ */
+function readMode(
+  ctx: ParseCtx,
+  rec: Record<string, unknown>,
+  line: number,
+  field: 'to_next' | 'from_stay',
+): TransportMode | null {
+  const raw = str(rec['mode']) ?? ''
+  const mode = resolveTransport(raw)
+  if (!mode) {
+    const guess = suggestEnum(raw, TRANSPORT_MODES, TRANSPORT_ALIASES)
+    ctx.bag.error(
+      line,
+      `\`${field}\` 的 mode "${raw}" 无效`,
+      guess ? `是否想写 \`${guess}\`？` : `可选值：${TRANSPORT_MODES.join(' / ')}`,
+    )
+  }
+  return mode
+}
+
+/** 通勤记录里除 mode 外的那几个值 —— 同上，两处共用一份读法 */
+function flowValues(rec: Record<string, unknown>): Pick<Leg, 'durationMin' | 'distanceKm' | 'label' | 'note'> {
+  return {
+    durationMin: num(rec['minutes']) ?? num(rec['min']) ?? null,
+    distanceKm: num(rec['km']) ?? null,
+    label: str(rec['label']),
+    note: str(rec['note']),
+  }
+}
+
 /** lint 的输入：一天的事件流 + 谁写了 to_next（含 mode 无效的，口径与旧实现一致） */
 export interface DayFlow {
   index: number
@@ -44,6 +80,8 @@ export interface DayFlow {
   legs: Leg[]
   /** 写了 to_next 的事件下标 → 该事件的行号 */
   toNext: Map<number, number>
+  /** 开场通勤的素材：当天该在哪儿醒来、作者写没写 `from_stay` */
+  opening: { stay: Stay | null; declared: boolean }
 }
 
 export interface BuiltDays {
@@ -51,15 +89,19 @@ export interface BuiltDays {
   flows: DayFlow[]
 }
 
-export function buildDays(
-  ctx: ParseCtx,
-  rawDays: RawDay[],
-  dates: { start: string; end: string },
-  resolvePlaceRef: PlaceResolver,
-  detailNames: Map<string, string>,
-): BuiltDays {
+/** buildDays 要的前置素材。具名而不是继续排位置参数 —— 到第六个就没人读得懂了 */
+export interface DayContext {
+  dates: { start: string; end: string }
+  resolvePlaceRef: PlaceResolver
+  detailNames: Map<string, string>
+  /** 住宿区间 —— 开场通勤的起点从这里认领 */
+  stays: Stay[]
+}
+
+export function buildDays(ctx: ParseCtx, rawDays: RawDay[], front: DayContext): BuiltDays {
   const { bag } = ctx
-  const { start, end } = dates
+  const { resolvePlaceRef, detailNames, stays } = front
+  const { start, end } = front.dates
   const days: Day[] = []
   const flows: DayFlow[] = []
   const seenIndex = new Set<number>()
@@ -214,22 +256,47 @@ export function buildDays(
       }
     })
 
+    // ── 开场通勤：昨晚住处 → 今天第一站。它排在所有 to_next 之前 ──
+    const stay = stayOfMorning(stays, date)
+    const fromStay = asRecord(dmeta['from_stay'])
+    if (fromStay) {
+      checkKeys(bag, fromStay, TO_NEXT_KEYS, rd.line, 'from_stay')
+      const mode = readMode(ctx, fromStay, rd.line, 'from_stay')
+      const first = events[0]
+      if (!first) {
+        bag.warn(rd.line, `Day ${rd.index} 没有任何事件，\`from_stay\` 没有去处`, '删掉 from_stay，或补上事件')
+      } else if (!stay) {
+        bag.error(
+          rd.line,
+          `Day ${rd.index} 写了 \`from_stay\`，但当天早上没有住宿区间覆盖`,
+          '落地当天本来就不从住处出发；否则检查 `trip-stays` 的 from/to 是否漏了这一晚',
+        )
+      } else if (stay.placeId && stay.placeId === first.placeId) {
+        bag.error(
+          rd.line,
+          `Day ${rd.index} 的第一个事件「${first.title}」就在住处「${stay.what}」`,
+          '这段路不存在，删掉 `from_stay`',
+        )
+      } else if (mode) {
+        legs.push({
+          id: stableId(`d${rd.index}l`, `stay|${first.id}`),
+          afterEventId: null,
+          from: stay.placeId,
+          to: first.placeId,
+          mode,
+          ...flowValues(fromStay),
+          geometry: null,
+        })
+      }
+    }
+
     for (const p of pending) {
       const from = events[p.evIndex]
       const to = events[p.evIndex + 1]
       if (!from) continue
 
       // 先校验 mode 再判断有没有去处 —— 两个问题都报出来，比只报一个更省一轮修改
-      const modeRaw = str(p.rec['mode']) ?? ''
-      const mode = resolveTransport(modeRaw)
-      if (!mode) {
-        const guess = suggestEnum(modeRaw, TRANSPORT_MODES, TRANSPORT_ALIASES)
-        bag.error(
-          p.line,
-          `\`to_next\` 的 mode "${modeRaw}" 无效`,
-          guess ? `是否想写 \`${guess}\`？` : `可选值：${TRANSPORT_MODES.join(' / ')}`,
-        )
-      }
+      const mode = readMode(ctx, p.rec, p.line, 'to_next')
       if (!to) {
         bag.warn(
           p.line,
@@ -246,10 +313,7 @@ export function buildDays(
         from: from.placeId,
         to: to.placeId,
         mode,
-        durationMin: num(p.rec['minutes']) ?? num(p.rec['min']) ?? null,
-        distanceKm: num(p.rec['km']) ?? null,
-        label: str(p.rec['label']),
-        note: str(p.rec['note']),
+        ...flowValues(p.rec),
         geometry: null,
       })
     }
@@ -282,6 +346,7 @@ export function buildDays(
       events,
       legs,
       toNext: new Map(pending.map((p) => [p.evIndex, p.line])),
+      opening: { stay, declared: fromStay !== null },
     })
   })
 

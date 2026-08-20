@@ -43,10 +43,19 @@ export type TimelineRow = EventRow | LegRow | IdleRow
 
 export function buildTimeline(day: Day): TimelineRow[] {
   const legByEvent = new Map<string, Leg>()
-  for (const leg of day.legs) legByEvent.set(leg.afterEventId, leg)
+  for (const leg of day.legs) if (leg.afterEventId !== null) legByEvent.set(leg.afterEventId, leg)
 
   const rows: TimelineRow[] = []
   const events = day.events
+
+  /*
+    开场那一段（住处 → 第一站）排在首卡之前。它**不长成事件卡** ——
+    「从酒店出门」不是一项安排，是两项安排之间的路；给它一张卡，
+    每一天就都会以一张什么都没说的卡开头。
+    余量留空：前面没有事件的结束时刻可减，编一个只会误报冲突。
+  */
+  const opening = day.legs.find((l) => l.afterEventId === null)
+  if (opening) rows.push({ kind: 'leg', key: opening.id, leg: opening, slackMin: null, gapMin: 0 })
 
   events.forEach((ev, i) => {
     const prev = i > 0 ? events[i - 1] : undefined

@@ -11,7 +11,7 @@ import {
   type ParseCtx,
 } from './blocks.ts'
 import { buildDays } from './days.ts'
-import { checkCoordOutliers, lintDayFlow, lintUnreferenced } from './lint.ts'
+import { checkCoordOutliers, lintDayFlow, lintDayOpening, lintUnreferenced } from './lint.ts'
 import { detailIndex } from './resolve.ts'
 import { daysBetween, isIsoDate, stableId } from './values.ts'
 
@@ -74,7 +74,13 @@ export function parse(src: string): ParseResult {
   const { journeys, stays, rentals, detailNames } = readFrontBlocks(ctx, scan, resolvePlaceRef)
 
   // ── 天 ──
-  const { days, flows } = buildDays(ctx, scan.rawDays, { start, end }, resolvePlaceRef, detailNames)
+  // stays 也进来：当天的开场通勤（住处 → 第一站）从住宿区间认领起点
+  const { days, flows } = buildDays(ctx, scan.rawDays, {
+    dates: { start, end },
+    resolvePlaceRef,
+    detailNames,
+    stays,
+  })
   days.sort((a, b) => a.date.localeCompare(b.date))
 
   // 「首次引用」按日期序判定，所以必须排完序再算 —— 若按书写序，
@@ -90,6 +96,7 @@ export function parse(src: string): ParseResult {
 
   // ── 语义 lint ──
   lintDayFlow(bag, flows)
+  lintDayOpening(bag, flows)
   lintUnreferenced(bag, { journeys, stays, rentals }, refIndex.firstRef)
   checkCoordOutliers(bag, [...places.values()], placeLines)
 

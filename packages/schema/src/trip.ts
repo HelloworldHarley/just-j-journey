@@ -194,8 +194,11 @@ export const LegSchema = z.object({
    * 这一段路发生在哪个事件之后。
    * 不能靠 from/to 的 placeId 反查 —— 同一地点一天内可能出现多次
    * （Day 1 的 Astra 就出现两次），placeId 对不出唯一的位置。
+   *
+   * **null = 当天的开场那一段**：从昨晚住处到第一个事件，前面没有事件可挂。
+   * 由 `trip-day` 的 `from_stay` 派生，起点从 `trip-stays` 区间认领。
    */
-  afterEventId: z.string().min(1),
+  afterEventId: z.string().min(1).nullable(),
   /** placeId；起点或终点没有地点时为 null */
   from: z.string().nullable(),
   to: z.string().nullable(),

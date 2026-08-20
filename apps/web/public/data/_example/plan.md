@@ -154,6 +154,7 @@ detail: 京都四条 UNIZO
 theme: 清水寺晨游，午后返程
 sunrise: "06:27"
 sunset: "16:51"
+from_stay: {mode: bus, minutes: 15, label: 四条河原町搭 207 路上山}
 ```
 
 ### 清水寺

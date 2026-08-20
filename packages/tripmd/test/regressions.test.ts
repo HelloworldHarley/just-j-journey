@@ -225,6 +225,142 @@ ${event('入住', '"16:00"')}`
   })
 })
 
+describe('每天从住处出发', () => {
+  /** 住 Astra 到 10-03 早上；Day 2 早上从酒店走去派克市场 */
+  const base = (day2: string): string => `---
+id: t
+title: T
+destination: X
+timezone: UTC
+start: 2026-10-01
+end: 2026-10-02
+---
+
+## 住宿
+
+\`\`\`trip-stays
+- what: Astra Hotel
+  from: "2026-10-01 16:00"
+  to: "2026-10-03 09:45"
+\`\`\`
+
+## 地点表
+
+\`\`\`trip-places
+- name: Astra Hotel
+  coord: 47.6211, -122.3368
+  category: hotel
+- name: 派克市场
+  coord: 47.6097, -122.3422
+  category: food
+\`\`\`
+
+## Day 1 · 2026-10-01
+${event('入住', '"16:00"', 'place: Astra Hotel\ndetail: Astra Hotel')}
+## Day 2 · 2026-10-02
+${day2}`
+
+  const declared = base(
+    ['```trip-day', 'from_stay: {mode: walk, minutes: 20, label: 顺 Denny Way 下坡}', '```', '']
+      .join('\n') + event('派克市场', '08:45–11:10', 'place: 派克市场'),
+  )
+
+  it('开场段挂在天上而不是事件后，起点自动认领当晚住处', () => {
+    const { trip, diagnostics } = parse(declared)
+    expect(diagnostics.filter((d) => d.severity === 'error')).toEqual([])
+    const d2 = trip!.days.find((d) => d.index === 2)!
+    expect(d2.legs).toHaveLength(1)
+    const leg = d2.legs[0]!
+    expect(leg.afterEventId).toBeNull()
+    expect(leg.from).toBe(trip!.places.find((p) => p.name === 'Astra Hotel')!.id)
+    expect(leg.to).toBe(d2.events[0]!.placeId)
+    expect(leg.durationMin).toBe(20)
+    expect(leg.mode).toBe('walk')
+  })
+
+  it('写回 trip-day 块，往返幂等', () => {
+    const once = parse(declared).trip!
+    const md = serialize(once)
+    expect(md).toContain('from_stay: {mode: walk, minutes: 20, label: 顺 Denny Way 下坡}')
+    const twice = parse(md).trip!
+    expect(twice.days[1]!.legs).toEqual(once.days[1]!.legs)
+  })
+
+  it('该有却没写 → 警告，不静默漏掉半天的路', () => {
+    const { diagnostics } = parse(base(event('派克市场', '08:45–11:10', 'place: 派克市场')))
+    const warn = diagnostics.find((d) => d.message.includes('这段路没有交代'))
+    expect(warn?.severity).toBe('warning')
+    expect(warn?.hint).toContain('from_stay')
+  })
+
+  it('第一个事件就在住处时不警告 —— 那天本来就从住处开始', () => {
+    const { diagnostics } = parse(base(event('早餐 + 退房', '09:00–09:45', 'place: Astra Hotel')))
+    expect(diagnostics.filter((d) => d.message.includes('这段路没有交代'))).toEqual([])
+  })
+
+  it('落地当天不警告 —— 入住当天早上你还没到', () => {
+    const { diagnostics } = parse(base(event('派克市场', '08:45–11:10', 'place: 派克市场')))
+    expect(diagnostics.filter((d) => d.message.startsWith('Day 1'))).toEqual([])
+  })
+
+  it('第一个事件就在住处却写了 from_stay → 报错，这段路不存在', () => {
+    const md = base(
+      ['```trip-day', 'from_stay: {mode: walk, minutes: 5}', '```', ''].join('\n') +
+        event('早餐 + 退房', '09:00–09:45', 'place: Astra Hotel'),
+    )
+    const err = parse(md).diagnostics.find((d) => d.severity === 'error')
+    expect(err?.message).toContain('就在住处')
+  })
+
+  it('当天没有住宿区间覆盖却写了 from_stay → 报错', () => {
+    const md = `---
+id: t
+title: T
+destination: X
+timezone: UTC
+start: 2026-10-01
+end: 2026-10-01
+---
+
+## Day 1 · 2026-10-01
+
+\`\`\`trip-day
+from_stay: {mode: walk, minutes: 20}
+\`\`\`
+${event('派克市场', '08:45–11:10')}`
+    const err = parse(md).diagnostics.find((d) => d.severity === 'error')
+    expect(err?.message).toContain('没有住宿区间覆盖')
+  })
+
+  it('删掉当天第一个事件后，开场段自动改指新的第一站', () => {
+    // 挂在事件上的 to_next 删事件时会一起烂掉（见「删除/移动事件时的通勤段」），
+    // 开场段挂在天上，重新 parse 就该自己接到新的首站 —— 不能跟着消失、也不能指向亡魂
+    const md = base(
+      ['```trip-day', 'from_stay: {mode: walk, minutes: 20}', '```', ''].join('\n') +
+        event('派克市场', '08:45–11:10', 'place: 派克市场') +
+        event('别处', '12:00–13:00'),
+    )
+    const trip = parse(md).trip!
+    const first = trip.days[1]!.events[0]!
+    const r = applyPatch(trip, [{ op: 'remove_event', eventId: first.id }])
+    expect(r.ok).toBe(true)
+    const legs = r.trip.days[1]!.legs
+    expect(legs).toHaveLength(1)
+    expect(legs[0]!.afterEventId).toBeNull()
+    expect(legs[0]!.to).toBe(r.trip.days[1]!.events[0]!.placeId)
+  })
+
+  it('mode 拼错的诊断与 to_next 同一套', () => {
+    const md = base(
+      ['```trip-day', 'from_stay: {mode: wlak, minutes: 20}', '```', ''].join('\n') +
+        event('派克市场', '08:45–11:10', 'place: 派克市场'),
+    )
+    const err = parse(md).diagnostics.find((d) => d.severity === 'error')
+    expect(err?.message).toContain('`from_stay` 的 mode "wlak" 无效')
+    expect(err?.hint).toContain('walk')
+  })
+})
+
 describe('旧写法不静默丢数据', () => {
   it('事件上的 `stay:` 与天上的 `lodging:` 都报错', () => {
     // 迁移到 trip-stays 之后，这两个键不再被读取。
