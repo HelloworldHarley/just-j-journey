@@ -5,11 +5,13 @@ import {
   Map as LibreMap,
   Marker,
   NavigationControl,
+  setWorkerUrl,
   type GeoJSONSource,
   type GeoJSONSourceSpecification,
   type StyleSpecification,
 } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Trip } from '@jjj/schema'
 import { missingCoords } from '@jjj/tripmd'
 import {
@@ -39,6 +41,22 @@ import { PlaceCard } from './PlaceCard.tsx'
  * 硬约束：运行时零 API 调用 —— 瓦片是静态取用，路线是虚线直连
  * （真路网 polyline 由下一轮 enrich 管道预计算进 legs.geometry）。
  */
+
+/*
+  瓦片解析跑在 web worker 里，而 maplibre 自己**在运行时**拼那个文件的地址：
+  拿 `import.meta.url` 换名成同目录的 `maplibre-gl-worker.mjs`。这个字符串是算出来的，
+  打包器静态分析看不见，于是 worker 文件从来没被拷进产物 —— 线上请求
+  `/assets/maplibre-gl-worker.mjs` 直接 404，底图和动线全画不出来（pin 是 DOM，照常显示）。
+
+  用 `?url` 显式导入，文件就成了 vite 认得的一份资源（带 hash、跟着 base 走），
+  再用官方的 `setWorkerUrl` 告诉 maplibre 去哪儿取。放在模块顶层：这一句必须早于
+  任何 `new LibreMap`，而地图整块是懒加载的，chunk 求值时正好赶在组件渲染之前。
+
+  **这个坑 dev 和 `vite preview` 都照不出来**：dev 下 maplibre 从 node_modules 直接加载、
+  worker 就在它旁边；preview 有 SPA 回退，会把缺失的文件回成 200 + index.html。
+  只有真静态托管（GitHub Pages）才 404。验证要对着产物 + 真静态服务器跑。
+*/
+setWorkerUrl(workerUrl)
 
 /** 底图样式。3d = liberty + 建筑挤出 + 俯仰角，不是独立样式表 */
 const STYLE_KEYS = ['bright', 'positron', 'liberty', '3d'] as const
