@@ -6,14 +6,19 @@
  *   pnpm data:check <dir>        只校验一个（含 _ 前缀目录）
  *
  * 注意它**不再生成任何展示用数据** —— 浏览器直接 fetch plan.md 现场解析，
- * 不存在"忘了重新导入"这回事。这里只做两件事：
+ * 不存在"忘了重新导入"这回事。这里只做三件事：
  *   1. CI / 提交前把关：错误退出码非零
  *   2. 维护 manifest.json（首页需要知道有哪些行程；_ 前缀目录不入册）
+ *   3. 生成日历订阅文件 calendar.ics（订阅方要的是**可轮询的静态地址**，
+ *      浏览器现场解析给不了这个 —— 这是「不生成展示数据」原则的唯一例外，
+ *      与 geometry.json 同理：派生文件躺在 plan.md 旁边，真相仍只有一份。
+ *      CI 每次部署都跑这里，所以推 main 之后订阅方的日历自动跟上；
+ *      文件被 gitignore —— 重新生成零成本，不值得进版本库吃 DTSTAMP 抖动的 diff）
  */
 import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parse, formatDiagnostics, mergeGeometry, summarize } from '@jjj/tripmd'
+import { parse, formatDiagnostics, mergeGeometry, summarize, toIcs } from '@jjj/tripmd'
 import type { Trip } from '@jjj/schema'
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -81,6 +86,9 @@ for (const dir of dirs) {
     )}`,
   )
   geometryHealth(dir, trip)
+  // 解析通过就生成订阅文件 —— `_` 前缀行程也生成（本地 dev 可订阅试用），
+  // 反正 CI 部署前会把 _* 目录整个从 dist 里删掉，线上不会多出东西
+  writeFileSync(join(DATA, dir, 'calendar.ics'), toIcs(trip))
   if (!dir.startsWith('_')) manifest.push(dir)
 }
 

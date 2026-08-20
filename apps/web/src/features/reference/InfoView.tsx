@@ -4,6 +4,7 @@ import { Markdown } from '../../components/Markdown.tsx'
 import { RailLayout } from '../../components/RailLayout.tsx'
 import { isBudgetRef } from '../../lib/derive.ts'
 import { segChip } from '../../components/Segmented.tsx'
+import { CalendarExport } from './CalendarExport.tsx'
 
 /**
  * 资料页：打包、住宿备选、雨天预案、出发前清单…
@@ -11,6 +12,9 @@ import { segChip } from '../../components/Segmented.tsx'
  * 这些内容不属于任何一天，硬塞进时间轴会破坏日程的连续性；
  * 但它们占了原始行程近三分之一的篇幅，不能丢。所以单开一页。
  * 预算类附录不在这里 —— 它们渲染在预算页底部，和自动统计放在一起。
+ *
+ * 日历导出也住这页：它同样是「不属于任何一天」的整程动作，
+ * 而且没有附录的行程也该能导出 —— 所以两个分支都要渲染它。
  */
 export default function InfoView({ trip }: { trip: Trip }) {
   const refs = trip.reference.filter((r) => !isBudgetRef(r))
@@ -18,9 +22,12 @@ export default function InfoView({ trip }: { trip: Trip }) {
 
   if (refs.length === 0) {
     return (
-      <p className="mx-auto max-w-3xl px-4 py-16 text-[13px] text-graphite">
-        这份行程没有附录。在 plan.md 里用 <code>## 附录 · 标题</code> 添加。
-      </p>
+      <div className="mx-auto max-w-3xl px-4 pb-16 pt-6">
+        <CalendarExport trip={trip} />
+        <p className="text-[13px] text-graphite">
+          这份行程没有附录。在 plan.md 里用 <code>## 附录 · 标题</code> 添加。
+        </p>
+      </div>
     )
   }
 
@@ -50,6 +57,7 @@ export default function InfoView({ trip }: { trip: Trip }) {
       </nav>
 
       <article className="min-w-0 pb-24 xl:pt-11">
+        <CalendarExport trip={trip} />
         {current && (
           <>
             <h2 className="display mb-4 flex items-center gap-2 text-[26px] tracking-[-0.02em] text-ink">

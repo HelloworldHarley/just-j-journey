@@ -10,7 +10,7 @@ pnpm dev                         # @jjj/web on :5173 (host: true, reachable over
 pnpm build                       # vite build (CI adds --base=/<repo>/ for GitHub Pages)
 pnpm test                        # vitest run — whole workspace, no per-package config
 pnpm typecheck                   # root tsconfig (covers tools/) + `pnpm -r exec tsc --noEmit`
-pnpm data:check                  # parse every fixture under apps/web/public/data + rewrite manifest.json
+pnpm data:check                  # parse every fixture under apps/web/public/data + rewrite manifest.json + emit calendar.ics per trip
 pnpm data:check seattle-2026-10  # single fixture (accepts `_`-prefixed dirs)
 
 pnpm enrich <dir>                    # real road routes → <dir>/geometry.json (needs ORS_API_KEY)
@@ -52,7 +52,9 @@ pnpm workspace, three packages:
 
 **Single artifact, no JSON layer.** The browser fetches `plan.md` and parses it in place ([MarkdownTripRepository.ts](apps/web/src/data/MarkdownTripRepository.ts), ~20ms/trip). There is no export/import step to forget. `tools/check.ts` is purely a CI gate plus `manifest.json` maintenance.
 
-**One exception, and it is a cache:** `geometry.json` next to `plan.md` holds pre-computed road polylines (`pnpm enrich` writes it; routing APIs forbid runtime batching). plan.md stays the only truth — every record carries the endpoint coords it was computed from, and **anything that doesn't line up is discarded**: no file, bad JSON, unknown version, drifted coords, undecodable polyline → that leg falls back to the dashed straight line it always drew. Never let a derived cache fail a trip load. One implementation of those rules in [geometry.ts](packages/tripmd/src/geometry.ts), consumed by the repository, `tools/enrich.ts` and the `data:check` health line. Design and reasons: `docs/superpowers/specs/2026-08-13-enrich-pipeline-design.md`.
+**Two derived files live next to `plan.md`; neither is ever the truth.** `calendar.ics` is the calendar subscription feed: `data:check` regenerates it from plan.md on every run (CI runs that before build, so pushing main updates subscribers on their next poll), it is gitignored (free to rebuild — not worth DTSTAMP-churn diffs), and the 资料 view offers subscribe/copy/download via one `toIcs` ([CalendarExport.tsx](apps/web/src/features/reference/CalendarExport.tsx), links from [calendar-link.ts](apps/web/src/lib/calendar-link.ts)). Beware: event UIDs ride the parser's position-based ids, so inserting an event mid-day shifts later UIDs — fine for subscriptions (the feed replaces wholesale), duplicates on repeated manual imports.
+
+**The second, and it is a cache:** `geometry.json` next to `plan.md` holds pre-computed road polylines (`pnpm enrich` writes it; routing APIs forbid runtime batching). plan.md stays the only truth — every record carries the endpoint coords it was computed from, and **anything that doesn't line up is discarded**: no file, bad JSON, unknown version, drifted coords, undecodable polyline → that leg falls back to the dashed straight line it always drew. Never let a derived cache fail a trip load. One implementation of those rules in [geometry.ts](packages/tripmd/src/geometry.ts), consumed by the repository, `tools/enrich.ts` and the `data:check` health line. Design and reasons: `docs/superpowers/specs/2026-08-13-enrich-pipeline-design.md`.
 
 **Data access has exactly one seam:** the `TripRepository` interface, injected in [main.tsx](apps/web/src/main.tsx). Views never learn where data comes from; a future HTTP backend is a one-line swap there.
 
@@ -105,7 +107,7 @@ The map (MapLibre GL + OpenFreeMap tiles) makes **zero API calls at runtime** �
 
 ## Backlog
 
-Wire up `toIcs()` (written, no UI entry) → render `trip-constraints` (parsed, never displayed; the week view is the natural home) → edit mode on `applyPatch` — two paths side by side, hand the data to an agent to improve *and* edit by hand; **filling in missing coordinates belongs to that round**, not to a write path of its own (the map's "N places missing coords" chip is read-only today, and `saveTrip?` on `TripRepository` is still an unimplemented Phase-6 stub) → agent authoring pipeline (`docs/AUTHORING_PROMPT.md`).
+Render `trip-constraints` (parsed, never displayed; the week view is the natural home) → edit mode on `applyPatch` — two paths side by side, hand the data to an agent to improve *and* edit by hand; **filling in missing coordinates belongs to that round**, not to a write path of its own (the map's "N places missing coords" chip is read-only today, and `saveTrip?` on `TripRepository` is still an unimplemented Phase-6 stub) → agent authoring pipeline (`docs/AUTHORING_PROMPT.md`).
 
 `seattle-2026-10` is fully enriched: 0 places missing coords, 28 of its 32 legs on real road geometry (the other 4 are rail/monorail — no public line geometry, dashed by design). For another trip: `--geocode` → review the list → `--apply` → re-run `pnpm enrich <dir>`; `ORS_API_KEY` lives in the repo-root `.env`.
 
