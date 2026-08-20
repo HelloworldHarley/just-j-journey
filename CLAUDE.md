@@ -13,6 +13,10 @@ pnpm typecheck                   # root tsconfig (covers tools/) + `pnpm -r exec
 pnpm data:check                  # parse every fixture under apps/web/public/data + rewrite manifest.json
 pnpm data:check seattle-2026-10  # single fixture (accepts `_`-prefixed dirs)
 
+pnpm enrich <dir>                    # real road routes → <dir>/geometry.json (needs ORS_API_KEY)
+pnpm enrich <dir> --geocode          # geocode the missing coords, print the list, write nothing
+pnpm enrich <dir> --geocode --apply  # after review, write the coords back into plan.md
+
 pnpm vitest run packages/tripmd/test/patch.test.ts   # single test file
 pnpm vitest run -t 'roundtrip'                       # single test by name
 ```
@@ -31,12 +35,14 @@ pnpm workspace, three packages:
 | Package | Role |
 |---|---|
 | `packages/schema` (`@jjj/schema`) | zod `Trip` model, category/palette/time enums. No logic. |
-| `packages/tripmd` (`@jjj/tripmd`) | `parse` (orchestrating `sections`/`blocks`/`days`/`lint`) / `serialize` / `applyPatch` / `summarize` / `toIcs` / `detailIndex` / `timelineDates` / value coercion |
+| `packages/tripmd` (`@jjj/tripmd`) | `parse` (orchestrating `sections`/`blocks`/`days`/`lint`) / `serialize` / `applyPatch` / `summarize` / `toIcs` / `detailIndex` / `missingCoords` / `timelineDates` / `geometry` / value coercion |
 | `apps/web` (`@jjj/web`) | Vite + React 19 + Tailwind v4 + HashRouter |
 
 **Hub-and-spoke.** The zod `Trip` object is the hub; TripMD text round-trips through `parse()`/`serialize()`. Semantic idempotence — `parse(serialize(parse(md))) === parse(md)` — is pinned by [roundtrip.test.ts](packages/tripmd/test/roundtrip.test.ts). Every write goes `applyPatch` → `serialize` → re-`parse`; **the parser is the only validator**.
 
 **Single artifact, no JSON layer.** The browser fetches `plan.md` and parses it in place ([MarkdownTripRepository.ts](apps/web/src/data/MarkdownTripRepository.ts), ~20ms/trip). There is no export/import step to forget. `tools/check.ts` is purely a CI gate plus `manifest.json` maintenance.
+
+**One exception, and it is a cache:** `geometry.json` next to `plan.md` holds pre-computed road polylines (`pnpm enrich` writes it; routing APIs forbid runtime batching). plan.md stays the only truth — every record carries the endpoint coords it was computed from, and **anything that doesn't line up is discarded**: no file, bad JSON, unknown version, drifted coords, undecodable polyline → that leg falls back to the dashed straight line it always drew. Never let a derived cache fail a trip load. One implementation of those rules in [geometry.ts](packages/tripmd/src/geometry.ts), consumed by the repository, `tools/enrich.ts` and the `data:check` health line. Design and reasons: `docs/superpowers/specs/2026-08-13-enrich-pipeline-design.md`.
 
 **Data access has exactly one seam:** the `TripRepository` interface, injected in [main.tsx](apps/web/src/main.tsx). Views never learn where data comes from; a future HTTP backend is a one-line swap there.
 
@@ -47,6 +53,7 @@ pnpm workspace, three packages:
 - **Three front-loaded blocks** — ` ```trip-transports ` (long-haul), ` ```trip-stays `, ` ```trip-rentals `. All detail (times, platform, `cost`, terms) is declared once up front; `what` is unique across all three.
 - **`detail:` is the only pointer.** Events carry `detail: <name>`; writing `transport:`/`stay:`/`lodging:` on an event is a migration error. The **first reference in date order** (not authoring order — this is what makes round-tripping idempotent) renders the full info module / ticket timeline; later references are plain mentions and dedupe in the stay/transport filter views. The scan lives once in [resolve.ts](packages/tripmd/src/resolve.ts) (`detailIndex`) — parser, web modules and budget all consume the same index.
 - **Money:** front-block `cost` counts toward the budget (long-haul on first-reference day, stays on check-in, rentals on pick-up); event `cost` is only for on-the-spot items. One implementation in [budget.ts](apps/web/src/lib/budget.ts), shared by the budget page and month view.
+- **A day starts where you woke up.** ` ```trip-day `'s `from_stay:` is the opening commute (same shape as `to_next`); the origin is never written — `stayOfMorning(stays, date)` claims it from the `trip-stays` interval on **dates only** (`from.date < date ≤ to.date`), which excludes arrival day and includes check-out morning for free. It lands as the day's first `Leg` with `afterEventId: null`, so **every consumer that indexes legs by `afterEventId` must filter null first** (serialize, `buildTimeline`, `dayPaths`, the slack lint). The list draws one commute row before the first card — **never an extra event card**; the map makes the stay stop #1. Missing when it should be there → warning (`lintDayOpening`).
 - **Times are input, dates are derived** — never infer a day rollover from duration across time zones.
 - **Date arithmetic always goes through `@jjj/tripmd`'s UTC-anchored helpers** (`addDays` / `daysBetween` / `mondayIndex`). Bare `new Date(iso)` is banned.
 - **Diagnostics are loud by design:** misspelled field → warning + suggestion, dangling reference → error + suggestion, unreferenced front-block record → warning. Silently dropping data is a bug. The `_broken` fixture pins this.
@@ -76,7 +83,7 @@ apps/web/src/
 
 Routing is HashRouter (`/#/trip/seattle-2026-10/list`) so static hosting needs no rewrites. All five views are built: list ✓ calendar ✓ map ✓ info ✓ budget ✓ — **every view route is lazy-loaded**, so the shell carries none of their dependencies (maplibre-gl rides with the map chunk, react-markdown with the shared one).
 
-The map (MapLibre GL + OpenFreeMap tiles) makes **zero API calls at runtime** — tiles are static, routes are dashed straight lines until `legs.geometry` gets pre-computed polylines. The OSM attribution is collapsed to its compact ⓘ at startup (it ships *expanded*, eating a full 351px row on a phone) — collapse it only after attributions settle, or MapLibre re-expands it. Marker opacity must go through `marker.setOpacity()`; writing `element.style.opacity` is silently overwritten on every redraw. See `docs/superpowers/specs/2026-08-11-map-view-design.md` for these and the other overlay rules.
+The map (MapLibre GL + OpenFreeMap tiles) makes **zero API calls at runtime** — tiles are static, and every road route is pre-computed offline by `pnpm enrich`. A leg with geometry draws **solid**, one without draws **dashed**; that difference is deliberately visible, so the casing under it is dash-matched too (maplibre's `line-dasharray` is in line-width units, not pixels — widen the casing and you must shrink the dash values to match; `dashCasing()`). The bottom-right chip switches the whole scene between road geometry and stop-to-stop straight lines (`straightSegments()`, every segment `real: false` — the mode has no true/estimated split to show). Switching only calls `setData` on each day's source: no layer rebuild (flicker) and **no refit** (the camera must not jump on every toggle). A day's route is usually a loop (leave the hotel, come back to it — first and last stop share one coordinate), so a **checkered start flag** is planted into that day's pin #1: deliberately not the pin's shape or palette, `startFlagOffset()` tracks the pin's own cluster offset and bites into it so there is no seam, and it only stands while a single day is selected — five flags on the all-days view is noise. Direction arrows ride a per-day `symbol` layer (`symbol-placement: 'line'`, one every 105px) over the same source, so **both modes get them for free** and maplibre rotates each one along the line — the icon must therefore be drawn **pointing right**, since that is its 0°. The icon is a canvas image added via `map.addImage`, never a Unicode triangle: text symbols need the basemap style's glyph pack, which the offline paper fallback does not have. The OSM attribution is collapsed to its compact ⓘ at startup (it ships *expanded*, eating a full 351px row on a phone) — collapse it only after attributions settle, or MapLibre re-expands it. Marker opacity must go through `marker.setOpacity()`; writing `element.style.opacity` is silently overwritten on every redraw. See `docs/superpowers/specs/2026-08-11-map-view-design.md` for these and the other overlay rules.
 
 ## Conventions
 
@@ -86,6 +93,8 @@ The map (MapLibre GL + OpenFreeMap tiles) makes **zero API calls at runtime** �
 
 ## Backlog
 
-Enrich pipeline (fill `legs.geometry` with real road polylines — routing APIs forbid runtime batching, so it must be pre-computed; the dashed lines upgrade to solid once filled — and fill the coordinates the map reports as missing) → wire up `toIcs()` (written, no UI entry) → render `trip-constraints` (parsed, never displayed; the week view is the natural home) → edit mode on `applyPatch` → agent authoring pipeline (`docs/AUTHORING_PROMPT.md`).
+Wire up `toIcs()` (written, no UI entry) → render `trip-constraints` (parsed, never displayed; the week view is the natural home) → edit mode on `applyPatch` — two paths side by side, hand the data to an agent to improve *and* edit by hand; **filling in missing coordinates belongs to that round**, not to a write path of its own (the map's "N places missing coords" chip is read-only today, and `saveTrip?` on `TripRepository` is still an unimplemented Phase-6 stub) → agent authoring pipeline (`docs/AUTHORING_PROMPT.md`).
 
-`docs/HANDOVER.md` holds the cross-machine handover state; `docs/superpowers/specs/2026-08-04-calendar-view-design.md` records every deviation between the calendar design and its implementation, with reasons.
+`seattle-2026-10` is fully enriched: 0 places missing coords, 28 of its 32 legs on real road geometry (the other 4 are rail/monorail — no public line geometry, dashed by design). For another trip: `--geocode` → review the list → `--apply` → re-run `pnpm enrich <dir>`; `ORS_API_KEY` lives in the repo-root `.env`.
+
+**Process docs are local-only, by choice.** `docs/HANDOVER.md` (cross-machine handover state) and everything under `docs/superpowers/specs/` (per-round design + implementation records, including every deviation and its reason) are gitignored — a fresh clone will not have them, and pointers to them elsewhere in this file will dangle there. Ask Harley for the files, or rebuild the context from this file plus `docs/TRIPMD_SPEC.md`. Product specs (`TRIPMD_SPEC` / `AUTHORING_PROMPT` / `archive/`) stay in the repo.

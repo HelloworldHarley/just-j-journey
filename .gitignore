@@ -5,3 +5,8 @@ dist/
 .env
 .env.local
 .wrangler/
+
+# 过程文档只在本地留：交接状态、各轮设计与实现记录。
+# 产品规范（TRIPMD_SPEC / AUTHORING_PROMPT / archive）照旧进仓库。
+docs/HANDOVER.md
+docs/superpowers/
