@@ -13,7 +13,8 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parse, formatDiagnostics, summarize } from '@jjj/tripmd'
+import { parse, formatDiagnostics, mergeGeometry, summarize } from '@jjj/tripmd'
+import type { Trip } from '@jjj/schema'
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const DATA = join(ROOT, 'apps/web/public/data')
@@ -79,7 +80,42 @@ for (const dir of dirs) {
       `${s.dayCount} 天 · ${s.eventCount} 事件 · ${s.bookingCount} 待订`,
     )}`,
   )
+  geometryHealth(dir, trip)
   if (!dir.startsWith('_')) manifest.push(dir)
+}
+
+/**
+ * geometry.json 的体检行 —— 方案 B（polyline 存旁路文件）主要风险的对冲。
+ *
+ * 派生文件会与 plan.md 脱节，而脱节的表现是「地图默默画回直线」，无声无息。
+ * 这一行把它变得可见。**失效不算错误、不影响退出码**：回退本来就是设计内的行为，
+ * 这里只是告诉你有多少段没走真路、该不该重跑 enrich。
+ */
+function geometryHealth(dir: string, trip: Trip): void {
+  const path = join(DATA, dir, 'geometry.json')
+  if (!existsSync(path)) return // 没跑过 enrich 的行程就是没有，不是问题
+
+  let raw: unknown
+  try {
+    raw = JSON.parse(readFileSync(path, 'utf8'))
+  } catch {
+    console.log(`  ${yellow('⚠')} ${dim('geometry.json 不是合法 JSON，整份忽略 —— 全部回退直线')}`)
+    return
+  }
+
+  // mergeGeometry 会就地写 trip，这里只要计数；trip 在这个循环之后就不再用了
+  const r = mergeGeometry(trip, raw)
+  if (!r) {
+    console.log(`  ${yellow('⚠')} ${dim('geometry.json 版本或结构不认识，整份忽略 —— 全部回退直线')}`)
+    return
+  }
+  const bad = [
+    r.stale > 0 ? `${r.stale} 条坐标对不上` : '',
+    r.broken > 0 ? `${r.broken} 条解不开` : '',
+    r.orphan > 0 ? `${r.orphan} 条无人认领` : '',
+  ].filter(Boolean)
+  const tail = bad.length > 0 ? yellow(`（${bad.join(' · ')}，均回退直线，跑 pnpm enrich ${dir} 重算）`) : ''
+  console.log(`  ${dim(`路线 ${r.used}/${r.needed} 有效`)} ${tail}`)
 }
 
 // 全量跑的时候顺手把 manifest 对齐 —— 新增行程 = 建目录 + 跑一次 check

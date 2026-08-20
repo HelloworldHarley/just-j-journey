@@ -1,5 +1,5 @@
 import type { Trip, TripSummary } from '@jjj/schema'
-import { formatDiagnostics, parse, summarize } from '@jjj/tripmd'
+import { formatDiagnostics, mergeGeometry, parse, summarize } from '@jjj/tripmd'
 import { TripNotFoundError, type TripRepository } from './TripRepository.ts'
 
 /**
@@ -51,7 +51,36 @@ export class MarkdownTripRepository implements TripRepository {
     if (warnings.length > 0) {
       console.warn(`[jjj] ${id} 有 ${warnings.length} 条警告：\n` + formatDiagnostics(`${id}/plan.md`, warnings))
     }
+    await this.mergeGeometry(id, trip)
     this.parsed.set(id, trip)
     return trip
+  }
+
+  /**
+   * 把预计算的真实路网并进 `leg.geometry`。
+   *
+   * plan.md 仍是唯一真相，geometry.json 只是**派生缓存** —— 所以这里的每一条
+   * 失败路径都只意味着「这段没有真路」，绝不让行程加载失败：文件不存在、不是
+   * JSON、版本不认识、端点漂了、poly 解不开，一律跳过，地图照常画直连虚线。
+   * 「宁可不画，也不画错」。判断规则本身在 `@jjj/tripmd` 的 `mergeGeometry`，
+   * 与 enrich 工具和 data:check 共用一份。
+   */
+  private async mergeGeometry(id: string, trip: Trip): Promise<void> {
+    let raw: unknown
+    try {
+      const res = await fetch(`${this.base}/${encodeURIComponent(id)}/geometry.json`)
+      if (!res.ok) return // 404 是常态：还没跑过 enrich 的行程就是没有
+      raw = await res.json()
+    } catch {
+      return // 非 JSON / 网络中断 —— 派生数据不值得让页面出错
+    }
+
+    const report = mergeGeometry(trip, raw)
+    if (import.meta.env.DEV && report && report.stale + report.broken > 0) {
+      console.warn(
+        `[jjj] ${id}：geometry.json 有 ${report.stale + report.broken} 条与当前 plan.md 对不上，` +
+          `已回退直线（${report.used}/${report.needed} 条生效）。跑 pnpm enrich ${id} 重算`,
+      )
+    }
   }
 }

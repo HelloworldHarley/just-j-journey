@@ -2,7 +2,17 @@ export { parse, type ParseResult } from './parse.ts'
 export { serialize } from './serialize.ts'
 export { applyPatch, type PatchResult } from './patch.ts'
 export { summarize, dayComposition } from './summary.ts'
-export { detailIndex, type DetailIndex } from './resolve.ts'
+export { detailIndex, missingCoords, stayOfMorning, type DetailIndex } from './resolve.ts'
+export {
+  decodePolyline,
+  mergeGeometry,
+  routableLegs,
+  routeKey,
+  type GeometryDoc,
+  type GeometryRecord,
+  type MergeReport,
+  type RouteNeed,
+} from './geometry.ts'
 export { timelineDates, dayOffsetOf, type TimelineDates } from './transport-dates.ts'
 export {
   DiagnosticBag,

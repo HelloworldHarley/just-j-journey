@@ -94,6 +94,7 @@ currency: USD
   category: flight
 - name: Astra Hotel
   en: Astra Hotel Seattle, Autograph Collection
+  coord: 47.6211, -122.3368
   category: hotel
   note: 300 Terry Ave N，South Lake Union。50K 券 + 补 5,000 点
 - name: Seattle Center
@@ -110,7 +111,9 @@ currency: USD
   category: viewpoint
 - name: Elliott's Oyster House
   en: Elliott's Oyster House Pier 56 Seattle
+  coord: 47.6054, -122.3409
   category: food
+  note: Pier 56，1201 Alaskan Way
 - name: 派克市场
   en: Pike Place Market
   coord: 47.6097, -122.3422
@@ -141,11 +144,13 @@ currency: USD
   category: viewpoint
 - name: How to Cook a Wolf
   en: How to Cook a Wolf Queen Anne Seattle
+  coord: 47.6387, -122.3567
   category: food
 - name: Altitude Sky Lounge
-  en: Altitude Sky Lounge Seattle
+  en: Altitude Sky Lounge Astra Hotel Seattle
+  coord: 47.6211, -122.3368
   category: bar
-  note: Astra 顶层屋顶酒吧
+  note: Astra 顶层屋顶酒吧，与酒店同址
 - name: Kenmore Air 联合湖码头
   en: Kenmore Air Lake Union Seaplane Terminal
   coord: 47.6280, -122.3395
@@ -160,9 +165,11 @@ currency: USD
   category: sight
 - name: Bonney Lake 补货点
   en: Fred Meyer Bonney Lake WA
+  coord: 47.1663, -122.1506
   category: logistics
 - name: Tehaleh Rainier View Point
   en: Tehaleh Rainier View Point Bonney Lake WA
+  coord: 47.1290, -122.1758
   category: viewpoint
   note: 坐标待现场核对，Nominatim 查不到
 - name: Ashford 木屋
@@ -194,8 +201,10 @@ currency: USD
   tentative: true
   note: 十月上旬是否运营需出发前确认
 - name: Asadero Sinaloa
-  en: Asadero Sinaloa Kent WA
+  en: Asadero Prime Kent WA
+  coord: 47.3831, -122.2470
   category: food
+  note: 实际店名 Asadero Prime，310 Washington Ave N, Kent
 - name: Renaissance Seattle
   en: Renaissance Seattle Hotel
   coord: 47.6072, -122.3300
@@ -328,6 +337,7 @@ detail: Astra Hotel
 theme: 提车自驾，市区一路玩到 Kerry Park 日落
 sunrise: "07:08"
 sunset: "18:50"
+from_stay: {mode: walk, minutes: 22, km: 1.7, label: 顺 Westlake Ave 南行下坡, note: 不想走就坐 South Lake Union Streetcar 到 Westlake Center 再走 5 分钟}
 ```
 
 今天的锚点是 18:00 的 Kerry Park 日落，前面所有安排都为它让路。**落后了就按 煤气厂公园 → 日本花园门票 → 苏扎罗图书馆 的顺序往下砍。**
@@ -747,6 +757,7 @@ notes:
 theme: 唐人街早茶，还车返程
 sunrise: "07:13"
 sunset: "18:44"
+from_stay: {mode: walk, minutes: 15, km: 1.4, label: 穿 Pioneer Square 往南到 ID}
 ```
 
 **倒推链不可压缩。** 前一晚已收好行李、网上办好登机，早上从酒店走 15 分钟到唐人街开吃。
