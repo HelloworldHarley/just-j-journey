@@ -8,6 +8,7 @@
     "build": "pnpm --filter @jjj/web build",
     "preview": "pnpm --filter @jjj/web preview",
     "data:check": "tsx tools/check.ts",
+    "check:built": "tsx tools/check-built.ts",
     "enrich": "tsx tools/enrich.ts",
     "typecheck": "tsc --noEmit && pnpm -r exec tsc --noEmit",
     "test": "vitest run"

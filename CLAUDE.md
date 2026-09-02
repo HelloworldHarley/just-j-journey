@@ -23,15 +23,7 @@ pnpm vitest run -t 'roundtrip'                       # single test by name
 
 Full verification gate for any change: `pnpm typecheck && pnpm test && pnpm data:check && pnpm build`, then a Playwright screenshot pass checked by eye — including 390px phone width and both light and dark themes.
 
-**Touching the map? Screenshot the built output, not just `pnpm dev`.** Dev loads maplibre straight from `node_modules`; the build inlines it into a hashed chunk, and the two resolve its web worker differently — that gap left the live map showing pins on a blank canvas from the day it shipped until 2026-08-20. `vite preview` hides it too (its SPA fallback answers a missing asset with 200 + index.html, where GitHub Pages 404s), so serve `apps/web/dist` under a plain static server at the CI base path:
-
-```bash
-cd apps/web && npx vite build --base=/just-j-journey/
-mkdir -p /tmp/pages && ln -sfn "$PWD/dist" /tmp/pages/just-j-journey
-cd /tmp/pages && python3 -m http.server 4174   # → /just-j-journey/#/trip/<id>/map
-```
-
-Assert three things there: a `maplibre-gl-worker-*.js` asset exists in `dist/assets`, the page starts a web worker, and tile requests actually happen. Do **not** assert by reading canvas pixels — a WebGL canvas without `preserveDrawingBuffer` reads back blank and gives you a false failure.
+**Touching the map? Run `pnpm check:built`, not just `pnpm dev`.** Dev loads maplibre straight from `node_modules`; the build inlines it into a hashed chunk, and the two resolve its web worker differently — that gap left the live map showing pins on a blank canvas from the day it shipped until 2026-08-20. `vite preview` hides it too (its SPA fallback answers a missing asset with 200 + index.html, where GitHub Pages 404s). [check-built.ts](tools/check-built.ts) builds at the CI base path into `dist-check/`, then asserts structurally (worker asset exists, its relative imports resolve, a chunk holds its URL — the two historical failure modes, replayed and confirmed red) and, when Chromium + playwright-core are findable (`JJJ_CHROMIUM` / `JJJ_PLAYWRIGHT` to point at them), boots the page on a no-fallback static server and asserts a web worker starts and tiles are requested; missing browser prints an explicit SKIP, never a false green. Do **not** assert by reading canvas pixels — a WebGL canvas without `preserveDrawingBuffer` reads back blank and gives you a false failure.
 
 - Do **not** use `tsc -b` — every tsconfig is `noEmit`, so project references would fight it.
 - Reading `pnpm test` output: check the `Test Files` line, not just `Tests N passed`. A suite that fails to collect still leaves the test count green.
@@ -107,8 +99,8 @@ The map (MapLibre GL + OpenFreeMap tiles) makes **zero API calls at runtime** �
 
 ## Backlog
 
-Render `trip-constraints` (parsed, never displayed; the week view is the natural home) → edit mode on `applyPatch` — two paths side by side, hand the data to an agent to improve *and* edit by hand; **filling in missing coordinates belongs to that round**, not to a write path of its own (the map's "N places missing coords" chip is read-only today, and `saveTrip?` on `TripRepository` is still an unimplemented Phase-6 stub) → agent authoring pipeline (`docs/AUTHORING_PROMPT.md`).
+Render `trip-constraints` (parsed, never displayed; the week view is the natural home; Harley has deferred this — edit mode comes first) → edit mode on `applyPatch` — two paths side by side, hand the data to an agent to improve *and* edit by hand; **filling in missing coordinates belongs to that round**, not to a write path of its own (the map's "N places missing coords" chip is read-only today, and `saveTrip?` on `TripRepository` is still an unimplemented Phase-6 stub). Full five-milestone plan: `docs/superpowers/specs/2026-08-21-edit-mode-design.md` → agent authoring pipeline (`docs/AUTHORING_PROMPT.md`).
 
 `seattle-2026-10` is fully enriched: 0 places missing coords, 28 of its 32 legs on real road geometry (the other 4 are rail/monorail — no public line geometry, dashed by design). For another trip: `--geocode` → review the list → `--apply` → re-run `pnpm enrich <dir>`; `ORS_API_KEY` lives in the repo-root `.env`.
 
-**Process docs are local-only, by choice.** `docs/HANDOVER.md` (cross-machine handover state) and everything under `docs/superpowers/specs/` (per-round design + implementation records, including every deviation and its reason) are gitignored — a fresh clone will not have them, and pointers to them elsewhere in this file will dangle there. Ask Harley for the files, or rebuild the context from this file plus `docs/TRIPMD_SPEC.md`. Product specs (`TRIPMD_SPEC` / `AUTHORING_PROMPT` / `archive/`) stay in the repo.
+**Process docs live in the repo** (since 2026-09-02; they were briefly local-only). `docs/HANDOVER.md` is the cross-machine handover snapshot — update it at the end of a round of work. `docs/superpowers/specs/` holds per-round design + implementation records, including every deviation and its reason; when a design decision looks odd, its spec's 实现记录 section usually explains it. Product specs are `TRIPMD_SPEC` / `AUTHORING_PROMPT` / `archive/`.

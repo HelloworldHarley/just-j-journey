@@ -1,15 +1,11 @@
 node_modules/
 dist/
+dist-check/
 .DS_Store
 *.tsbuildinfo
 .env
 .env.local
 .wrangler/
-
-# 过程文档只在本地留：交接状态、各轮设计与实现记录。
-# 产品规范（TRIPMD_SPEC / AUTHORING_PROMPT / archive）照旧进仓库。
-docs/HANDOVER.md
-docs/superpowers/
 
 # data:check 的派生产物：每次都重新生成（零成本），DTSTAMP 抖动不值得进 diff。
 # CI 在 build 前跑 data:check，文件随 public/ 进 dist —— 订阅地址由此而来。

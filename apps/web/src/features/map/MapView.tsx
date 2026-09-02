@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Layers, Route, Waypoints } from 'lucide-react'
 import {
@@ -276,9 +276,13 @@ export default function MapView({ trip }: { trip: Trip }) {
 
   // ── 选中地点：把它挪到「小卡之上」那块可视区的中心 ────────────
   // useLayoutEffect：要等小卡真的渲染出来才量得到高度，而它高度随事件条数变。
+  // 量到的高度同时写进 --card-h：手机上小卡横跨整个底部，会盖住 bottom-2 的
+  // 两列 chip（透明还能点的反面 —— 看得见却点不到），它们靠这个变量让位。
+  const [cardH, setCardH] = useState(0)
   useLayoutEffect(() => {
     const map = mapRef.current
     const box = containerRef.current
+    setCardH(selected ? (cardRef.current?.offsetHeight ?? 0) : 0)
     if (!map || !box || !selected) return
     map.easeTo({
       center: selected.stop.coord,
@@ -401,7 +405,8 @@ export default function MapView({ trip }: { trip: Trip }) {
         </div>
       )}
 
-      <div className="relative flex-1">
+      {/* --card-h：打开的小卡有多高（关着 = 0）。窄屏的底部 chip 用它算让位量 */}
+      <div className="relative flex-1" style={{ '--card-h': `${cardH}px` } as CSSProperties}>
         {/*
           定位写内联 style：maplibre 的 .maplibregl-map 自带 position:relative，
           且它的 CSS 随懒加载 chunk 在 Tailwind 之后注入 —— 类写法会被同特异性
@@ -434,7 +439,15 @@ export default function MapView({ trip }: { trip: Trip }) {
           容器 pointer-events-none、只在按钮上放行：这个浮层横跨到地图中部，
           透明区照样吞点击（spec 里记过的坑，截图看不出来）。
         */}
-        <div className="pointer-events-none absolute bottom-2 left-2 z-10 flex items-center gap-1">
+        {/*
+          max-sm 的 bottom 挂在 --card-h 上：手机上小卡横跨整个底部（sm 以上居中不占角，
+          不用让），打开时 chip 抬到卡上沿之上 —— 否则就是「看得见却点不到」。
+          关卡时变量归 0，calc 退回 bottom-2 原位；bottom 加过渡，跟着卡片一起走。
+        */}
+        <div
+          className="pointer-events-none absolute bottom-2 left-2 z-10 flex items-center gap-1
+                     transition-[bottom] duration-200 max-sm:bottom-[calc(0.5rem+var(--card-h,0px))]"
+        >
           <button
             type="button"
             onClick={() => {
@@ -492,8 +505,10 @@ export default function MapView({ trip }: { trip: Trip }) {
           淡出的同时必须连命中一起关（chipHit），否则就是「看不见却还能点」。
         */}
         <div
-          className={`pointer-events-none absolute right-10 bottom-2 z-10 flex flex-col items-end
-                      gap-1 transition-opacity duration-200 ${styleOpen ? 'opacity-0' : 'opacity-100'}`}
+          className={`pointer-events-none absolute right-10 bottom-2 z-10 flex flex-col items-end gap-1
+                      transition-[bottom,opacity] duration-200
+                      max-sm:bottom-[calc(0.5rem+var(--card-h,0px))]
+                      ${styleOpen ? 'opacity-0' : 'opacity-100'}`}
         >
           {missingOpen && missing.length > 0 && (
             <ul
