@@ -19,6 +19,7 @@ import {
   PLACE_KEYS,
   RENTAL_KEYS,
   STAY_KEYS,
+  LEG_KEYS,
   STOP_KEYS,
   TRANSPORT_KEYS,
   asRecord,
@@ -213,6 +214,20 @@ function readTransport(bag: DiagnosticBag, line: number, frec: Rec): TripEvent['
     const rec = asRecord(sr)
     if (rec) checkKeys(bag, rec, STOP_KEYS, line, 'stops')
   }
+  // 分段信息同样宽容单条 map；数量必须与行进段一一对应，对不上就大声说
+  const legsField = frec['legs']
+  const legsRaw = Array.isArray(legsField) ? legsField : legsField ? [legsField] : []
+  for (const lr of legsRaw) {
+    const rec = asRecord(lr)
+    if (rec) checkKeys(bag, rec, LEG_KEYS, line, 'legs')
+  }
+  if (legsRaw.length > 0 && legsRaw.length !== stopsRaw.length + 1) {
+    bag.warn(
+      line,
+      `legs 有 ${legsRaw.length} 段，但按 stops 应是 ${stopsRaw.length + 1} 段（stops + 1）`,
+      '每个行进段一条 legs 记录，顺序与时间轴一致',
+    )
+  }
   return {
     traveler: str(frec['traveler']) ?? str(frec['who']),
     mode: mode ?? 'flight',
@@ -227,7 +242,8 @@ function readTransport(bag: DiagnosticBag, line: number, frec: Rec): TripEvent['
     arrDayOffset: num(frec['arr_day_offset']) ?? num(frec['arrDayOffset']) ?? 0,
     price: str(frec['price']) ?? str(frec['fare']),
     durationMin: parseDurationMin(frec['duration']),
-    cabin: str(frec['cabin']) ?? str(frec['class']) ?? str(frec['seat']),
+    cabin: str(frec['cabin']) ?? str(frec['class']),
+    seat: str(frec['seat']),
     baggage: str(frec['baggage']),
     throughCheck:
       str(frec['through_check']) ?? str(frec['throughCheck']) ?? str(frec['baggage_through']),
@@ -245,6 +261,17 @@ function readTransport(bag: DiagnosticBag, line: number, frec: Rec): TripEvent['
         depDate: str(sr['dep_date']),
         legMin: parseDurationMin(sr['leg']),
         waitMin: parseDurationMin(sr['wait']),
+      })),
+    legs: legsRaw
+      .map((lr) => asRecord(lr))
+      .filter((lr): lr is Rec => lr !== null)
+      .map((lr) => ({
+        number: str(lr['number']) ?? str(lr['flight_no']) ?? str(lr['flightNo']) ?? str(lr['no']),
+        cabin: str(lr['cabin']) ?? str(lr['class']),
+        seat: str(lr['seat']),
+        baggage: str(lr['baggage']),
+        refund: str(lr['refund']),
+        note: str(lr['note']),
       })),
     note: str(frec['note']),
   }

@@ -15,21 +15,21 @@ currency: USD
 
 ```trip-constraints
 - kind: arrive
-  at: 2026-10-01 13:11
-  label: 抵达 SEA · 国际航班
-  note: 过海关 + 走到轻轨 + 车程 → 到 Astra 约 16:00–16:30。有 Global Entry 约 14:15 出关，否则 14:45–15:00
+  at: 2026-10-01 10:40
+  label: 她抵达 SEA · 国际航班
+  note: 我 10:05 先落地，直接去提车，提完开回航站楼接她。她过海关取行李约 11:45–12:15 出来，有 Global Entry 约 11:30
 - kind: deadline
-  at: 2026-10-02 11:20
-  label: 租车计费节点
-  note: 早于 11:20 提车跳 4 天计费，晚于它算 3 天。所以约 11:30 提车
-- kind: deadline
-  at: 2026-10-05 11:20
-  label: 必须还车
-  note: 倒推链 12:40 到航站楼 ← 12:25 SEA 轻轨站 ← 11:45 Chinatown-ID 上车 ← 11:20 还车
+  at: 2026-10-05 08:15
+  label: 必须还完车
+  note: 倒推链 08:30 进航站楼 ← 08:15 还完车 ← 07:50 机场加完油 ← 07:15 出酒店
 - kind: depart
-  at: 2026-10-05 15:40
-  label: 离开 SEA · 国际航班
-  note: 12:40 前到航站楼。绝对底线 13:10，但别拿这个当计划
+  at: 2026-10-05 10:10
+  label: 我起飞 · DL 1001
+  note: 国内线，08:30 进航站楼绰绰有余
+- kind: depart
+  at: 2026-10-05 11:45
+  label: 她起飞 · CX 853
+  note: 国际航班，08:45 前进航站楼。和我一起到机场，分头安检
 ```
 
 ## 长途
@@ -37,52 +37,42 @@ currency: USD
 ```trip-transports
 - what: 去程 · 汇合
   transport:
-    - {traveler: 她, mode: flight, from: PVG, to: SEA, arr_time: "13:11", note: 国际到达，过海关后行李转盘取行李}
-    - {traveler: 我, mode: flight, from: SNA, to: SEA, note: 尔湾出发，票未定}
+    - {traveler: 她, mode: flight, carrier: 大韩航空, from: PVG, to: SEA, dep_time: "11:10", arr_time: "10:40", arr_date: 2026-10-01, duration: 14h30m, baggage: 1 件托运, refund: 出票 24 小时内可免费取消, price: "$713.33", stops: [{airport: ICN, arr_time: "14:20", dep_time: "16:40", leg: 2h10m, wait: 2h20m}], legs: [{number: KE 882, cabin: Economy Saver, seat: 48J}, {number: KE 41, cabin: Economy Saver, seat: 35J}]}
+    - {traveler: 我, mode: flight, carrier: 达美, number: DL 3687, from: SNA, to: SEA, dep_time: "07:00", arr_time: "10:05", duration: 3h05m, cabin: Delta Main Basic, baggage: 不含托运, price: "往返 $226.80"}
 - what: 返程 · 各自起飞
   transport:
-    - {traveler: 她, mode: flight, from: SEA, to: PVG, dep_time: "15:40", arr_day_offset: 1, note: 国际航班，12:40 前进航站楼}
-    - {traveler: 我, mode: flight, from: SEA, to: SNA, note: 回尔湾，票未定}
+    - {traveler: 我, mode: flight, carrier: 达美, number: DL 1001, from: SEA, to: SNA, dep_time: "10:10", arr_time: "13:11", duration: 3h01m, cabin: Delta Main Basic, baggage: 不含托运, note: 与去程同一张往返票，票价计在去程}
+    - {traveler: 她, mode: flight, carrier: 国泰航空, from: SEA, to: PVG, dep_time: "11:45", arr_time: "22:10", arr_day_offset: 1, duration: 19h25m, baggage: 1 件托运, price: "$949.60", stops: [{airport: HKG, arr_date: 2026-10-06, arr_time: "16:45", dep_time: "19:20", leg: 14h0m, wait: 2h35m}], legs: [{number: CX 853, cabin: Economy Light}, {number: CX 362, cabin: Economy Light}], note: 与去程分开的两张单程票，改签互不影响}
 ```
 
 ## 住宿
 
 ```trip-stays
-- what: Astra Hotel
-  platform: 万豪 · Autograph Collection
-  from: "2026-10-01 16:00"
-  to: "2026-10-03 09:45"
+- what: Mt. Rainier Getaway
+  platform: Airbnb
+  from: "2026-10-01 18:30"
+  to: "2026-10-02 07:15"
+  cost: $339.42
+  room: 独栋木屋 · 自助入住/退房
+  parking: 含 · 门口
+- what: AC Hotel
+  platform: 万豪 · AC Hotels
+  from: "2026-10-02 20:10"
+  to: "2026-10-05 07:15"
   stars: 4
   parking: 不含 · 停 SpotHero 地库
-  refund: 免费取消至入住前 48 小时
-- what: Ashford 木屋
-  platform: Airbnb
-  from: "2026-10-03 20:30"
-  to: "2026-10-04 07:15"
-  cost: $250–400
-  room: 独栋木屋
-  parking: 含 · 门口
-- what: Renaissance Seattle
-  platform: 万豪
-  from: "2026-10-04 20:45"
-  to: "2026-10-05 09:40"
-  stars: 4
-  parking: 不含 · SpotHero 另订
 ```
 
 ## 租车
 
 ```trip-rentals
-- what: 保时捷 Macan
-  platform: Turo
-  from: "2026-10-02 11:30"
-  to: "2026-10-05 11:20"
-  cost: 保时捷 Macan 3 天 $310
-  pickup: 唐人街提车点
-  dropoff: 唐人街提车点
-  mileage: 600 英里
-  insurance: Turo 自带
-  refund: 预订后 24 小时内可免费取消
+- what: 租车（待定）
+  platform: Sixt / Turo 二选一
+  from: "2026-10-01 10:45"
+  to: "2026-10-05 08:15"
+  cost: 4 天 $400–550 预估
+  pickup: SEA 机场
+  dropoff: SEA 机场
 ```
 
 ## 地点表
@@ -90,41 +80,67 @@ currency: USD
 ```trip-places
 - name: SEA 机场
   en: Seattle-Tacoma International Airport
-  coord: 47.4502, -122.3088
+  coord: 47.4435, -122.2961
   category: flight
-- name: Astra Hotel
-  en: Astra Hotel Seattle, Autograph Collection
-  coord: 47.6211, -122.3368
-  category: hotel
-  note: 300 Terry Ave N，South Lake Union。50K 券 + 补 5,000 点
-- name: Seattle Center
-  en: Seattle Center
-  coord: 47.6221, -122.3540
-  category: sight
-- name: 单轨 Seattle Center 站
-  en: Seattle Center Monorail Station
-  coord: 47.6212, -122.3495
-  category: transit
-- name: Waterfront Park / Pier 62
-  en: Waterfront Park Pier 62 Seattle
-  coord: 47.6086, -122.3435
-  category: viewpoint
-- name: Elliott's Oyster House
-  en: Elliott's Oyster House Pier 56 Seattle
-  coord: 47.6054, -122.3409
+  note: 坐标取航站楼正门（International Blvd），不是机场几何中心 —— 自驾路线要能算
+- name: Sharps RoastHouse
+  en: Sharps RoastHouse SeaTac WA
+  coord: 47.4360, -122.2966
   category: food
-  note: Pier 56，1201 Alaskan Way
+  note: 18427 International Blvd，机场跑道边。坐标约，订位前核对
+- name: 99 Ranch 大华
+  en: 99 Ranch Market Kent WA
+  coord: 47.4415, -122.2242
+  category: logistics
+  note: Great Wall Mall（18230 E Valley Hwy），坐标约
+- name: Tehaleh Rainier View Point
+  en: Tehaleh Rainier View Point Bonney Lake WA
+  coord: 47.1290, -122.1758
+  category: viewpoint
+  note: 坐标待现场核对，Nominatim 查不到
+- name: Longmire
+  en: Longmire Mount Rainier National Park
+  coord: 46.7502, -121.8120
+  category: outdoor
+- name: Mt. Rainier Getaway
+  en: 31222 555th Street East Ashford WA 98304
+  coord: 46.7550, -122.0200
+  category: homestay
+  note: 坐标按门牌地址精确定位（OSM）。Ashford 镇东侧私人社区，距 Nisqually 园门约 10 分钟车程
+- name: Paradise
+  en: Paradise Jackson Visitor Center Mount Rainier
+  coord: 46.7860, -121.7355
+  category: outdoor
+- name: 倒影湖
+  en: Reflection Lakes Mount Rainier
+  coord: 46.7690, -121.7290
+  category: outdoor
+- name: Stevens Canyon Road
+  en: Stevens Canyon Road Mount Rainier
+  coord: 46.7580, -121.6400
+  category: viewpoint
+- name: Tipsoo Lake
+  en: Tipsoo Lake Mount Rainier
+  coord: 46.8690, -121.5170
+  category: outdoor
+- name: Narada Falls
+  en: Narada Falls Mount Rainier
+  coord: 46.7750, -121.7459
+  category: viewpoint
+- name: Asadero Sinaloa
+  en: Asadero Prime Kent WA
+  coord: 47.3831, -122.2470
+  category: food
+  note: 实际店名 Asadero Prime，310 Washington Ave N, Kent
+- name: AC Hotel
+  en: AC Hotel by Marriott Seattle Downtown
+  coord: 47.6076, -122.3340
+  category: hotel
+  tentative: true
+  note: 具体门店订房后定，坐标先按市中心占位 —— 定了回填并重跑 enrich
 - name: 派克市场
   en: Pike Place Market
   coord: 47.6097, -122.3422
-  category: food
-- name: 唐人街提车点
-  en: Chinatown International District Seattle
-  coord: 47.5983, -122.3277
-  category: logistics
-- name: Capitol Hill
-  en: Capitol Hill Seattle
-  coord: 47.6205, -122.3212
   category: food
 - name: 华盛顿公园植物园
   en: Washington Park Arboretum Seattle
@@ -146,11 +162,6 @@ currency: USD
   en: How to Cook a Wolf Queen Anne Seattle
   coord: 47.6387, -122.3567
   category: food
-- name: Altitude Sky Lounge
-  en: Altitude Sky Lounge Astra Hotel Seattle
-  coord: 47.6211, -122.3368
-  category: bar
-  note: Astra 顶层屋顶酒吧，与酒店同址
 - name: Kenmore Air 联合湖码头
   en: Kenmore Air Lake Union Seaplane Terminal
   coord: 47.6280, -122.3395
@@ -159,148 +170,432 @@ currency: USD
   en: Amazon Spheres Seattle
   coord: 47.6155, -122.3390
   category: sight
-- name: Chihuly Garden and Glass
-  en: Chihuly Garden and Glass Seattle
-  coord: 47.6205, -122.3505
+- name: Serious Pie
+  en: Serious Pie Downtown Seattle
+  coord: 47.6132, -122.3410
+  category: food
+  note: 2001 4th Ave，周六 11:30 开门，离玻璃球步行 5 分钟
+- name: MoPOP
+  en: Museum of Pop Culture Seattle
+  coord: 47.6215, -122.3481
   category: sight
-- name: Bonney Lake 补货点
-  en: Fred Meyer Bonney Lake WA
-  coord: 47.1663, -122.1506
-  category: logistics
-- name: Tehaleh Rainier View Point
-  en: Tehaleh Rainier View Point Bonney Lake WA
-  coord: 47.1290, -122.1758
-  category: viewpoint
-  note: 坐标待现场核对，Nominatim 查不到
-- name: Ashford 木屋
-  en: Ashford WA
-  coord: 46.7570, -122.0270
-  category: homestay
-  tentative: true
-  note: 5 选 1 未定，见附录
-- name: Paradise
-  en: Paradise Jackson Visitor Center Mount Rainier
-  coord: 46.7860, -121.7355
-  category: outdoor
-- name: 倒影湖
-  en: Reflection Lakes Mount Rainier
-  coord: 46.7690, -121.7290
-  category: outdoor
-- name: Stevens Canyon Road
-  en: Stevens Canyon Road Mount Rainier
-  coord: 46.7580, -121.6400
-  category: viewpoint
-- name: Tipsoo Lake
-  en: Tipsoo Lake Mount Rainier
-  coord: 46.8690, -121.5170
-  category: outdoor
-- name: Crystal Mountain 缆车
-  en: Crystal Mountain Gondola WA
-  coord: 46.9350, -121.4750
-  category: experience
-  tentative: true
-  note: 十月上旬是否运营需出发前确认
-- name: Asadero Sinaloa
-  en: Asadero Prime Kent WA
-  coord: 47.3831, -122.2470
-  category: food
-  note: 实际店名 Asadero Prime，310 Washington Ave N, Kent
-- name: Renaissance Seattle
-  en: Renaissance Seattle Hotel
-  coord: 47.6072, -122.3300
-  category: hotel
-  tentative: true
-  note: 换不出来退 Courtyard Pioneer Square
-- name: Jade Garden
-  en: Jade Garden Restaurant Seattle Chinatown
-  coord: 47.5977, -122.3235
-  category: food
-- name: Chinatown-ID 轻轨站
-  en: Chinatown International District Station Seattle
-  coord: 47.5983, -122.3277
+- name: Seattle Center
+  en: Seattle Center
+  coord: 47.6221, -122.3540
+  category: sight
+- name: 单轨 Seattle Center 站
+  en: Seattle Center Monorail Station
+  coord: 47.6212, -122.3495
   category: transit
+- name: Waterfront Park / Pier 62
+  en: Waterfront Park Pier 62 Seattle
+  coord: 47.6086, -122.3435
+  category: viewpoint
+- name: Elliott's Oyster House
+  en: Elliott's Oyster House Pier 56 Seattle
+  coord: 47.6054, -122.3409
+  category: food
+  note: Pier 56，1201 Alaskan Way
 ```
 
 ## Day 1 · 2026-10-01
 
 ```trip-day
-theme: 落地西雅图 Citywalk 感受市区
+theme: 双城落地汇合，提车南下雪山脚
 sunrise: "07:07"
 sunset: "18:52"
 ```
 
-时差日。主线是把行李安顿好，靠日落收尾，别排太满。
+时差日，也是搬运日。今天的主线只有一条：汇合、补给、进山 —— 木屋和早睡是给明天 7:15 出门存的本钱。
 
-### 抵达西雅图 · 汇合
+### 抵达 SEA · 我先落地
 
 ```trip-event
-time: "13:11"
+time: "10:05"
 category: flight
 place: SEA 机场
-flags: [warning]
 detail: 去程 · 汇合
-to_next: {mode: rail, minutes: 38, label: 1 Line 到 Westlake，再换电车, note: 行李转盘走到轻轨站还要 12 分钟}
+to_next: {mode: walk, minutes: 15, label: 出来直奔租车, note: Sixt 走机场租车中心（摆渡车直达）；Turo 则约车主交车点}
 ```
 
-以她的国际航班为锚：**有 Global Entry 约 14:15 出关，否则 14:45–15:00。** 我提前到就在到达层等她。
+我 10:05 落地，国内线没有海关，10:30 前就能出来 —— **不等她，直接去办租车**。
 
-到 Westlake Station 后换 **South Lake Union Streetcar**，在 **Terry & Thomas 站**下车，Astra 就在眼前。
+她 10:40 落地，开始过海关取行李，正好是我提车的窗口。
 
-### 放行李 · 入住 Astra
+### 提车
 
 ```trip-event
-time: 16:00–16:30
-category: hotel
-place: Astra Hotel
-detail: Astra Hotel
-to_next: {mode: walk, minutes: 22, km: 1.8, label: 平路好走}
+time: 10:45–11:30
+category: drive
+place: SEA 机场
+detail: 租车（待定）
+flags: [tentative, warning]
+notes:
+  - "Sixt / Turo 二选一未定：Sixt 在机场租车中心，柜台手续标准；Turo 是车主交车，车型有性格 —— 定哪家都要确认可进国家公园和里程政策"
+  - 拍全车视频存证 / 问清加什么油 / 贵重物品全塞后备箱
+to_next: {mode: drive, minutes: 5, label: 开回航站楼，国际到达层外接客道等她}
 ```
 
-50K 券 + 补 5,000 点换的房。**万豪允许给免房券最多加 15,000 点**，两晚共补 10,000 点。
+一个人办手续最快。提完车开回航站楼，**卡着她出关的点在到达层外接**。
+
+### 接她 · 汇合
+
+```trip-event
+time: 11:45–12:15
+category: logistics
+place: SEA 机场
+flags: [warning]
+to_next: {mode: drive, minutes: 10, label: 出机场上 WA-518 转南下}
+```
+
+她**过海关 + 取行李约 11:45–12:15 出来，有 Global Entry 约 11:30**。出来直接上车，行李进后备箱就走。
+
+### 午餐 · 机场边的烟熏烤肉
+
+```trip-event
+time: 12:25–13:30
+category: food
+place: Sharps RoastHouse
+cost: 约 $30/人
+to_next: {mode: drive, minutes: 15, label: 去 Kent 的大华}
+```
+
+**Sharps RoastHouse** —— 机场跑道边的烟熏烤肉老店，落地第一餐直接进入美式节奏。
+
+备选：**13 Coins SeaTac**（24 小时老牌餐馆，早餐全天供应）。
+
+### 补货 · 99 Ranch 大华
+
+```trip-event
+time: 13:45–14:30
+category: logistics
+place: 99 Ranch 大华
+flags: [warning]
+notes:
+  - 别跳过这一站：Ashford 晚上没有可靠补给，明天雷尼尔全线更是没有任何吃饭的地方
+  - 买：水、零食、明早的咖啡面包、今晚的晚餐食材（木屋有灶台）
+  - "自热锅是明天中午背上山的午饭 —— 按人头买够，再配点干粮"
+to_next: {mode: drive, minutes: 40, label: WA-167 经 Puyallup 转 410 往 Bonney Lake 方向}
+```
+
+Great Wall Mall 里的大华超市，自热锅、亚洲零食一站配齐。
+
+### Tehaleh 雪山合影
+
+```trip-event
+time: 15:15–15:45
+category: viewpoint
+place: Tehaleh Rainier View Point
+flags: [optional]
+to_next: {mode: drive, minutes: 80, label: 走 Orting-Kapowsin / Eatonville 到 Ashford}
+```
+
+Bonney Lake 南边的观景台，零遮挡，巨大的雷尼尔怼在眼前 —— **全程最好的车 + 雪山合影机位**，顺路小绕。
+
+累了就跳过直接南下，明天一整天都是雪山。
+
+### Longmire 历史区
+
+```trip-event
+time: 17:15–18:00
+category: outdoor
+place: Longmire
+flags: [optional]
+cost: 雷尼尔门票 $30/车（7 天有效）
+notes:
+  - 来得及且精力允许才进 —— Nisqually 门再开 10 分钟就到
+  - 今天买的门票 7 天有效，明天进山直接用
+to_next: {mode: drive, minutes: 25, label: 出园回木屋}
+```
+
+古木、苔藓、1899 年的老屋群，**Trail of the Shadows** 0.7 英里平地环线正好舒展一下飞了一天的腿。
+
+### 入住 Mt. Rainier Getaway
+
+```trip-event
+time: "18:30"
+category: homestay
+place: Mt. Rainier Getaway
+detail: Mt. Rainier Getaway
+booking: {status: booked}
+notes:
+  - 自助入住/退房，她航班晚点也进得去 —— 门锁密码提前离线存好
+  - 山区夜里 4–7°C，厚外套 + 拖鞋
+  - 睡前查一次 NPS 步道状况，Paradise 结冰就把冰爪备在包顶
+  - 时差克星是早睡 —— 明早 07:15 出门
+```
+
+晚餐两条路：**木屋有灶台**，用大华买的食材简单做点；或者干脆路上解决 —— **Copper Creek Inn**（园门方向 7 分钟，黑莓派是招牌）约 20:00 打烊，来得及。
+
+**自热锅别动** —— 那是明天中午山上的午饭。
+
+## Day 2 · 2026-10-02
+
+```trip-day
+theme: 雷尼尔环线，夜宿回城
+sunrise: "07:08"
+sunset: "18:50"
+```
+
+**⚠️ 全程最长的一天：7:15 出门，20:10 进酒店（跳过日落场 19:00 就到）。**
+
+**周五进山比周末松一大截** —— 停车、步道、机位都是。
+
+**为什么是 Glacier Vista 这条线：** 中等强度就把最值钱的景拿全了 —— 上山正前方一路是**雷尼尔和尼斯阔利冰川**，回程加走 Myrtle Falls 拿明信片机位，出园顺路再收 Narada Falls。Panorama Point 以上的雪原、碎石和 430 米爬升整段让掉，膝盖和体力都留给后面三天。
+
+### 出发 · 西南门
+
+```trip-event
+time: "07:15"
+category: logistics
+place: Mt. Rainier Getaway
+to_next: {mode: drive, minutes: 60, km: 26, label: 木屋 → Nisqually 门约 10 分钟 → Paradise 约 50 分钟（18 英里盘山）}
+```
+
+清晨无车跑山，**08:15–08:30 到 Paradise 稳稳有位**（周五压力比周末小，这是双保险）。
+
+早餐吃昨晚买的。想喝正经咖啡：Ashford 的 **Whittaker's** espresso 吧开得早。**行李全部装车、自助退房** —— 今晚直接回市区，不回木屋。
+
+### Paradise · Glacier Vista + Myrtle Falls
+
+```trip-event
+time: 08:45–11:45
+category: outdoor
+place: Paradise
+flags: [warning]
+cost: 雷尼尔门票 $30/车（7 天有效）
+notes:
+  - 昨天进过 Longmire 的话门票已买，直接刷
+  - "全天山里没有任何吃饭的地方 —— 自热锅 + 干粮背上山，午饭在 Glacier Vista 解决"
+  - 清晨步道结霜，轻便冰爪（microspikes）+ 登山杖带上 —— 早上停车场有步道状况告示板，结冰就穿
+to_next: {mode: drive, minutes: 10, label: 出 Paradise 下行}
+```
+
+**主线：Deadhorse Creek → Glacier Vista 往返**，约 2.8 英里、爬升约 150 米，中等强度 —— 上山正前方一路就是**尼斯阔利冰川**。
+
+**午饭就是背上来的自热锅** —— Glacier Vista 找个背风处，对着冰川开饭，这顿的机位没有餐厅给得起。
+
+回到 Paradise 再往东侧走 **Myrtle Falls**（往返 0.8 英里，铺装路）：瀑布 + 雷尼尔同框的明信片机位，11 点多的光线正好。
+
+**九月末十月初高山灌木（越橘、花楸）秋色正在峰值**，红黄一片配冰川。
+
+### Narada Falls
+
+```trip-event
+time: 12:00–12:20
+category: viewpoint
+place: Narada Falls
+notes:
+  - 停车场下到观景点约 0.2 英里，台阶常年水雾打湿，走稳
+to_next: {mode: drive, minutes: 5, label: 转上 Stevens Canyon Road}
+```
+
+168 英尺的路边大瀑布，十月水量仍在 —— 从停车场走两步就到，性价比极高的顺路一站。
+
+### 倒影湖
+
+```trip-event
+time: 12:30–12:50
+category: outdoor
+place: 倒影湖
+to_next: {mode: drive, minutes: 5}
+```
+
+无风时能拍到完整雪山倒影。
+
+### Stevens Canyon Road 跑山
+
+```trip-event
+time: 12:55–14:05
+category: viewpoint
+place: Stevens Canyon Road
+notes:
+  - Grove of the Patriarchs 因吊桥损毁长期关闭，别绕过去
+to_next: {mode: drive, label: 继续沿 123 号 / 410 公路北上}
+```
+
+工作日的 Stevens Canyon 几乎是包场跑山。顺路可停 Box Canyon。
+
+### Tipsoo Lake 湖边小环线
+
+```trip-event
+time: 14:10–14:40
+category: outdoor
+place: Tipsoo Lake
+to_next: {mode: drive, minutes: 100, km: 105, label: 410 出山向西北，经 Enumclaw 到 Kent, note: 途中把油加了，市区几天就不用惦记油箱}
+```
+
+东侧 Chinook Pass。**只走湖边约 0.5 英里，10 分钟拿到 90% 的景。**
+
+🚫 **不去 Sunrise：** Sunrise Road 十月上旬随时季节性关闭，从 Tipsoo 往返 3 小时只换一个 Emmons Vista 眺望点，不值。到此掉头出山。
+
+### 收官 · Kent 和牛烤肉
+
+```trip-event
+time: 16:45–18:00
+category: food
+place: Asadero Sinaloa
+flags: [needs-booking]
+booking: {status: required}
+cost: 约 $90/人
+notes:
+  - 周五生意火，按 16:45 订位（周五营业 11:00–22:00 已核实）
+  - 时间偏早不算亏 —— 早饭 6 点多吃的、午饭是 11 点的自热锅，到这正好饿；吃完还有日落场
+to_next: {mode: drive, minutes: 35, label: WA-167 转 410 到 Tehaleh, note: 天阴就跳过日落场直接回城，55 分钟进酒店}
+```
+
+**Asadero Sinaloa 发源老店**（Kent, Central Ave）—— 顶级和牛烤肉配重口莎莎，给全程最长的一天收官。
+
+备选：**Bai Tong**（当年为泰航机组开的泰餐，本地传奇）。
+
+### Tehaleh 雪山日落
+
+```trip-event
+time: 18:35–19:05
+category: viewpoint
+place: Tehaleh Rainier View Point
+flags: [optional]
+to_next: {mode: drive, minutes: 55, label: 回城，I-5 北上市中心，停 SpotHero 地库}
+```
+
+**时间和天气都合适才去** —— 天边没云的话，18:50 日落把整座雷尼尔染成玫瑰金，昨天的白天版在这补成日落版。
+
+天阴或人乏就跳过，从 Kent 直接回城，19:00 就进酒店。
+
+### 入住 AC Hotel · 三晚不挪窝
+
+```trip-event
+time: "20:10"
+category: hotel
+place: AC Hotel
+detail: AC Hotel
+flags: [tentative, needs-booking]
+booking: {status: required}
+cost: SpotHero 地库过夜 $15–30/晚 × 3
+notes:
+  - 行李全部搬进房间，车里不留任何东西 —— 西雅图车内盗窃率很高
+  - 车停 SpotHero 封闭安保地库，明早还要开去码头
+```
+
+**接下来三晚不挪窝** —— 两个住宿点跑完全程，晚上回来永远是同一张床。
+
+## Day 3 · 2026-10-03
+
+```trip-day
+theme: 水上飞机、玻璃球与海滨日落
+sunrise: "07:10"
+sunset: "18:48"
+from_stay: {mode: drive, minutes: 10, label: 地库取车，北上联合湖码头, note: 码头有收费停车场，停一上午}
+```
+
+**十月第一个周六** —— 亚马逊玻璃球这趟唯一的开放日，不可移动。今天开车串场：码头 → **玻璃球访客车库（2021 7th Ave，停到傍晚）** → Serious Pie 午餐 → 玻璃球 → Seattle Center 步行/单轨往返 → 取车去海滨看日落。
+
+**为什么水上飞机放上午：** ① 上午气流稳，下午热对流明显更颠 ② 空腹或轻食上飞机比刚吃完午饭好 ③ **决定性理由 —— 上午被取消还有一整个下午当天补飞（12:30 / 13:30 场）；订下午被取消就彻底没了**。
+
+### 水上飞机天际线之旅
+
+```trip-event
+time: 10:00–11:00
+category: experience
+place: Kenmore Air 联合湖码头
+flags: [needs-booking]
+booking: {status: required}
+cost: $159 × 2 = $318
+notes:
+  - 订 10:00 场，订时问清取消改期政策
+  - 十月早晨常有海雾低云，班次有取消风险 —— 被取消就顺延 12:30 / 13:30 场（见如果）
+  - 市中心上空有空域限制，不会绕着太空针塔盘旋，是从侧上方远观
+  - 非嗜睡型晕车药 + 姜糖，起飞前 30 分钟吃
+to_next: {mode: drive, minutes: 8, label: 南下停进玻璃球访客车库（2021 7th Ave）}
+```
+
+水面滑行起飞，上帝视角俯瞰市中心和整片湖区。
+
+#### 变体 · 海雾没散
+
+顺延到 **12:30 / 13:30 场**：午餐压缩、MoPOP 直接砍，玻璃球的预约时段不动。Classic Seattle Tour 只飞 20 分钟左右，就算颠也很短。
+
+### 午餐 · Serious Pie
+
+```trip-event
+time: 11:30–12:45
+category: food
+place: Serious Pie
+cost: 约 $30/人
+notes:
+  - "车停 2021 7th Ave 访客车库（周六日间约 $15–25），一直放到傍晚 —— 2120 那个「用餐免费停」的口子周六 16:00 才开门，中午用不上"
+to_next: {mode: walk, minutes: 5, label: 走到玻璃球}
+```
+
+Tom Douglas 的招牌薄底披萨，蛤蜊披萨是名场面 —— **11:30 开门，掐点进去不用排**。
+
+备选：**Biscuit Bitch**（Belltown，重口美式早午餐）。
+
+### 亚马逊玻璃球
+
+```trip-event
+time: 13:00–14:15
+category: sight
+place: 亚马逊玻璃球
+flags: [needs-booking]
+booking: {status: required}
+notes:
+  - "预约窗口：9/18 上午 10 点开放、10/2 中午 12 点截止 —— 免费但即抢即空，9/18 定好闹钟"
+to_next: {mode: walk, minutes: 25, label: 步行去 Seattle Center, note: 不想走就去 Westlake 搭单轨，或 3rd Ave 搭 D Line，10 分钟}
+```
+
+**这趟唯一的开放日**（每月仅第一、三个周六对公众开放），凭预约进入。玻璃穹顶内的热带雨林，1 小时够。
 
 ### Seattle Center
 
 ```trip-event
-time: 16:55–17:50
+time: 14:45–15:45
 category: sight
 place: Seattle Center
 notes:
-  - 不建议登太空针塔：$40+/人，Day 3 早上要飞（视角更高）、明晚有 Kerry Park（构图更好），十月云层还可能让塔顶什么都看不到
-to_next: {mode: monorail, minutes: 5, label: 单轨列车穿 MoPOP → Westlake Center, note: 约 $4，ORCA 可刷}
+  - 不建议登太空针塔：$40+/人，今早刚从更高处飞过整个市中心，明晚还有 Kerry Park 的更好构图，十月云层还可能让塔顶什么都看不到
+to_next: {mode: walk, minutes: 2, label: 就在场内}
 ```
 
 太空针脚下、International Fountain、MoPOP 那栋金属扭曲建筑的外观。
 
-#### 变体 · 赶得上就白捡 Chihuly
+### MoPOP
 
-Chihuly Garden and Glass 十月周四大概率 18:00 关门、**17:00 前后停止入场**。你们要过国际海关，赶不赶得上是赌的。**正式档期已排在 Day 3 13:00**，这里凑巧赶上就当白捡。
+```trip-event
+time: 15:50–17:00
+category: sight
+place: MoPOP
+flags: [optional]
+cost: 约 $35/人
+to_next: {mode: walk, minutes: 3, label: 走到单轨站}
+```
+
+流行文化博物馆：Nirvana 与西雅图之声、吉他旋风塔、科幻与恐怖片道具馆 —— **也是今天最好的雨天保险**。不进去就在外面拍拍金属曲面，直接去单轨。
 
 ### 单轨穿 MoPOP
 
 ```trip-event
-time: 17:55–18:10
+time: 17:10–17:25
 category: viewpoint
 place: 单轨 Seattle Center 站
-to_next: {mode: walk, minutes: 15, label: 顺 Pine St 一路下坡，走 Overlook Walk 下到海滨}
+to_next: {mode: drive, minutes: 20, label: Westlake 下车走 8 分钟回 Day 1 车库取车，开去海滨, note: 海滨停派克市场地库或 Pier 附近收费场，$15–25}
 ```
 
-**坐第一节车厢** —— 看列车直接穿过 MoPOP 建筑内部。
-
-下车后经派克市场边缘（正在收摊，明早才是主场），走 **2024 年新开的 Overlook Walk** 直接下到海滨。
+**坐第一节车厢** —— 看列车直接穿过 MoPOP 建筑内部，回 Westlake 正好取车。
 
 ### 海滨日落
 
 ```trip-event
-time: 18:25–18:55
+time: 17:50–18:55
 category: viewpoint
 place: Waterfront Park / Pier 62
 cost: Seattle Great Wheel 摩天轮 $18/人（可选）
 to_next: {mode: walk, minutes: 8, label: 沿栈桥南行到 Pier 56}
 ```
 
-太阳落进对岸的**奥林匹克山脉**。
+走 **2024 年新开的 Overlook Walk** 下到海滨，**18:00 前占位** —— 太阳落进对岸的**奥林匹克山脉**（18:48）。
 
-**Seattle Great Wheel** 摩天轮 —— 日落时段坐最值。
+**Seattle Great Wheel** 摩天轮日落时段坐最值；时间富余就在栈桥来杯咖啡。
 
 ### 晚餐 · 海滨
 
@@ -309,94 +604,68 @@ time: 19:15–20:45
 category: food
 place: Elliott's Oyster House
 flags: [needs-booking]
-booking: {status: required, note: Pier 56，提前订位}
+booking: {status: required}
+notes:
+  - 周六晚必须提前订位
 cost: 约 $70/人
-to_next: {mode: rideshare, minutes: 10, label: Uber 回 Astra, note: 约 $15。走回去是 20 分钟上坡，吃饱了别走}
+to_next: {mode: drive, minutes: 8, label: 取车开回 AC Hotel，停回地库}
 ```
 
-**Elliott's Oyster House**（Pier 56）—— 生蚝质量最好，**顺便把蛤蜊巧达浓汤今天喝掉**（派克市场那家 11:00 才开门，明早赶不上）。
+**Elliott's Oyster House**（Pier 56）—— 生蚝质量最好。**浓汤别在这点** —— 明天中午派克市场的 Pike Place Chowder 有 4 杯装 Sampler 等着。
 
 备选：**Ivar's Acres of Clams**（Pier 54，本地老字号，炸鱼薯条 + 浓汤）· **The Crab Pot**（Pier 57，砸蟹腿，体验强但出品一般，海滨在改造先确认）。
 
-*屋顶酒吧留到明晚。*
-
-### 回 Astra
+### 回 AC Hotel
 
 ```trip-event
-time: "20:55"
+time: "21:00"
 category: hotel
-place: Astra Hotel
-detail: Astra Hotel
+place: AC Hotel
+detail: AC Hotel
 ```
 
-早点睡，明天 08:45 出门。
+今天是全程最满的一天，明天睡到自然醒一点。
 
-## Day 2 · 2026-10-02
+## Day 4 · 2026-10-04
 
 ```trip-day
-theme: 提车自驾，市区一路玩到 Kerry Park 日落
-sunrise: "07:08"
-sunset: "18:50"
-from_stay: {mode: walk, minutes: 22, km: 1.7, label: 顺 Westlake Ave 南行下坡, note: 不想走就坐 South Lake Union Streetcar 到 Westlake Center 再走 5 分钟}
+theme: 派克市场到凯里公园日落
+sunrise: "07:11"
+sunset: "18:46"
+from_stay: {mode: drive, minutes: 8, label: 地库取车去派克市场, note: 停市场自家地库（1531 Western Ave 入口）}
 ```
 
-今天的锚点是 18:00 的 Kerry Park 日落，前面所有安排都为它让路。**落后了就按 煤气厂公园 → 日本花园门票 → 苏扎罗图书馆 的顺序往下砍。**
+睡到自然醒，**10 点出发**。今天的锚点是 18:00 的 Kerry Park 日落，下午所有安排都为它让路。**落后了就按 煤气厂公园 → 苏扎罗图书馆 的顺序往下砍**（日本花园门票也可省）。今晚回来要收行李 —— 明早 07:15 出发。
 
-### 派克市场
+### 派克市场 · 泡一个上午
 
 ```trip-event
-time: 08:45–11:10
+time: 10:15–14:15
 category: food
 place: 派克市场
-to_next: {mode: walk, minutes: 20, label: 沿 1st Ave 向南穿过 Pioneer Square}
-```
-
-**飞鱼秀**（9:30 后热闹）、Post Alley、口香糖墙、第一家星巴克（队极长，拍照就走）。
-
-**早餐吃市场小食**：**Piroshky Piroshky** 俄式馅饼 + **Le Panier** 可颂 + **Beecher's** 手工芝士通心粉。
-
-### 提车 · 唤醒保时捷
-
-```trip-event
-time: 11:30–11:48
-category: drive
-place: 唐人街提车点
-detail: 保时捷 Macan
-flags: [warning]
+cost: 市场地库停车约 $15–20
 notes:
-  - "必须 11:20 之后提，才落进 3 天计费 —— 计费节点在 10/2 11:20，早于跳 4 天，晚于都算 3 天，11:30 把 3 天用得最满"
-  - 先跟车主确认：按 24 小时块还是自然日计费 / 可否进国家公园
-  - 加 91+ 号汽油。全程预计约 310 英里，600 英里上限有余量
-to_next: {mode: drive, minutes: 12}
+  - "Pike Place Chowder 11:00 开门 —— 10:50 就去排，这家是排队王者。点 Chowder Sampler：4 小杯一次尝 4 种口味"
+to_next: {mode: drive, minutes: 15, label: 出地库，Madison 向东去植物园}
 ```
 
-**立刻三件事：** 拍全车视频存证 / 确认加 91+ 号汽油 / 贵重物品全塞后备箱。
+整整四个小时全交给市场，不赶场：**飞鱼秀**（正是热闹时段）、Post Alley、口香糖墙、第一家星巴克（队极长，拍照就走）、Down Under 那几层老铺子。
 
-### Capitol Hill · 咖啡 · 午餐 · 书店
+**先垫肚子**：**Piroshky Piroshky** 俄式馅饼 + **Le Panier** 可颂 + **Beecher's** 手工芝士通心粉现场看制作。
 
-```trip-event
-time: 12:00–13:50
-category: food
-place: Capitol Hill
-cost: 停车 Broadway 收费场 $5–10
-to_next: {mode: drive, minutes: 10}
-```
-
-- **Espresso Vivace**（321 Broadway E 路边站）—— 拉花天花板
-- 午餐：**Mamnoon**（中东菜，出品极稳）或 **Kedai Makan**（马来菜，味道够冲）
-- **Elliott Bay Book Company**（1521 10th Ave）—— 木结构独立书店
+**午餐主角是 Pike Place Chowder** —— 4 小杯的 Sampler 一次把招牌口味尝遍，配市场里随手买的加餐，就地解决。吃完再补一轮 Post Alley 消食。
 
 ### 华盛顿公园植物园
 
 ```trip-event
-time: 14:00–15:05
+time: 14:30–15:30
 category: outdoor
 place: 华盛顿公园植物园
 cost: 日本花园约 $10/人（可选）
 to_next: {mode: drive, minutes: 10}
 ```
 
-**"开保时捷压马路"兑现的地方** —— Lake Washington Blvd 湖畔林荫路配 Macan，出片靠车不靠枫叶。
+**"开车压马路"兑现的地方** —— Lake Washington Blvd 湖畔林荫路，出片靠车不靠枫叶。
 
 **⚠️ 秋色预期：现在基本还是绿的。** 红枫峰值在十月下旬。
 
@@ -405,7 +674,7 @@ to_next: {mode: drive, minutes: 10}
 ### 苏扎罗图书馆
 
 ```trip-event
-time: 15:15–16:03
+time: 15:40–16:20
 category: sight
 place: 苏扎罗图书馆
 flags: [optional]
@@ -413,12 +682,12 @@ cost: Central Plaza Garage 停车约 $5
 to_next: {mode: drive, minutes: 12}
 ```
 
-霍格沃茨阅览室。**十月是 UW 秋季学期，校园很有生气。**
+霍格沃茨阅览室。**十月是 UW 秋季学期，校园很有生气** —— 但今天是周日，看的是建筑不是人气。
 
 ### 煤气厂公园
 
 ```trip-event
-time: 16:15–17:30
+time: 16:35–17:35
 category: outdoor
 place: 煤气厂公园
 flags: [optional]
@@ -430,15 +699,15 @@ to_next: {mode: drive, minutes: 20, note: 山上路边位极少，早到 15 分�
 ### 凯里公园日落
 
 ```trip-event
-time: 18:00–19:15
+time: 17:55–19:10
 category: viewpoint
 place: 凯里公园
 to_next: {mode: drive, minutes: 5}
 ```
 
-**今天的锚点。** 太空针 + 城市 + 远处雷尼尔一起变粉金。
+**今天的锚点。** 太空针 + 城市 + 远处雷尼尔一起变粉金 —— 前天你们就在那座山顶下面。
 
-**18:15–18:50 金光转粉紫，18:50–19:15 蓝调时刻更出片。**
+**18:10–18:45 金光转粉紫，18:45–19:10 蓝调时刻更出片。**
 
 ### 晚餐 · Queen Anne
 
@@ -447,374 +716,87 @@ time: 19:20–21:00
 category: food
 place: How to Cook a Wolf
 flags: [needs-booking]
-booking: {status: required, note: 需订位}
+booking: {status: required}
 cost: 约 $80/人
-to_next: {mode: drive, minutes: 15, label: 开回 Astra 停地库}
+to_next: {mode: drive, minutes: 12, label: 开回 AC Hotel 停地库}
 ```
 
-**How to Cook a Wolf** —— Ethan Stowell 的意式小馆，小份多道，氛围浪漫。
+**How to Cook a Wolf** —— Ethan Stowell 的意式小馆，小份多道，氛围浪漫，收官晚餐。
 
 备选：**Betty**（街区本地人首选，休闲一档，省 $60）· **Canlis**（全程只奢一次就选它，Queen Anne 北坡俯瞰联合湖，$150–200/人，提前几周订）。
 
-### Altitude Sky Lounge
+### 收拾行李 · 早睡
 
 ```trip-event
-time: 21:15–23:00
-category: bar
-place: Altitude Sky Lounge
-flags: [needs-booking]
-booking: {status: required, note: 周五晚爆满，能订位就订}
-cost: SpotHero 地库过夜 $10–20
-notes:
-  - 先停好车才能放开喝：SpotHero 封闭安保地库 $10–20 过夜，不要停露天路边
-```
-
-顶层屋顶酒吧直面亮灯的太空针塔。
-
-## Day 3 · 2026-10-03
-
-```trip-day
-theme: 水上飞机与玻璃艺术，傍晚南下雪山
-sunrise: "07:10"
-sunset: "18:48"
-```
-
-**十月第一个周六** —— 亚马逊玻璃球这趟唯一的开放日，不可移动。
-
-**为什么水上飞机放上午：** ① 上午气流稳，下午热对流明显更颠 ② 空腹或轻食上飞机比刚吃完午饭好 ③ **决定性理由 —— 上午被取消还有一整个下午当天补飞（12:30 / 13:30 场）；订 14:00 被取消就彻底没了**，因为下午必须南下赶日落。
-
-### 早餐 + 退房
-
-```trip-event
-time: 09:00–09:45
+time: "21:30"
 category: logistics
-place: Astra Hotel
+place: AC Hotel
 flags: [warning]
 notes:
-  - 西雅图车内盗窃率很高，后座绝不能有可见行李
-to_next: {mode: walk, minutes: 10, label: 走去 Kenmore Air 码头}
+  - 两个人的登机牌都在线办掉（DL 和 CX）
+  - 行李今晚收完，明早不留任何决策
+  - 闹钟 06:30，07:15 出发
 ```
 
-行李寄存前台，**或一次性锁进后备箱后今天再也不打开**。
-
-### 水上飞机天际线之旅
-
-```trip-event
-time: 10:00–11:00
-category: experience
-place: Kenmore Air 联合湖码头
-flags: [needs-booking]
-booking: {status: required, note: 订 10:00 场，问清取消改期政策}
-cost: $159 × 2 = $318
-notes:
-  - 十月早晨常有海雾低云，班次有取消风险 —— 被取消就顺延 12:30 / 13:30 场（见如果）
-  - 市中心上空有空域限制，不会绕着太空针塔盘旋，是从侧上方远观
-  - 非嗜睡型晕车药 + 姜糖，起飞前 30 分钟吃
-to_next: {mode: walk, minutes: 15}
-```
-
-水面滑行起飞，上帝视角俯瞰市中心和整片湖区。
-
-#### 变体 · 海雾没散
-
-顺延到 **12:30 / 13:30 场**，砍掉 Chihuly，整体往后推。Classic Seattle Tour 只飞 20 分钟左右，就算颠也很短。
-
-### 亚马逊玻璃球
-
-```trip-event
-time: 11:30–12:45
-category: sight
-place: 亚马逊玻璃球
-flags: [needs-booking]
-booking: {status: required, note: 每月仅第一、三个周六对公众开放，名额放出即抢空}
-to_next: {mode: monorail, minutes: 15, label: 走回 Westlake 5 分钟，单轨到 Seattle Center}
-```
-
-**这趟唯一的开放日**，凭预约进入。玻璃穹顶内的热带雨林，1 小时够。
-
-### Chihuly Garden and Glass
-
-```trip-event
-time: 13:00–14:10
-category: sight
-place: Chihuly Garden and Glass
-flags: [needs-booking]
-booking: {status: required, note: 一周内订 13:00 时段票}
-cost: 约 $35 × 2 = $70
-to_next: {mode: walk, minutes: 20, label: 回 Astra 装车}
-```
-
-玻璃艺术，室内 + 温室 + 户外花园，**极度出片，也是全程最好的雨天保险**。逛 60–75 分钟。
-
-#### 变体 · Day 1 已经逛过
-
-跳过，13:00 直接装车南下，多出 2 小时缓冲。
-
-### 装车南下
-
-```trip-event
-time: 14:30–15:00
-category: logistics
-place: Astra Hotel
-to_next: {mode: drive, minutes: 55, km: 70, label: I-5 向南到 Bonney Lake}
-```
-
-退房行李全部上车。
-
-### 补货 · 今晚的晚餐在这里买
-
-```trip-event
-time: 16:15–17:30
-category: logistics
-place: Bonney Lake 补货点
-flags: [warning]
-notes:
-  - 别跳过这一站：Ashford 的 Copper Creek Inn 通常 20:00 前后打烊，看完日落再过去必吃闭门羹 —— 今晚的晚餐就是这里买的
-to_next: {mode: drive, minutes: 25}
-```
-
-Bonney Lake 或 Puyallup 的 Fred Meyer / Safeway。
-
-买：熟食或牛排、奶酪、水果、酒、零食、**明早的咖啡和面包、以及 Day 4 中午的三明治**。晚上带回木屋，泡着雪松泡池慢慢吃。
-
-### Tehaleh 追日落
-
-```trip-event
-time: 18:00–19:05
-category: viewpoint
-place: Tehaleh Rainier View Point
-to_next: {mode: drive, minutes: 80, label: 走 Orting / Eatonville 到 Ashford}
-```
-
-Bonney Lake 观景台，**日落 18:48**。零遮挡，巨大的雷尼尔怼在眼前被染成玫瑰金。
-
-拍到 19:05 暮光散尽再走。**全程最好的车 + 雪山合影机位。**
-
-### 入住 Ashford 木屋
-
-```trip-event
-time: "20:30"
-category: homestay
-place: Ashford 木屋
-detail: Ashford 木屋
-flags: [tentative, needs-booking]
-booking: {status: required, note: 5 选 1 未定，见附录。订前必须问泡池是独享还是公用}
-notes:
-  - 山区夜里 4–7°C，厚外套 + 拖鞋 + 泳衣
-  - 睡前查一次 NPS 步道状况，决定明早走环线还是往返
-```
-
-泡池 + 带回来的酒菜 + 星空。
-
-## Day 4 · 2026-10-04
-
-```trip-day
-theme: 雷尼尔国家公园徒步大环线
-sunrise: "07:11"
-sunset: "18:46"
-```
-
-**⚠️ 全程唯一的硬核长日：7:15 出门，18:30 落地 Kent。**
-
-**为什么顺时针：** 核心是"好东西在正前方还是背后"。上山走西侧（Deadhorse Creek → Glacier Vista）一路朝北，**雷尼尔和尼斯阔利冰川就在正前方**；下山走东侧（Golden Gate → Myrtle Falls）一路朝南，**正前方是 Tatoosh 山脉**，后面叠着亚当斯山和胡德山。逆时针走则两次都得回头看。附带：西侧陡东侧缓，陡的上缓的下，膝盖友好；Myrtle Falls 那张照片落在 11 点多的光线里比 8 点 50 分的阴影里好得多。
-
-### 出发 · 西南门
-
-```trip-event
-time: "07:15"
-category: logistics
-place: Ashford 木屋
-to_next: {mode: drive, minutes: 75, km: 29, label: 木屋 → Nisqually 门 15 分钟 → Paradise 约 50 分钟（18 英里盘山）}
-```
-
-清晨无车跑山，**08:30 到 Paradise 轻松找位**（周日 10:00 后停车场就满）。
-
-早餐吃昨晚买的。想喝正经咖啡：Ashford 的 **Whittaker's** espresso 吧开得早。
-
-### Skyline 顺时针环线
-
-```trip-event
-time: 08:45–11:45
-category: outdoor
-place: Paradise
-flags: [warning]
-cost: 雷尼尔门票 $30/车（7 天有效）
-notes:
-  - 十月初 Panorama Point 以上常年雪原、Golden Gate 开阔坡面可能积雪结冰 —— 有雪改走往返（见如果）
-  - 必带轻便冰爪（microspikes）+ 登山杖，清晨步道结霜
-  - "Panorama Point 海拔 6,800 英尺（Paradise 5,400），少数人有轻微高度反应，慢一点就好"
-to_next: {mode: drive, minutes: 15, label: 离开 Paradise 向东}
-```
-
-**约 4.3 英里，爬升 430 米。** Paradise → Deadhorse Creek → Glacier Vista → Panorama Point → Low Skyline 向东 → Golden Gate 下切 → Myrtle Falls → Paradise。
-
-**十月初高山灌木（越橘、花楸）秋色正在峰值**，红黄一片配冰川。
-
-#### 变体 · Panorama 以上或 Golden Gate 有雪
-
-改走**顺时针往返**：上 Deadhorse Creek 到 Panorama Point，原路下来，最后加走 Myrtle Falls 支线（往返 0.8 英里）。约 4 英里。
-
-Golden Gate 挂在开放坡上，铺雪之后滑下去很麻烦。
-
-**怎么查：** 前一晚从木屋查 NPS 的 Mount Rainier 步道状况页；早上 Paradise 停车场有状况告示板。**Jackson 游客中心十月可能 10:00 才开门，你们 08:45 就出发，别指望问到人。**
-
-### 倒影湖 · 吃打包的午餐
-
-```trip-event
-time: 12:00–12:25
-category: outdoor
-place: 倒影湖
-flags: [warning]
-notes:
-  - 必须自带午餐：Longmire 以东、Paradise 以外整条线没有任何吃饭的地方
-to_next: {mode: drive, minutes: 5}
-```
-
-无风时能拍到完整雪山倒影。
-
-### Stevens Canyon Road 跑山
-
-```trip-event
-time: 12:30–13:45
-category: viewpoint
-place: Stevens Canyon Road
-notes:
-  - Grove of the Patriarchs 因吊桥损毁长期关闭，别绕过去
-to_next: {mode: drive, label: 继续沿 123 号 / 410 公路北上}
-```
-
-反向进山的游客在西门堵成一条，你们一路畅通。顺路可停 Box Canyon。
-
-### Tipsoo Lake 湖边小环线
-
-```trip-event
-time: 13:45–14:15
-category: outdoor
-place: Tipsoo Lake
-to_next: {mode: drive, minutes: 45, label: 走 410 经 Cayuse Pass 向北}
-```
-
-东侧 Chinook Pass。**只走湖边约 0.5 英里，10 分钟拿到 90% 的景。**
-
-### Crystal Mountain 缆车
-
-```trip-event
-time: 15:00–16:30
-category: experience
-place: Crystal Mountain 缆车
-flags: [tentative]
-cost: 约 $49 × 2 = $98
-notes:
-  - "前提：必须已确认 10/4 运营。秋季一般只开周五–周日，十月上旬就收，10/4 在临界线上"
-to_next: {mode: drive, minutes: 105, km: 110, label: 下山向西北到 Kent}
-```
-
-10 分钟上到 **6,872 英尺**，山顶正对雷尼尔全貌。
-
-🚫 **为什么砍掉 Sunrise：** Sunrise Road 十月上旬随时季节性关闭，且从 Tipsoo 往返 3 小时只换一个 Emmons Vista 眺望点，性价比远低于 Crystal 缆车。
-
-#### 变体 · 缆车没开
-
-跳过，**17:00 就能到城南**，多出的时间给 Kent 的和牛和酒店泡澡。
-
-### 完美收官 · Kent 和牛烤肉
-
-```trip-event
-time: 18:30–20:15
-category: food
-place: Asadero Sinaloa
-cost: 约 $90/人
-notes:
-  - 吃完顺路把油加满，明早还车前就不用再操心
-to_next: {mode: drive, minutes: 30, label: Kent → 市中心}
-```
-
-**Asadero Sinaloa 发源老店**（Kent, Central Ave）—— 顶级和牛烤肉配重口莎莎。
-
-备选：**Bai Tong**（当年为泰航机组开的泰餐，本地传奇）· **Din Tai Fung**（Southcenter）。
-
-### 入住 Renaissance Seattle
-
-```trip-event
-time: "20:45"
-category: hotel
-place: Renaissance Seattle
-detail: Renaissance Seattle
-flags: [tentative, needs-booking]
-booking: {status: required, note: 第三张 50K 券。换不出来退 Courtyard Pioneer Square}
-cost: SpotHero 停车 $20–35
-notes:
-  - 行李全部搬进房间，车里不留任何东西
-```
-
-**SpotHero 找 Pioneer Square 附近地库过夜。** 酒店代客要 $55–70。
-
-住市中心的最大好处：**Day 5 早上完全不用开车** —— 走去吃早茶、走去还车、走到轻轨站。这在一个要卡 3 小时缓冲的国际航班日，是最大的风险削减。
+倒推链从现在开始：**明早 07:15 出酒店 → 08:15 前还完车 → 08:30/08:45 各自进航站楼。**
 
 ## Day 5 · 2026-10-05
 
 ```trip-day
-theme: 唐人街早茶，还车返程
+theme: 清晨还车，各自起飞
 sunrise: "07:13"
 sunset: "18:44"
-from_stay: {mode: walk, minutes: 15, km: 1.4, label: 穿 Pioneer Square 往南到 ID}
 ```
 
-**倒推链不可压缩。** 前一晚已收好行李、网上办好登机，早上从酒店走 15 分钟到唐人街开吃。
+**清晨的 I-5 站在你们这边** —— 全程 25 分钟，不赌高峰，8 点左右还完车两个人都从容。
 
-### 早茶 · 唐人街
+### 退房出发
 
 ```trip-event
-time: 10:00–11:10
-category: food
-place: Jade Garden
-flags: [warning]
-cost: 约 $30/人
-notes:
-  - Dough Zone 这类 11:00 才开门的赶不上；ID 部分老店周一休息，确认一家 + 备选一家
-  - 马上要坐长途飞机，重油川菜不是好主意，点心更聪明
-to_next: {mode: walk, minutes: 8, label: 走回还车点}
+time: 07:00–07:15
+category: logistics
+place: AC Hotel
+to_next: {mode: drive, minutes: 25, label: 清晨 I-5 空旷，顺路加油 10 分钟, note: 还车要满箱，留好小票}
 ```
 
-**Jade Garden** —— 推车点心，老派 ID 体验，早上就开，周一人少。
-
-备选：**Harbor City**（同样早开，港式点心）· **Tai Tung**（西雅图最老的中餐馆，李小龙常去）。
+前一晚都收好了，早上只做两件事：快速退房、从地库取车。
 
 ### 还车
 
 ```trip-event
-time: 11:20–11:35
+time: 07:55–08:15
 category: drive
-place: 唐人街提车点
-detail: 保时捷 Macan
+place: SEA 机场
+detail: 租车（待定）
 flags: [warning]
 notes:
-  - "11:20 硬截止"
-to_next: {mode: rail, minutes: 46, label: 走 10 分钟到 Chinatown-ID 站，11:45 上 1 Line 直达 SEA}
+  - "08:15 前还完 —— 再晚压缩的是她的国际航班缓冲"
+  - 拍全车视频 / 清空车内 / 保留加油小票
+to_next: {mode: walk, minutes: 15, label: 租车中心摆渡或车主送到航站楼, note: 具体方式定了哪家再确认}
 ```
 
-还车前：**拍全车视频 / 清空车内**（油昨晚已加满）。
+四天前在这提的车，闭环。
 
 ### 进航站楼
 
 ```trip-event
-time: 12:25–12:40
+time: 08:30–08:45
 category: logistics
 place: SEA 机场
 ```
 
-国际航班，3 小时缓冲。*绝对底线 13:10，但别拿这个当计划。*
+一起到、分头安检：我走 Delta 国内，她走 CX 国际区。**她 08:45 进去，国际线 3 小时缓冲正好。**
 
 ### 各自起飞
 
 ```trip-event
-time: "15:40"
+time: "10:10"
 category: flight
 place: SEA 机场
 detail: 返程 · 各自起飞
 ```
 
-各回各家。她 15:40 国际航班是全天倒推链的锚。
+我 10:10 先飞，13:11 落 SNA；她 11:45 起飞，经香港 **10/6 晚 22:10 落浦东**。
 
 ## 附录 · 出发前必办清单
 
@@ -825,73 +807,49 @@ icon: ✅
 
 ### 现在就做
 
-1. **亚马逊玻璃球 10/3 预约 · 订 11:30 场** —— 每月仅第一、三个周六对公众开放，名额放出即抢空
-2. **水上飞机 10/3 · 订 10:00 场** —— Kenmore Air（950 Westlake Ave N，离 Astra 步行 10 分钟）。问清取消改期政策
-3. **Astra 两晚：50K 券 + 补 5,000 点** —— 万豪允许给免房券最多加 15,000 点，55K = 50K 券 + 5K 点，两晚共补 10,000 点。官网不显示补点选项就直接打客服电话。确认券有效期覆盖 10/1
-4. **Day 4 万豪：Renaissance Seattle**（第三张 50K 券）
-5. **Ashford 木屋 10/3（周六）** —— 订之前必须问：泡池是独享还是公用
+1. **定租车（最急）** —— Sixt / Turo 二选一：SEA 机场提还，10/1 10:45 → 10/5 08:15，4 天。哪家都要确认：可进国家公园 / 里程政策 / 机场交接车方式
+2. **AC Hotel 三晚（10/2–10/5）** —— 万豪系 AC Hotels，点数换划算；选市中心门店，订好后把地址坐标回填地点表
+3. **亚马逊玻璃球 10/3 预约 —— 9/18（周五）上午 10:00 开抢，定好闹钟** —— 免费但即抢即空，窗口到 10/2 中午 12:00 截止；订 13:00 前后的时段
+4. **水上飞机 10/3 · 订 10:00 场** —— Kenmore Air（950 Westlake Ave N，开车 10 分钟，码头有收费停车）。问清取消改期政策
 
 ### 一周内
 
-- **Chihuly Garden and Glass 10/3 下午 13:00 时段票**
-- **餐厅订位**：Elliott's（10/1 晚）、How to Cook a Wolf（10/2 晚）、**Altitude Sky Lounge（10/2 晚，周五爆满）**
-- SpotHero 下载 + 预订 10/2、10/4 两晚车位
+- **餐厅订位**：Asadero Prime（10/2 周五 16:45，生意火）、Elliott's（10/3 周六晚，必须订）、How to Cook a Wolf（10/4 周日晚）
+- SpotHero 下载 + 预订 **10/2–10/4 三晚** AC Hotel 附近地库
 - **买轻便冰爪（microspikes）+ 登山杖**、非嗜睡型晕车药、姜糖
 
 ### 出发前 3 天
 
+- **收好 Airbnb 自助入住指引**（门锁密码、Wi-Fi、垃圾规则），离线存一份 —— Ashford 信号不稳
 - **NPS 雷尼尔步道与道路状况页** —— 两件事都要查：
   - 道路：Stevens Canyon Rd / Hwy 410 Chinook Pass 是否因早雪封闭
-  - 步道：**Panorama Point 以上和 Golden Gate 是否积雪**（决定 Day 4 走环线还是往返）
-- **Crystal Mountain 缆车 10/4 是否运营** —— 秋季一般只开周五–周日，十月上旬就收，10/4 在临界线上
+  - 步道：**Paradise 一带（Glacier Vista / Myrtle Falls 沿线）是否结冰积雪**
 - 雷尼尔 2026 时段预约制是否已结束
-- **查 10/3 月相** —— 满月的话 Ashford 星空基本没了
+- **查 10/1 月相** —— 满月的话 Ashford 星空基本没了
 - 逐个确认餐厅营业状态（西雅图这几年关店率高）
 
-## 附录 · Ashford 住宿备选
+## 附录 · 市区住宿（三晚）
 
 ```trip-ref
-id: lodging-ashford
-icon: 🏡
-```
-
-**⚠️ Ashford 在森林河谷里，树很高，"房间里看得到雷尼尔"基本不存在。** 宣传里的 mountain view 多半是林景。雪山视觉在 Day 3 傍晚的 Tehaleh 和 Day 4 早上的 Paradise —— 这一晚买的是**私密泡池 + 森林感**。
-
-| 选择 | 泡池 | 特点 | 价位 |
-| :-- | :-- | :-- | :-- |
-| **Stormking Spa + Cabins** ⭐ | **每间木屋独立雪松泡池** | 仅限成人，有正规 spa 可约按摩，最安静私密 | $300–400 |
-| **Wellspring Spa & Woodland Retreat** ⭐ | **私人露天雪松浴桶 + 柴烧桑拿** | Ashford 最"泡"的一家，树屋/原木屋风格古怪有趣 | $200–320 |
-| **Jasmer's at Mt. Rainier** | 部分单元私人泡池 | 独立小屋，内装收拾得好，带壁炉 | $200–300 |
-| **Deep Forest Cabins** | 部分单元私人泡池 | 位置隐蔽，林中独栋，安静 | $200–300 |
-| **Mounthaven Resort** | 部分单元有泡池 | **离园区大门不到 1 英里**，带厨房 | $180–280 |
-
-**订之前必须问四件事：**
-
-1. **泡池是这间独享还是公用的？**（很多列表写 hot tub 其实是共用一个）
-2. 有没有使用时段限制？（有些 22:00 静音）
-3. **到店时水是不是已经烧热？**（你们 20:30 才到）
-4. 周末是否有"最少住两晚"限制
-
-**🎯 顺手查 Paradise Inn** —— 在国家公园里面，第二天推开门就是 Skyline 起点，白送 40 分钟清晨山路。但季节性营业，**通常十月上旬关门**，且没泡池。
-
-## 附录 · Day 4 住宿备选
-
-```trip-ref
-id: lodging-day4
+id: lodging-city
 icon: 🏨
 ```
 
-**券最多可再补 15,000 点，65K 以内的房都能换 —— 换越贵的房，券越不浪费。**
+**三晚全住 AC Hotel 是这版行程的支点** —— 不挪窝，晚上回来永远是同一张床。AC 是万豪旗下的欧风精选牌子，点数价通常比 Westin 一档酒店低，现金价也实惠。
 
-| 万豪 | 走到唐人街 | 周日晚约需点数 | 券价值 |
-| :-- | :-- | :-- | :-- |
-| **Renaissance Seattle** ⭐ | 15 分钟 | 40–50K | **最优** |
-| **The Westin Seattle** | 20 分钟 | 40–55K | 好 |
-| **W Seattle** | 15–18 分钟 | 50–60K（可能补点） | 好 |
-| **Courtyard Downtown/Pioneer Square** | **10 分钟，最近** | 30–40K | 一般（券略浪费） |
-| **Seattle Marriott Waterfront** | 25 分钟 | 50–70K（要补点） | 好，但离 ID 最远 |
+**订的时候盯三件事：**
 
-**推荐 Renaissance Seattle**，换不出来退 **Courtyard Pioneer Square**。
+1. **选市中心门店**（Westlake 商圈半径内最好）—— Day 3 电车去水上飞机、Day 4 步行去派克市场都指着这个位置
+2. 订好后**把地址和坐标回填地点表**（现在是市中心占位坐标），重跑一次 enrich
+3. 三晚一个订单别拆 —— 拆单可能被要求中途换房
+
+**AC 满房再看备选（同万豪系）：**
+
+| 备选 | 位置 | 备注 |
+| :-- | :-- | :-- |
+| **Moxy Seattle Downtown** | SLU 边缘 | 年轻牌子，点数同档 |
+| **Courtyard Downtown/Pioneer Square** | 老城 | 点数便宜 |
+| **The Westin Seattle** | Westlake 旁 | 贵一档，位置最正 |
 
 ## 附录 · 租车与停车
 
@@ -900,19 +858,28 @@ id: car
 icon: 🚗
 ```
 
-**租期：3 天，10/2 11:30 → 10/5 11:20**
+**租期：4 天，10/1 10:45 SEA 机场提 → 10/5 08:15 SEA 机场还。**
 
-**提车时间为什么是 11:30：** 计费节点在 **10/2 11:20** —— 早于这个跳 4 天，晚于这个都算 3 天。11:30 把 3 天用得最满。
+**Sixt vs Turo 怎么选：**
 
-**⚠️ 先跟车主确认三件事：** 按 24 小时块还是自然日计费 / 可否进国家公园 / 每日里程上限（全程约 310 英里）
+| | Sixt | Turo |
+| :-- | :-- | :-- |
+| 交接 | 机场租车中心，摆渡车直达，柜台手续 | 车主交车，点位和时间要提前约 |
+| 车型 | 标准车队，看运气升舱 | 挑得到有性格的车 |
+| 要确认 | 跨州/国家公园无限制，里程政策 | **可否进国家公园 + 里程上限**，逐单不同 |
 
-**停车策略（全程 SpotHero）：**
+**⚠️ 哪家都要过的三关：** 可进国家公园 / 里程政策（全程约 310 英里）/ 机场交接车的具体方式。
+
+**用车节奏：** Day 1–2 重度（机场→Ashford→雷尼尔→市区），Day 3–4 市区串场，Day 5 清晨送机场。
+
+**停车策略：**
 
 | 时间 | 地点 | 费用 |
 | :-- | :-- | :-- |
-| 10/2 夜 | Astra 附近写字楼封闭地库 Evening Rate | $10–20 |
-| 10/2 白天 | Broadway 收费场（Capitol Hill）、Central Plaza Garage（华大） | 各 $5–10 |
-| 10/4 夜 | Pioneer Square / 市中心地库 | $20–35（酒店代客要 $55–70） |
+| 10/1 夜 | Mt. Rainier Getaway 门口 | 含 |
+| 10/2–10/4 三夜 | AC Hotel 附近封闭地库（SpotHero） | $15–30/晚 |
+| 10/3 白天 | 码头收费场（上午）→ 玻璃球访客车库 2021 7th Ave（午后）→ 海滨地库（傍晚） | $10–20 + $15–25 + $15–25 |
+| 10/4 白天 | 派克市场地库（上午）· Central Plaza Garage（华大，可选站） | $15–20 · $5–10 |
 
 ## 附录 · 日期运气与风险
 
@@ -924,13 +891,14 @@ icon: 📅
 **运气：**
 
 - 10/3 是十月**第一个周六** → 亚马逊玻璃球开放（**这趟唯一的开放日，不可移动**）
-- 10/4 高山秋色接近峰值，雷尼尔夏季时段预约制通常已结束
+- **10/2 周五进雷尼尔** —— 停车、步道、机位都比周末松
+- 10/1–10/2 高山秋色正在峰值窗口，雷尼尔夏季时段预约制通常已结束
 
 **风险：**
 
+- 她的国际航班晚点会整体压缩 Day 1 —— 木屋是自助入住，晚到无碍；Tehaleh 和 Longmire 两个可选项就是当天的缓冲带
 - 十月初雨季过渡，约五成概率遇雨
-- Sunrise Road 与 Crystal 缆车都进入季节性关闭窗口
-- Panorama Point 以上可能已积雪
+- Paradise 高处步道可能已有霜雪 —— 冰爪备着
 - **市区秋色还没上色**，植物园红枫峰值在十月下旬
 - 十月初西雅图水手队可能在季后赛，市区酒店和交通会有临时溢价
 
@@ -943,15 +911,15 @@ id: rain
 icon: 🌧️
 ```
 
-**如果 10/4 雷尼尔被云雾封死**，别硬上 Panorama Point。改走低海拔雨林线：
+**如果 10/2 雷尼尔被云雾封死**，别硬上 Glacier Vista 看白墙。改走低海拔雨林线：
 
-- **Christine Falls / Narada Falls** —— 路边瀑布，雨天水量更大更美
-- **Longmire 历史区 + Trail of the Shadows** —— 0.7 英里环线，古木苔藓，雨中氛围极佳
+- **Christine Falls + Narada Falls** —— 路边瀑布，雨天水量更大更美（Narada 本来就在主线里，雨天反而加分）
+- **Longmire 历史区 + Trail of the Shadows** —— 0.7 英里环线，古木苔藓，雨中氛围极佳（Day 1 没去成的话正好补上）
 - **Carbon River 雨林** —— 西北门，温带雨林，全程平坦
 
-然后提早下山，把时间给 Kent 的和牛和酒店泡澡。
+然后提早回城，把多出来的时间给 Kent 的和牛和酒店泡澡。
 
-**市区遇雨的室内备选：** Chihuly（已在 Day 3）· MoPOP · Seattle Aquarium（Day 1 顺路）· Elliott Bay Book Company（已在 Day 2）
+**市区遇雨的室内备选：** MoPOP（Day 3 的可选项，雨天直接转正）· Seattle Aquarium（海滨 Ocean Pavilion）· Chihuly Garden and Glass（Seattle Center 内，玻璃艺术 + 温室）· Elliott Bay Book Company（Capitol Hill 的木结构独立书店）· 派克市场 Down Under（本来就在 Day 4，全在室内）
 
 ## 附录 · 预算
 
@@ -962,16 +930,16 @@ icon: 💰
 
 双人，不含机票。逐项金额看上方的自动统计，这里只放数字之外的判断。
 
-**💡 四晚住宿全靠免房券，现金只出 Ashford 一晚 + 两晚停车。** 统计里没出现的隐性支出：油费约 $85（310 英里 × 91+ 号高价油）、餐饮日均 $130–160、冰爪 + 登山杖一次性装备 $60–100。
+**机票已出票（不进下方统计）：** 我 SNA↔SEA 往返 $226.80（确认号 F9PJ3C，不含托运）；她 PVG↔SEA 两张单程共 $1,662.93，实付 46,185 点 + $1,201.08（各含 1 件托运）。
 
-**想再压 $300+，按顺序砍：**
+**💡 住宿口径：木屋 $339.42 已锁定，AC 三晚目标走点数，现金再出三晚停车。** 统计里没出现的隐性支出：油费约 $85（约 310 英里）、餐饮日均 $130–160、冰爪 + 登山杖一次性装备 $60–100。
 
-1. Ashford 选 Mounthaven（$200 档）而非 Stormking → 省 $150
-2. 跳过 Crystal 缆车 → 省 $100
-3. 跳过摩天轮和日本花园 → 省 $56
-4. Day 2 晚餐选 Betty 而非 How to Cook a Wolf → 省 $60
+**想再压 $100+，按顺序砍：**
 
-**⚠️ 最大变量：** 如果 Astra 补点换房换不出来，现金价约 $250–350/晚，**两晚多出 $500–700**。
+1. 跳过摩天轮和日本花园 → 省 $56
+2. Day 4 晚餐选 Betty 而非 How to Cook a Wolf → 省 $60
+
+**⚠️ 最大变量：** 水手队若进季后赛，市区酒店现金价临时跳涨 —— AC 用点数订提前锁掉这个敞口，这也是清单第 2 条优先级的由来。
 
 ## 附录 · 打包清单
 
@@ -982,7 +950,7 @@ icon: 🎒
 
 **山上专用**
 
-- **轻便冰爪（microspikes）+ 登山杖** —— Panorama Point 以上十月可能结冰
+- **轻便冰爪（microspikes）+ 登山杖** —— Paradise 高处步道十月清晨可能结霜结冰
 - **抓地好的徒步鞋**
 - **防水外套**（不是伞，山上有风）
 - 太阳镜（雪面反光强）+ 防晒
@@ -992,7 +960,7 @@ icon: 🎒
 **其他**
 
 - **非嗜睡型晕车药 + 姜糖** —— Day 3 早上水上飞机前 30 分钟
-- **泳衣 + 拖鞋** —— Ashford 泡池
+- **泳衣 + 拖鞋** —— 木屋若带泡池/浴缸就用得上，出发前看一眼房源设施清单
 - 保温杯 / 车载充电器 / 移动电源
-- ORCA 卡，或手机 Apple Pay 直接刷闸机
-- **Global Entry 卡（如果有）** —— Day 1 能省 30 分钟
+- ORCA 卡，或手机 Apple Pay 直接刷闸机（电车、单轨都能刷）
+- **Global Entry 卡（如果有）** —— Day 1 她出关能省 30 分钟

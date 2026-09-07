@@ -193,6 +193,23 @@ function transportValue(t: Transport): string {
             .join(', ')}]`,
         }
       : undefined
+  const legs =
+    t.legs.length > 0
+      ? {
+          raw: `[${t.legs
+            .map((l) =>
+              flowMap([
+                ['number', l.number],
+                ['cabin', l.cabin],
+                ['seat', l.seat],
+                ['baggage', l.baggage],
+                ['refund', l.refund],
+                ['note', l.note],
+              ]),
+            )
+            .join(', ')}]`,
+        }
+      : undefined
   return flowMap([
     ['traveler', t.traveler],
     // mode 总是显式写出 —— 规范形态不留默认值歧义，二次往返字节稳定
@@ -208,11 +225,13 @@ function transportValue(t: Transport): string {
     ['arr_day_offset', t.arrDayOffset !== 0 ? t.arrDayOffset : undefined],
     ['duration', t.durationMin !== null ? formatDurationCompact(t.durationMin) : undefined],
     ['cabin', t.cabin],
+    ['seat', t.seat],
     ['baggage', t.baggage],
     ['through_check', t.throughCheck],
     ['refund', t.refund],
     ['price', t.price],
     ['stops', stops],
+    ['legs', legs],
     ['note', t.note],
   ])
 }

@@ -63,7 +63,17 @@ apps/web/src/
 - 浅色 = 亮米黄信笺纸（`--paper: #f9f2df`），玩吃住行卡是主色变淡的粉彩底（`--grp-mix` 10%），事务卡走 `--fog` 兜底中间色；深色档基本没动过。「注意红」也是可自定义令牌（`--tight` → `--a-tight`）。
 - 设置面板（首页齿轮）：外观三态 + 7 个色令牌（固定 3×7 标准色板，先选行再点色，默认色内嵌网格）。租车底色开关**在周视图工具栏**，不在设置里。
 
-## 六、当前状态（2026-08-20，四条 commit + worker 修复已推上线；.ics 接线本地完成）
+## 六、当前状态
+
+### 本轮（2026-09-05 · seattle 行程照真实出行重写）
+
+- **seattle-2026-10 从示范行程变成真实行程 v1**：5 天 4 晚（10/1–10/5），机票已出票（她 KE/CX 经仁川/香港，我 DL 直飞 SNA），Ashford 木屋已订（Mt. Rainier Getaway，$339.42，坐标经 Nominatim 按门牌精确定位）。结构：Day 1 落地即提车南下 Ashford → Day 2 雷尼尔（Glacier Vista 中等线 + Narada Falls）夜宿回城 → Day 3–4 市区（水上飞机/玻璃球/派克市场/Kerry Park）→ Day 5 清晨机场还车。待定：租车（Sixt/Turo 二选一）、AC Hotel 三晚（坐标占位，订好回填）。
+- **工作流**：Harley 分段给修改意见 → 改草稿过目 → 通过后才跑验证轮（enrich + 全关口 + 事实核查 + 截图）。事实核查修掉的坑：2120 周六无午市（免费停车口子中午不成立，午餐换 Serious Pie）、跨日界线西向航班必须写 `arr_date` 否则钟点回卷误标 +1（transport-dates.ts 规则 4，spec 就是这么设计的）。
+- 测试基线仍 **19 套件 / 272 测试**；`patch.test.ts` 的事件锚点从「晚餐」改成「午餐」（fixture 重写后 Day 1 正餐变了）。路网 30/30 全真实几何。
+- **分段票面（transport.legs）**：中转前后班次号/客舱/座位逐段记录（`legs` 数量必须 = stops + 1，错配响亮警告），联程属性（价格/全程/托运/直挂/共同退改）留顶层；顶层新增 `seat` 字段（此前 seat 只是 cabin 的兜底别名，cabin 存在时座位号被静默丢弃 —— 已修）。票面时间轴下加分段信息条，标题行班次号由各段自动拼出。同类修复：`_demo` 的 UA34 东行同日到达其实一直误标 +1（必须显式 `arr_date`），已补。测试基线 **20 套件 / 276 测试**（新增 legs.test.ts）。
+- **预订状态并进标题角标**（Harley 拍板）：`需预订`（琥珀）/`已预订`（灰）挂在标题行「待定」旁，独立的 BookingModule 行删除；booking 的 deadline/note 由 DayTimeline 下沉进注意条目盒渲染（不静默丢数据），seattle 的 booking note 已全部迁到 notes 或删重。纯 `needs-booking` flag（无 booking 块）仍显示「待订」。机票信息改用票面结构化字段（carrier/number/duration/cabin/price/stops），不再塞 note。
+
+### 上一轮（2026-08-20，四条 commit + worker 修复已推上线；.ics 接线本地完成）
 
 - 测试基线：**19 个套件 / 272 个测试全绿**，`data:check` 4 fixtures 全过（`_broken` 恰好 6 错），typecheck/build 绿。
 - **`.ics` 接线完成**（backlog 原第 1 条）：

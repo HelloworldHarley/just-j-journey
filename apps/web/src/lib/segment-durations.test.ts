@@ -7,6 +7,7 @@ const t = (over: Partial<Transport>): Transport => ({
   arrDayOffset: 0,
   durationMin: null,
   stops: [],
+  legs: [],
   ...over,
 })
 

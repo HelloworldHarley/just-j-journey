@@ -41,7 +41,7 @@ currency: JPY
 - what: 去程航班
   cost: $842 + 她的票待定
   transport:
-    - {traveler: 我, mode: flight, carrier: 达美 Delta, number: DL7, from: LAX, to: HND T3, dep_date: "2026-11-19", dep_time: "08:05", arr_time: "15:30", arr_day_offset: 1, duration: 14h25m, cabin: 经济舱, baggage: 2 件 23kg, through_check: 行李直挂, refund: 改签 $200 起, price: "$842", stops: [{airport: SEA, arr_time: "10:55", dep_time: "13:35", leg: 2h50m, wait: 2h40m}]}
+    - {traveler: 我, mode: flight, carrier: 达美 Delta, from: LAX, to: HND T3, dep_date: "2026-11-19", dep_time: "08:05", arr_time: "15:30", arr_day_offset: 1, duration: 14h25m, cabin: 经济舱, baggage: 2 件 23kg, through_check: 行李直挂, refund: 改签 $200 起, price: "$842", stops: [{airport: SEA, arr_time: "10:55", dep_time: "13:35", leg: 2h50m, wait: 2h40m}], legs: [{number: DL7, seat: 36C}, {number: DL167, seat: 22A, note: 靠窗已锁定}]}
     - {traveler: 她, mode: flight, from: PVG, to: HND, note: 票未定，全部槽位等着填}
 - what: 新干线 · 小田原→京都
   cost: "¥11,220 × 2 = ¥22,440"
@@ -56,7 +56,7 @@ currency: JPY
   cost: $715 + 她的票待定
   transport:
     - {traveler: 她, mode: flight, from: KIX, to: PVG, dep_time: "19:05", note: 票未定}
-    - {traveler: 我, mode: flight, carrier: 联合 United, number: UA34, from: KIX T1, to: SFO, dep_time: "18:30", arr_time: "11:10", duration: 9h40m, cabin: 经济舱, baggage: 2 件 23kg, refund: 不可退，改签 $150 起, price: "$715", note: 东行跨日期变更线，同日上午落地}
+    - {traveler: 我, mode: flight, carrier: 联合 United, number: UA34, from: KIX T1, to: SFO, dep_time: "18:30", arr_time: "11:10", arr_date: 2026-11-23, duration: 9h40m, cabin: 经济舱, baggage: 2 件 23kg, refund: 不可退，改签 $150 起, price: "$715", note: 东行跨日期变更线，同日上午落地 —— 必须显式写 arr_date，钟点回卷推不出来}
 ```
 
 ## 住宿
@@ -548,6 +548,7 @@ icon: 🧪
 
 - **前置声明 + `detail:` 引用**：所有长途/住宿/租车的明细都写在顶层块里，事件只写 `detail: 去程航班` 一句话；同一记录被多次引用时（还车、回酒店），只有首次引用的卡片长出信息模块
 - **中转航班**：我的 DL7 经 SEA 停 2h40m —— 每段上方标时长（2h50m + 停 2h40m + 8h55m = 全程 14h25m），中转两端标到发当地时间
+- **分段票面（legs）**：DL7 → DL167 两段各自的班次号/座位逐行展示，客舱从顶层联程值兜底；标题行班次号由各段自动拼出
 - **跨日出发**：`dep_date: 11-19` + `arr_day_offset: 1` —— 左端日期 11/19、右端 11/20 带红色 +1 角标
 - **描述行**：客舱/托运/直挂/退改四格（她的票全待填）
 - **多人一人一票**：她的票全空 —— 航司/航班号/时刻/预算全是待填槽

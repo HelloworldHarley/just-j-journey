@@ -18,12 +18,12 @@ import { iconFor } from '../../lib/icons.tsx'
 import { CategoryChip, kindVars } from '../../components/CategoryChip.tsx'
 import { TransportTimeline } from './TransportTimeline.tsx'
 import { fmtDurationZh, formatMinutes, shortDate } from '../../lib/format.ts'
-import { BookingModule, CostText, RentalModule, StayModule } from './modules.tsx'
+import { CostText, RentalModule, StayModule } from './modules.tsx'
 import { MapLinkButton } from '../../components/MapLinkButton.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
 
 /** flight 事件没写 transport 块时的空骨架 —— 所有槽位都显示「待填」 */
-const EMPTY_TRANSPORT: Transport = { mode: 'flight', arrDayOffset: 0, durationMin: null, stops: [] }
+const EMPTY_TRANSPORT: Transport = { mode: 'flight', arrDayOffset: 0, durationMin: null, stops: [], legs: [] }
 
 /** 时间列宽度。卡片内外共用，保证通勤条的竖线对得上卡片里的时间列。 */
 const TIME_COL = '3.5rem'
@@ -135,12 +135,23 @@ function EventCard({
   const tentative = event.flags.includes('tentative')
   const optional = event.flags.includes('optional')
   const needsBooking = event.flags.includes('needs-booking') && !event.booking
+  const bookingStatus = event.booking?.status ?? 'none'
   const isPeriod = event.timeKind === 'period' || event.timeKind === 'allday'
+
+  // 预订状态并进标题角标后，booking 块里的截止/备注下沉到注意条目盒 —— 不静默丢数据
+  const bookingNotes =
+    event.booking && bookingStatus !== 'none'
+      ? [
+          event.booking.deadline ? `预订截止 ${event.booking.deadline}` : undefined,
+          event.booking.note,
+        ].filter((n): n is string => Boolean(n))
+      : []
+  const noteItems = [...bookingNotes, ...event.notes]
 
   const zoneHasContent =
     Boolean(event.summary) ||
     Boolean(event.detail) ||
-    event.notes.length > 0 ||
+    noteItems.length > 0 ||
     event.variants.length > 0
   const zoneOpened = detail || zoneOpen
 
@@ -196,6 +207,8 @@ function EventCard({
               <span className="mr-1.5 text-[12px] font-normal text-graphite">{cat.zh}</span>
               {event.title}
               {tentative && <InlineBadge tone="muted">待定</InlineBadge>}
+              {bookingStatus === 'required' && <InlineBadge tone="todo">需预订</InlineBadge>}
+              {bookingStatus === 'booked' && <InlineBadge tone="muted">已预订</InlineBadge>}
               {needsBooking && <InlineBadge tone="todo">待订</InlineBadge>}
             </span>
           </h4>
@@ -229,7 +242,6 @@ function EventCard({
         ) : null}
         {stay && <StayModule stay={stay} />}
         {rental && <RentalModule rental={rental} places={places} eventCost={event.cost} />}
-        {event.booking && <BookingModule booking={event.booking} />}
 
         {/* 折叠区：简要介绍 / 正文 / 注意条目 / 如果条目。
             全局「详」= 全部展开，不再要求二次点击；
@@ -238,7 +250,7 @@ function EventCard({
           <>
             {event.summary && <Markdown className="compact mt-2">{event.summary}</Markdown>}
             {event.detail && <Markdown className="compact mt-2">{event.detail}</Markdown>}
-            {event.notes.length > 0 && <NotesBox notes={event.notes} />}
+            {noteItems.length > 0 && <NotesBox notes={noteItems} />}
             {event.variants.length > 0 && <VariantList variants={event.variants} />}
           </>
         )}

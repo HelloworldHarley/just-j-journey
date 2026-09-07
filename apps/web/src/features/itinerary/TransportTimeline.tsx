@@ -75,6 +75,11 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
   const slots = MODE_SLOTS[flight.mode]
   const ModeIcon = iconFor(TRANSPORTS[flight.mode].icon)
   const stops = flight.stops
+  // 分段票（legs）：标题行班次号由各段拼出；客舱/座位逐段展示，顶层槽位让位
+  const legged = flight.legs.length > 0
+  const headlineNumber =
+    flight.number ??
+    (legged ? flight.legs.map((l) => l.number).filter(Boolean).join(' → ') || undefined : undefined)
   // 时刻是输入、日期是派生：整条轴的日期由 timelineDates 一次算出，
   // 每个节点的红色 +n 都用同一个 dayOffsetOf(出发日, 该节点) —— 不存在两套口径
   const dates = timelineDates(flight, date)
@@ -98,7 +103,13 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
   }
 
   const hasDescRow =
-    slots.cabin !== null || slots.bag !== null || flight.cabin || flight.baggage || flight.refund || flight.throughCheck
+    slots.cabin !== null ||
+    slots.bag !== null ||
+    flight.cabin ||
+    flight.seat ||
+    flight.baggage ||
+    flight.refund ||
+    flight.throughCheck
 
   return (
     <div className="rounded-lg bg-[var(--paper-sunken)] px-3.5 pb-3 pt-2.5">
@@ -111,7 +122,7 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
         )}
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <ModeIcon size={12} className="shrink-0 text-graphite" aria-hidden />
-          <SlotText value={joinSlot(flight.carrier, flight.number)} hint={slots.who} mono />
+          <SlotText value={joinSlot(flight.carrier, headlineNumber)} hint={slots.who} mono />
         </span>
         <span className="tnum text-graphite">
           {flight.durationMin !== null ? `全程 ${formatDurationCompact(flight.durationMin)}` : '全程 —'}
@@ -281,16 +292,59 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
       </div>
       </div>
 
-      {/* 行 6：客舱 · 托运 · 直挂 · 退改 */}
+      {/* 行 5.5：分段信息条 —— 中转前后班次各一行：班次号 · 客舱 · 座位（缺的是待填槽）。
+          托运/退改逐段不同才在段上出现，全程一致的留在下面的联程行 */}
+      {legged && (
+        <div
+          className="mt-2 space-y-1 border-t border-[var(--hairline)] pt-2 text-[11px]"
+        >
+          {flight.legs.map((leg, i) => (
+            <div key={i} className="flex flex-wrap items-center gap-x-3.5 gap-y-1">
+              <SlotText value={leg.number} hint="班次" mono />
+              {slots.cabin !== null && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-graphite">{slots.cabin}</span>
+                  <SlotText value={leg.cabin ?? flight.cabin} hint="待填" />
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-graphite">座位</span>
+                <SlotText value={leg.seat} hint="待填" />
+              </span>
+              {leg.baggage && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-graphite">{slots.bag ?? '行李'}</span>
+                  <SlotText value={leg.baggage} hint="待填" />
+                </span>
+              )}
+              {leg.refund && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-graphite">退改</span>
+                  <SlotText value={leg.refund} hint="待填" />
+                </span>
+              )}
+              {leg.note && <span className="text-graphite">{leg.note}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 行 6：联程行 —— 客舱/座位只在没有分段时占槽 · 托运 · 直挂 · 退改 */}
       {hasDescRow && (
         <div
           className="mt-2 flex flex-wrap items-center gap-x-3.5 gap-y-1 border-t
                      border-[var(--hairline)] pt-2 text-[11px]"
         >
-          {(slots.cabin !== null || flight.cabin) && (
+          {!legged && (slots.cabin !== null || flight.cabin) && (
             <span className="inline-flex items-center gap-1.5">
               <span className="text-graphite">{slots.cabin ?? '客舱'}</span>
               <SlotText value={flight.cabin} hint="待填" />
+            </span>
+          )}
+          {!legged && (slots.cabin !== null || flight.seat) && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-graphite">座位</span>
+              <SlotText value={flight.seat} hint="待填" />
             </span>
           )}
           {(slots.bag !== null || flight.baggage) && (

@@ -1,16 +1,17 @@
 import type React from 'react'
-import { CalendarCheck, KeyRound, MoonStar } from 'lucide-react'
-import type { Booking, Place, Rental, Stay, TripEvent } from '@jjj/schema'
+import { KeyRound, MoonStar } from 'lucide-react'
+import type { Place, Rental, Stay, TripEvent } from '@jjj/schema'
 import { daysBetween } from '@jjj/tripmd'
 import { fmtMoney, formatMinutes, shortDate } from '../../lib/format.ts'
 import { Arrow, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
 
 /**
- * 首次引用长出的**信息模块** —— 住宿 / 租车 / 预订状态的票面卡。
+ * 首次引用长出的**信息模块** —— 住宿 / 租车的票面卡。
  *
  * 它们是 TransportTimeline 的兄弟（同一套 ticket-parts 零件、同一种
  * 「有起止时刻、有节点、有条款的凭证」读法），不是事件卡的内脏 ——
  * 原先挤在 DayTimeline 里，683 行的文件装了 13 个组件。
+ * 预订状态不在此列：它并进了标题行角标，截止/备注下沉注意条目盒。
  */
 
 /** 预算金额：金色加粗放大 —— 金额是决策信息。没抽出金额时降级显示原文 */
@@ -182,35 +183,3 @@ export function RentalModule({
   )
 }
 
-/** 预订状态：需预订琥珀、已预订灰。餐厅订位 / 票务预约共用 */
-export function BookingModule({ booking }: { booking: Booking }) {
-  if (booking.status === 'none') return null
-  const booked = booking.status === 'booked'
-  return (
-    <div
-      className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg
-                 bg-[var(--paper-sunken)] px-3 py-2 text-[12px]"
-    >
-      {/*
-        走 --todo-ink 而非 Tailwind 的 dark: 变体 —— 后者只认 prefers-color-scheme，
-        强制主题（data-theme）时不跟随。旁边的 .todo-badge 用的就是这个令牌，两者本该同色。
-      */}
-      <CalendarCheck
-        size={13}
-        className={`shrink-0 ${booked ? 'text-graphite' : 'text-[var(--todo-ink)]'}`}
-        aria-hidden
-      />
-      <span
-        className={
-          booked
-            ? 'text-graphite'
-            : 'todo-badge rounded-full px-2 py-[1.5px] text-[10.5px] font-medium leading-tight'
-        }
-      >
-        {booked ? '已预订' : '需预订'}
-      </span>
-      {booking.deadline && <span className="tnum text-graphite">截止 {booking.deadline}</span>}
-      {booking.note && <span className="min-w-0 text-graphite">{booking.note}</span>}
-    </div>
-  )
-}

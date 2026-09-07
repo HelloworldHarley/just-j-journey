@@ -87,6 +87,22 @@ export const TransportStopSchema = z.object({
   waitMin: z.number().int().positive().nullable().default(null),
 })
 
+/** 一个行进段自己的票面信息 —— 中转前后班次不同时逐段记录 */
+export const TransportLegSchema = z.object({
+  /** 该段班次号，如 "KE 882" */
+  number: z.string().optional(),
+  /** 该段客舱/座席 */
+  cabin: z.string().optional(),
+  /** 该段座位号 */
+  seat: z.string().optional(),
+  /** 该段托运差异（与顶层不同才写） */
+  baggage: z.string().optional(),
+  /** 该段退改差异（与顶层不同才写） */
+  refund: z.string().optional(),
+  /** 该段备注 */
+  note: z.string().optional(),
+})
+
 /**
  * 长途换乘段 —— 抵达/离开/多目的地间的移动，机票式时间轴渲染。
  * 住在顶层 trip-transports（JourneySchema）里，事件用 detail: 引用。
@@ -132,16 +148,24 @@ export const TransportSchema = z.object({
    * 必须由作者提供；null = 未填，线段按等宽画
    */
   durationMin: z.number().int().positive().nullable().default(null),
-  /** 客舱/座席类型，如 "经济舱" / "指定席" */
+  /** 客舱/座席类型，如 "经济舱" / "指定席"。中转前后不同时写进 legs，这里留联程共同值 */
   cabin: z.string().optional(),
+  /** 座位号，如 "48J"。中转前后不同时写进 legs */
+  seat: z.string().optional(),
   /** 托运行李额说明，如 "2 件 23kg" / "无托运" */
   baggage: z.string().optional(),
-  /** 中转行李是否直挂，如 "行李直挂" / "需提取重新托运" */
+  /** 中转行李是否直挂，如 "行李直挂" / "需提取重新托运" —— 联程属性，只住顶层 */
   throughCheck: z.string().optional(),
   /** 退改签政策，如 "改签 $200 起" / "发车前免费改签" */
   refund: z.string().optional(),
   /** 中转/停靠，按顺序 */
   stops: z.array(TransportStopSchema).default([]),
+  /**
+   * 分段信息，按顺序与行进段一一对应（长度 = stops.length + 1）。
+   * 中转前后各段的班次号/客舱/座位（以及少见的托运/退改差异）逐段记录；
+   * 全程一致的信息留在顶层字段，不要两头重复。
+   */
+  legs: z.array(TransportLegSchema).default([]),
   /** 值机/检票/提车备注 */
   note: z.string().optional(),
 })
@@ -398,6 +422,7 @@ export type Booking = z.infer<typeof BookingSchema>
 export type Cost = z.infer<typeof CostSchema>
 export type Transport = z.infer<typeof TransportSchema>
 export type TransportStop = z.infer<typeof TransportStopSchema>
+export type TransportLeg = z.infer<typeof TransportLegSchema>
 export type TripEvent = z.infer<typeof EventSchema>
 export type Leg = z.infer<typeof LegSchema>
 export type Day = z.infer<typeof DaySchema>

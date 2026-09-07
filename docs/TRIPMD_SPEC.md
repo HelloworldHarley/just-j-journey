@@ -131,9 +131,10 @@ currency: USD                # 预算主币种的兜底（cost 文本没带货�
       arr_time: "13:11"            # 到达当地时间
       arr_day_offset: 0            # 次日到达写 1（跨日期变更线，见下）
       duration: 11h55m             # 全程含中转
-      cabin: 经济舱                 # 客舱/座席，如 经济舱 / 指定席
+      cabin: 经济舱                 # 客舱/座席，如 经济舱 / 指定席（联程一致时写这里）
+      seat: 48J                    # 座位号（联程一致或单段时写这里）
       baggage: 2 件 23kg            # 托运额度
-      through_check: 行李直挂       # 中转行李是否直挂
+      through_check: 行李直挂       # 中转行李是否直挂 —— 联程属性，只住顶层
       refund: 改签 $200 起          # 退改签政策
       price: "$189"                # 票面单价（一人一张票），展示用；进预算的是上面的 cost
       stops:                       # 中转/停靠，按顺序
@@ -142,6 +143,10 @@ currency: USD                # 预算主币种的兜底（cost 文本没带货�
           dep_time: "16:05"        # 再出发当地时间
           wait: 2h10m              # 停留时长
           leg: 2h50m               # 到达此中转点的前一段行进时长（跨时区时显式写，见下）
+      legs:                        # 分段信息：中转前后班次号/客舱/座位不同时逐段写，
+        - {number: KE 882, cabin: 经济舱, seat: 48J}   # 顺序与行进段一致，数量必须 = stops + 1
+        - {number: KE 41, seat: 35J}                   # （对不上会警告）；可带 baggage/refund/note
+                                   # 覆盖该段差异。全程一致的信息留顶层，别两头重复
       note: 国际到达，过海关后行李转盘取行李
     - traveler: 我
       mode: flight
@@ -182,6 +187,7 @@ UI 渲染成机票式时间轴：左出发、右到达、实线行进、虚线�
 | 字段 | 什么时候必须写 |
 |---|---|
 | `arr_day_offset` | 跨日期变更线的航班。次日到达写 1 |
+| `arr_date` | **西行跨日界线「同日到达」**（PVG 11:10 → SEA 10:40 当天）：到达钟点比出发小，缺省的钟点回卷会误推 +1，而 offset 的缺省 0 表达不了「显式 0」—— 只能写 `arr_date` 钉死 |
 | `dep_date` / `arr_date` | 直接照票面抄日期时；抵达型事件的航班其实前一天起飞时写 `dep_date` |
 | 中转的 `arr_date` / `dep_date` | 中转本身跨了日期变更线，且没写 `wait` |
 
@@ -553,6 +559,6 @@ parse(serialize(parse(md)))  深等于  parse(md)
 
 ## 完整示例
 
-见 [`apps/web/public/data/_example/plan.md`](../apps/web/public/data/_example/plan.md)（两天最小示例）和 [`apps/web/public/data/seattle-2026-10/plan.md`](../apps/web/public/data/seattle-2026-10/plan.md)（5 天 36 事件，压力测试）。全要素演示（四类时间、中转、租车、变体、待填槽位）见 [`_demo/plan.md`](../apps/web/public/data/_demo/plan.md) —— 仅本地开发可见。
+见 [`apps/web/public/data/_example/plan.md`](../apps/web/public/data/_example/plan.md)（两天最小示例）和 [`apps/web/public/data/seattle-2026-10/plan.md`](../apps/web/public/data/seattle-2026-10/plan.md)（5 天 37 事件，压力测试）。全要素演示（四类时间、中转、租车、变体、待填槽位）见 [`_demo/plan.md`](../apps/web/public/data/_demo/plan.md) —— 仅本地开发可见。
 
 生成新行程请用 [`AUTHORING_PROMPT.md`](./AUTHORING_PROMPT.md)。

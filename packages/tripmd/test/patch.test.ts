@@ -19,7 +19,7 @@ beforeEach(() => {
 
 const day1 = () => trip.days[0]!
 const arrival = () => day1().events.find((e) => e.category === 'flight')!
-const dinner = () => day1().events.find((e) => e.title.includes('晚餐'))!
+const meal = () => day1().events.find((e) => e.title.includes('午餐'))!
 
 describe('set_transports', () => {
   it('填入多人换乘段并出现在写回文本里', () => {
@@ -41,6 +41,7 @@ describe('set_transports', () => {
             durationMin: 715,
             baggage: '2 件 23kg',
             stops: [{ airport: 'ICN', waitMin: 130 }],
+            legs: [],
             note: undefined,
           },
           {
@@ -51,6 +52,7 @@ describe('set_transports', () => {
             arrDayOffset: 0,
             durationMin: null,
             stops: [],
+            legs: [],
           },
         ],
       },
@@ -72,9 +74,9 @@ describe('set_transports', () => {
     const r = applyPatch(trip, [
       {
         op: 'set_transports',
-        eventId: dinner().id,
+        eventId: meal().id,
         transports: [
-          { mode: 'rail', carrier: 'Amtrak', number: 'Cascades 504', arrDayOffset: 0, durationMin: null, stops: [] },
+          { mode: 'rail', carrier: 'Amtrak', number: 'Cascades 504', arrDayOffset: 0, durationMin: null, stops: [], legs: [] },
         ],
       },
     ])
@@ -85,7 +87,7 @@ describe('set_transports', () => {
 
 describe('update_event', () => {
   it('改餐厅：标题+地点一起换，id 不变（收藏不丢）', () => {
-    const before = dinner()
+    const before = meal()
     const r = applyPatch(trip, [
       {
         op: 'update_event',
@@ -102,7 +104,7 @@ describe('update_event', () => {
 
   it('非法时间被阀门拦下，返回带行号诊断', () => {
     const r = applyPatch(trip, [
-      { op: 'update_event', eventId: dinner().id, fields: { timeRaw: '下午三点半' } },
+      { op: 'update_event', eventId: meal().id, fields: { timeRaw: '下午三点半' } },
     ])
     expect(r.ok).toBe(false)
     expect(r.trip).toBe(trip)
@@ -149,7 +151,7 @@ describe('预留接口：add / remove / move', () => {
   })
 
   it('move_event 跨天移动', () => {
-    const victim = dinner()
+    const victim = meal()
     const r = applyPatch(trip, [
       { op: 'move_event', eventId: victim.id, dayIndex: 2, afterEventId: null },
     ])
@@ -160,7 +162,7 @@ describe('预留接口：add / remove / move', () => {
 
   it('找不到事件 → 整批拒绝（原子性）', () => {
     const r = applyPatch(trip, [
-      { op: 'update_event', eventId: dinner().id, fields: { title: '改了' } },
+      { op: 'update_event', eventId: meal().id, fields: { title: '改了' } },
       { op: 'remove_event', eventId: 'no-such-id' },
     ])
     expect(r.ok).toBe(false)
