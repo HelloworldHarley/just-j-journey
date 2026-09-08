@@ -245,8 +245,6 @@ function readTransport(bag: DiagnosticBag, line: number, frec: Rec): TripEvent['
     cabin: str(frec['cabin']) ?? str(frec['class']),
     seat: str(frec['seat']),
     baggage: str(frec['baggage']),
-    throughCheck:
-      str(frec['through_check']) ?? str(frec['throughCheck']) ?? str(frec['baggage_through']),
     refund: str(frec['refund']) ?? str(frec['change_policy']) ?? str(frec['change']),
     stops: stopsRaw
       .map((sr) => asRecord(sr))
@@ -269,9 +267,6 @@ function readTransport(bag: DiagnosticBag, line: number, frec: Rec): TripEvent['
         number: str(lr['number']) ?? str(lr['flight_no']) ?? str(lr['flightNo']) ?? str(lr['no']),
         cabin: str(lr['cabin']) ?? str(lr['class']),
         seat: str(lr['seat']),
-        baggage: str(lr['baggage']),
-        refund: str(lr['refund']),
-        note: str(lr['note']),
       })),
     note: str(frec['note']),
   }

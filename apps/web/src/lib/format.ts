@@ -28,7 +28,19 @@ export function fmtDurationZh(min: number): string {
 
 const SIGN: Record<string, string> = { USD: '$', CNY: '¥', JPY: '¥', EUR: '€', GBP: '£', KRW: '₩' }
 
+/** 预算金额一律四舍五入到个位 —— 页面上的钱是决策信息，不是账单，小数只添噪声 */
 export function fmtMoney(amount: number, currency?: string): string {
   const sign = currency ? (SIGN[currency] ?? `${currency} `) : ''
-  return `${sign}${amount.toLocaleString()}`
+  return `${sign}${Math.round(amount).toLocaleString()}`
+}
+
+/**
+ * 自由文本里的金额同样取整："$713.33" → "$713"，"往返 $226.80" → "往返 $227"。
+ * 给票面 price、cost 原文这类没抽成数字的字段用 —— 与 fmtMoney 一个口径。
+ * 只碰「数字.数字」，时刻（16:00）、时长（2h50m）、日期（9/26）都没有小数点，不受影响。
+ */
+export function roundMoneyText(raw: string): string {
+  return raw.replace(/(\d[\d,]*)\.(\d+)/g, (_m, int: string, frac: string) =>
+    Math.round(Number(`${int.replace(/,/g, '')}.${frac}`)).toLocaleString(),
+  )
 }

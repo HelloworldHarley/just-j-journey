@@ -56,11 +56,14 @@ export function SlotText({
       </span>
     )
   }
+  // 待填槽是行内 flex 盒、固定高度、文字居中 —— 放进条款行时和旁边的正文共用同一个
+  // 18px 行盒，不会因为多了边框和内边距把整行撑高、把邻居的基线挤歪
   return (
     <span
-      className={`whitespace-nowrap rounded border border-dashed border-[var(--fog)] px-1.5 py-px text-graphite/60 ${
-        mono ? 'tnum' : ''
-      } ${strong ? 'text-[12px]' : 'text-[10.5px]'}`}
+      className={`inline-flex items-center whitespace-nowrap rounded border border-dashed
+                  border-[var(--fog)] px-1.5 leading-none text-graphite/60 ${mono ? 'tnum' : ''} ${
+                    strong ? 'h-[22px] text-[12px]' : 'h-[18px] text-[10.5px]'
+                  }`}
       title="待填 —— 在 plan.md 里补上这个字段"
     >
       {hint}

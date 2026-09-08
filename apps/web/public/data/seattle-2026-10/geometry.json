@@ -23,37 +23,48 @@
         47.129
       ]
     },
-    "drive|p-ac-hotel-by-marriott-seattle-downtown|p-kenmore-air-lake-union-seaplane-terminal": {
-      "poly": "qjqaHpjtiVRj@kCbCi@cBMa@e@{Ak@iBCIIUc@wACU_A{CWq@OUYSc@IS?wAGsAQqAYsBm@iBo@iBkAQE_@KkDcAs@UQEm@OsJkCmBa@uEo@mAKqBKmFZqGGoG@{G?k@Lg@\\_@l@KZ_@zA_@~BCfAD~@PdCXlBTnA^fCFj@N|BFbBDdDB|BBhG?`@A`FwB?]Bu@Ts@`@uBxAYXS^?j@y@?Q@o@VKk@sBvA_BbAOc@BYtAcA",
+    "drive|p-ac-hotel-by-marriott-seattle-downtown|p-colman-dock-seattle-ferry-terminal-pier-": {
+      "poly": "krsaHdxsiVrB?BeAh@v@`AoB^u@x@}ARm@ZYf@SZA^@rB\\vBb@`@ErC~@pA`@b@LfDfAfAZdIvB`ARz@JJBfBd@pBCzDQp@Kp@Qf@Uh@]zHoGvAiAh@dBJZl@nBj@jBDPL^Vx@n@lBFTf@xAn@lBl@jBj@lBn@tBn@vBd@`B`A`DHXXQ|BoBCbACj@CTCZWlAIV[RGL@|D?X",
       "from": [
-        -122.334,
-        47.6076
+        -122.3308,
+        47.6191
       ],
       "to": [
-        -122.3395,
-        47.628
+        -122.3389,
+        47.6021
       ]
     },
     "drive|p-ac-hotel-by-marriott-seattle-downtown|p-pike-place-market": {
-      "poly": "qjqaHpjtiVRj@kCbCgEtDb@vAFPl@nBiExDcErDl@hBf@`BFRj@hBDLd@xAPj@r@|BFRe@~@GL",
+      "poly": "krsaHdxsiVrB?BeAh@v@bAtAbAtAb@l@\\d@`ArAXb@Z`@NRRXn@z@~@rAV^TZPX`AtAbAtAbAxA~@rAp@`ANRbAxAX^h@t@RXb@n@NTv@fA`AtAlBjCX^v@fAFJdAxA~@rA??`AtAV\\p@|@z@jAGL",
       "from": [
-        -122.334,
-        47.6076
+        -122.3308,
+        47.6191
       ],
       "to": [
         -122.3422,
         47.6097
       ]
     },
-    "drive|p-ac-hotel-by-marriott-seattle-downtown|p-seattle-tacoma-international-airport": {
-      "poly": "qjqaHpjtiVRj@kCbCi@cBMa@e@{AjC_CrAkAx@u@o@sBm@iBD[Fq@FWPWPOvDgChAaApBiBbAmAvHgGhBaB|@aAz@eAxDkFjAwA~EeHr@y@jAmAlAeAnBmAtAq@lAa@dBc@nASjBMZAfCG^A~BBrAJtJhAdCP|@?dBErAKlEw@pCo@nCe@tFg@dL_@pCS|BWvCc@zIyApAOx@EpCGdCNnG`AjD\\jDTdP^~HPbCHtDTlCXzQvBjK~AbEh@jDb@xCPvADlAAzAI~AQhAStA]jDuAfCwAbIuFfBgArGaD~Ay@nAm@dB}@vA_A`BaB`AkAp@}@jAwBdEmIf@gAlCuFd@eAlB_EnA{B`A}ArAmBjB{BlCgClXeXjEyEfFoG`PwSlAuA~@_Av@s@nA{@fB{@~WkKjAe@nHuCtKcE|GuBrKgC|IcCtI_DhNwFjEsBtAy@zScOzAgAjKeHlKsHlCoBdFmDjNoK`c@qd@pDeEdD}DpCqDtBqCxLaPzAgBr@o@hAy@tAm@|@YzAUh@CxA@t@FhBb@l@Rh@Xt@f@v@n@zAdBdB`CpAhBrErGrFhGxAxAlAdA~AhA~Ax@fBn@lAZpCf@bBXnALdCCx@Kv@QbBk@pBw@dBy@|@_@n@Y`GmClA_@|B_@jGcB~Ck@lCMbHaAdEe@~A[p@U|Bc@nDy@pHwBj@Gh@?\\Dn@Tb@XZV\\d@p@~ATfAL`ADx@A|@Ez@K|@S~@_@dAeDlIuC|G_@xA[zAK|@UjCGlA?~AD`CJ~APbBh@hC^jAb@nA^|@`BvCnAtBv@|Av@jBN`@f@zBJl@NxCFnB?xAGpBMhBw@zG[tCQzBQ|DIlB_@dG?pAHfAJ~@R`Ad@pA^x@\\j@zKzLdE~EzInJ~@|@xAdApAh@nA^p@HfBFfELhB@bBAf@Av@KvD?v@Eh@GhA[x@_@JG`BqAz@QHO?mD?Q@cDAaAA{@AqEhCZ|Eb@x@DhBDbAErAAlDKhFQbCIfBInAC`EMbBEAc@aBH]@aCH",
+    "drive|p-ac-hotel-by-marriott-seattle-downtown|p-tesla-supercharger-southcenter-tukwila": {
+      "poly": "krsaHdxsiVrB?BeAh@v@`AoB^u@x@}ARm@ZYf@SZA^@rB\\vBb@`@ErC~@pA`@b@LfDfAfAZdIvB`ARz@JJBpBHtAErBSZGz@Wh@_@r@]tAy@rA_AvHkGhHyFrAkAjAeAzAeBbAqApN{Rz@eAfAoAdB{ApAy@rAo@fBo@lBa@jBShAE~BBzAJjAL`NdBpAJlA@xAC|AOpKkBlBWpFKdL_@pCS|BWvCc@zIyApAOx@EpCGdCNnG`AjD\\jDTdP^~HPbCHtDTlCXzQvBjK~AbEh@jDb@xCPvADlAAzAI~AQhAStA]jDuAfCwAbIuFfBgArGaD~Ay@nAm@dB}@vA_A`BaB`AkAp@}@jAwBdEmIf@gAlCuFd@eAlB_EnA{B`A}ArAmBjB{BlCgClXeXjEyEfFoG`PwSlAuA~@_Av@s@nA{@fB{@~WkKjAe@nHuCtKcE|GuBrKgC|IcCtI_DhNwFjEsBtAy@zScOzAgAjKeHlKsHlCoBdFmDjNoK`c@qd@pDeEdD}DpCqDtBqCxLaPzAgBr@o@hAy@tAm@|@YzAUh@CxA@t@FhBb@l@Rh@Xt@f@v@n@zAdBdB`CpAhBrErGrFhGxAxAlAdA~AhA~Ax@fBn@lAZpCf@bBXnALdCCx@Kv@QbBk@pBw@dBy@|@_@n@Y`GmClA_@|B_@jGcB~Ck@lCMbHaAdEe@~A[vB[`Ea@lBYzBSzB@D{B^kQR}@HwAPuBJk@`@iCZyAVkAr@gDRaAXkAl@yCXsA\\]f@[jBf@vAd@`APXaDFm@Fo@FoC?oBA_JbCAf@?f@?`FAlD@V?X?rA@~B?X?\\?t@@dCC@fB?bACpJn@@REJGTU?y@",
       "from": [
-        -122.334,
-        47.6076
+        -122.3308,
+        47.6191
       ],
       "to": [
-        -122.2961,
-        47.4435
+        -122.2566,
+        47.4553
+      ]
+    },
+    "drive|p-amazon-spheres-seattle|p-kenmore-air-lake-union-seaplane-terminal": {
+      "poly": "g|raHjjuiVnAhBuB`Ec@|@]g@c@m@cAuA_@i@eBcCkA`CkAbCaAsAe@i@MIy@AaDAgFAk@?}DAgFAgCAy@?mAA]?qCAcC?aA?e@?SAG?I?y@?Q@o@VKk@sBvA_BbAOc@BYtAcA",
+      "from": [
+        -122.339,
+        47.6155
+      ],
+      "to": [
+        -122.3395,
+        47.628
       ]
     },
     "drive|p-asadero-prime-kent-wa|p-tehaleh-rainier-view-point-bonney-lake-w": {
@@ -67,48 +78,48 @@
         47.129
       ]
     },
-    "drive|p-elliott-s-oyster-house-pier-56-seattle|p-ac-hotel-by-marriott-seattle-downtown": {
-      "poly": "g_qaHhouiVJIFGlAcA_AuCEKnBeB^[k@iBK[e@wAe@{AEKo@sBo@qBm@iBo@sBk@iBo@sBoCbCNb@L`@",
+    "drive|p-bainbridge-island-ferry-terminal|p-tesla-supercharger-sequim-wa": {
+      "poly": "yetaHlvvjVCNIHs@\\SLeAlBe@zBU~@m@xA[t@Sh@MXGNWn@CFEJO^Uj@Qd@QZQLKDWDe@?qAAmBDs@FuAXmKjD}Bt@WFmD~@}BZ{BJqBAgTwAsAIyAK}E_@yAGqBBi@D{BVkCj@qCfAiAh@gAp@_D`C{B`CoEzFcC|CaAjAeArAsBtBcA|@qClB{CrAkA`@cAViCb@{CVgHFgJToBFcBBuFJeAByHPG?iFJ{ALwAP{Bf@kBn@uAn@}BpA}JjG{DdCmAv@sAv@aSvLeS~LkAp@oAx@{CtBiDvCoCpCkHxHw@z@oCvC}HnIWVgAjAgAlAi@j@wb@td@CBaFnFcTfUgAjAmApAeAjA}A`Bw@z@oApA_A|@eBrAoAv@eB|@oRbH{PnG}@Lw@b@Y@CEKCQ@MRUVuBv@}HxCe@Rw@`@w@n@k@h@kBnBq@\\aAr@[?MCIBONQVi@f@c@LQN{ARyCBcDAqADcANu@TqAl@w@l@cAhAe@p@_ApBqAlDqJvYKZEL_@fAENOh@Sx@WdBaAjEKLQNe@@_BFw@CgR_BeDU_@CgHo@iAIw@OyAg@w@k@o@o@o@w@_JyMs@cAu@iAqFeICCgAiB}@cB{F{LeA_Cm@}A[qAEUOkAIwAA_AqCLK?uB@iA?k@?aC?oB?yB@]?U?cA?wB@wB@?vOCvMAt@En@ETUv@e@pAkCxFWnAY~Au@jCSpAs@vCMZ]d@[HmCT_CHuBN_@A_CYa@Kk@My@Qq@EIAa@JqBB]DuAf@eAj@_@^UX_A~Ac@bAe@jBq@dCKn@Iz@ItBIj@Wh@gA`BgAnBMN}AlAgAh@QDqAEeADiExBg@`@sAv@eCxA{@b@iAx@}DnDy@r@q@b@QJoBn@aE|@uCh@e@JsARcG`ASFgBXgBVmATcEl@iALkADcBAkDMeDKy@CmAEw@AaAEi@CkBGC?aEMs@@aB@y@?iC@M?qE@yAVqEnAMDqEjAyAPeAFI@aC[iB]m@Se@QqAi@]I]CqDGwEKo@CuDMgBGmAKcA?UBYBsCT[@[Bg@BmAJ_@AqACsDTcBIwCC{BDeAF}AH{Cr@cBZyBT_CDsBCmA@a@Z_AfAsAbBa@\\iAp@GNKt@_A|AcCxDoAjBy@bAKLe@XeAPg@@eBUeAFgCKkHI_FFcFByBAi@IUIeAk@WWwAeBa@_@o@S_AQM?EHSLG@UGGOUc@k@mADf@GXMPOBkA?iEO_FPaGKiA@wAFeADkDBi@@[?{@LyCt@mANu@FkFM]M]U_Au@aB_Ba@]]Si@Oq@Ae@JWJ{AnAQHSF_C\\wANsA@kCAs@C[KO[UPg@\\cAb@aB\\{CX_DLwBRmBJkDZoBHm@DqCPgCNoAHeCN[BeJp@kCJqIn@yG\\wGh@mIx@oBL_HV_PfAsCLaQlA_CJ{@B{@B_CAuBQ}QeEiA]gIsBcH_BoJyBoEy@gAKgACwAEwA@yJCWFKPITC`@?`D?Z?jB?D?X?nI?tB?`C@hIA~HClCCz@OvBSbCC^c@dFg@fGC^M|BEtC@lATpHHhC@^DtAJlEFbB^fE\\`CZ`Bv@pCj@bBd@fAr@vAl@`AfB`CxAlBV|@F^Bd@E|@a@lBKRcBnDkJbSsQb`@_IvPwHjPed@`aAeArBk@xAa@lAKLQf@Qn@[rBK^E@IHEJCR?JDR@`AQrDA`B@Rs@bk@OrFI|AQ|Bk@dEWxA]vAQx@a@vAaHrS]nAg@zBYrA_@nBkAdME|AAvE?lEFxCJtANrAVpDvDtk@t@~KfAbPz@dLP|CFtABlBEtEGxAKtAm@tDw@rCqBlGQh@aJdY[hAo@hBcAtDSdAYhAc@lCOlAWbCu@tGqHtz@a@~D_@xCSpAc@tBY`Aq@nBqAtC{A~BcWf^if@rq@o@bA{@~A_AzBq@rB{@zD_@dCiBhPe@|BOfBCNKPQPSDGJELAND^HlB?hAIfC_@vE?f@_@hDgB`R_QpgBUfBW~Ac@jBk@pBg@tAqAnCaIfNuEdJ}o@`lAqTda@eBbDak@jdAiBfDoArCe@tAYbAy@nDwFf[qDxScGb\\eEzUQ~@a@zBcC~M{A|GuAbFgAjDuAvDyi@zyAyi@fzAcHnRk@tBo@dD]lCWpCkDnk@mEzs@iCbb@gAlQSpBWpBa@nBa@vAUr@s@~Au@tA}@jAk@l@k@h@gAt@q@ZkA`@_BZk@Dy@?oAG}AY}Ak@w@a@{ByAaNeImAo@eA_@iAU_BM_ADi@HuA`@q@XgDjBoBn@q@Lq@H_GNeIKoCS}@Sw@]_B}@kCiBoAu@}Ai@c@KkAIuA@eBRwVpEsSnDoANyBNeB@Q?]?uGEiBJoAPcATeHhCiPlGaA\\wAVkADe@?cBOiBi@oFgBsAS}@Em@@_AJw@TaAd@a@Ty@p@YZY`@k@|@[n@m@~AeCnI[v@o@lA_AjAe@f@q@h@i@Xw@\\_@JgAR}@Bw@E_@GiAW[Oq@_@q@c@y@u@iD{DUWgBqBe@k@oGoHMOqHoI{BmCOQsA}AMQMMkC_DgAeBg@eAg@iAo@gBq@eCmOeu@qAiG_AgEa@yAa@mAi@uAgAwBcA_Bu@}@w@y@cBqAq@c@kB{@_D}@}JaCyWqG{Be@gC]wCOmABmCPqEr@k@Jwb@xHkB^gCp@ea@dN}B|@}Av@yClBwAjAcAfA{FfHgVb[aAlAwE~Fq@bAiAxBk@|@e@hAq@lBm@fCSt@{@bEq@|D}@rGwClXsRx~A_Ez]wD|[}Efa@{ChVa@jDw@fHMdAMxBKfCGvCCrTBj[A~I@jNArcA?jIErq@?fP?vD?hXFjB\\hDlA`GbEnSdDzNzA|G\\`B`@zAb@pAb@dA^r@~@|AzA~A~@t@~DnCtAv@pA`A`C`BnT~N|QdMpMzIvEjDhAv@vIrHlBhBp@p@jAdAdFvEx@t@`CtBz@n@tAp@z@ZtB`@|Cv@pA`@vBvA`Av@t@x@h@x@b@v@t@bBfBpFdDfJ|CdJb@~APdA`@vCJnBDbBCtAGfBMpAWrAk@fCg@dBu@nBaBjD{AfC{ApBoAnAeC~BONc@`@GFoDrDkAvAcAzAkCpEiJvOk_@hs@cK|Rs@bA}AlBaAx@_Al@oCvAkA^iARgADeL@_@AiGCwADu@Hq@LcBn@aAh@{@l@kBtB}@nAiFbJiAnBiAlBYd@q@jAo@fAeCdEcL~QoIbNcBhD{AvDsHdUeA~By@xA}@jAwAtAuAz@eBp@kEr@}Bp@w@d@o@f@aAdA}@lAcFlJ}IfRsMdXwClH{@rBu@~Bm@xAcDfKcA|Ba@p@aAvAeChCe@j@U^o@`Be@dByEvO]hAa@vAMb@iAtDf@\\t@aC",
       "from": [
-        -122.3409,
-        47.6054
+        -122.51,
+        47.6222
       ],
       "to": [
-        -122.334,
-        47.6076
+        -123.0738,
+        48.0708
       ]
     },
-    "drive|p-gas-works-park-seattle|p-kerry-park-seattle": {
-      "poly": "e}xaHzptiVBJQ^AV@jA?r@g@A[??xHAlBEfAIj@Kd@a@dAS`@MVi@rA]nAQ|@UtB[dDEf@KbAKZGDW@O?U?QrB?HU`CSpCiAjNg@rGE^WzCCb@f@?F?F?v@?d@?b@?f@?R?X?j@?vA?jA?x@??^AnE?v@BNCz@Ap@?fB@nEAvE@rE?fG?`D?zA?vKAdBr@@tCDN\\t@A\\@tAAjDBjD@fCAhB?xB?`IBj@??eC?eC?eC?cC?gC?}@?gA`@?lE@rF@pFDrFBb@?xA?V?^?\\?\\?lB?bCCNm@HKJG\\CfC@jD@jD@@`G?bGAdC",
+    "drive|p-colman-dock-seattle-ferry-terminal-pier-|p-ac-hotel-by-marriott-seattle-downtown": {
+      "poly": "ehpaHbiuiV?j@?HE?E?EAC?E?G?C?C?E?E?E?C?E?E?E?C?E?E?E?C?E?C?E?C?E?E?E?C@CBEBI]AkB?aA?CAUESMc@Qk@gAiDg@cBs@uB{AaFm@oBk@mBoC`CmCbCkC|BoCbCo@sBi@eBi@cBMa@e@{Ak@iBCIIUc@wACU_A{CWq@OUYSc@IS?wAGsAQqAYsBm@iBo@iBkAQE_@Km@m@}As@s@SeAYo@QaGaBa@[QUQ]W{@O]wA?yG??\\DnC@jA?^B`BCxBG`ACdAsB?",
       "from": [
-        -122.3344,
-        47.6456
+        -122.3389,
+        47.6021
       ],
       "to": [
-        -122.3599,
-        47.6295
+        -122.3308,
+        47.6191
       ]
     },
     "drive|p-how-to-cook-a-wolf-queen-anne-seattle|p-ac-hotel-by-marriott-seattle-downtown": {
-      "poly": "{lwaHvyxiV|@??eC@qAJm@DQ@Y@iE?sF?sF?qF?qF?qF?qFlD@hD@~@@ZBRHNLf@p@JJPLr@Jr@Ed@OVMNSP]p@yBb@wAN]RSPGrA?v@@hD@n@DRHb@\\PFZFZ?lIGfD?tA?vA@xA?N?fA?nD?x@?pB?dA?fB?V??yB@oHz@BZDTHt@b@lAnAd@Zr@JfC@pA?`@BtB?`AA`A?dB@vAAJ?`@?P?t@?X??|@?Lf@r@vAjBlByDjBqDzCiGh@iAdAyBf@aA|@kBr@sAf@aAxCcGvCcGJO`@q@PGDE`BcBjAcARYbEqDpAiAvBmBhEsDjC_Cj@jBNb@L`@",
+      "poly": "{lwaHvyxiV|@??eC@qAJm@DQ@Y@iE?sF?sF?qF?qF?qF?qFlD@hD@~@@ZBRHNLf@p@JJPLr@Jr@Ed@OVMNSP]p@yBb@wAN]RSPGrA?v@@hD@n@DRHb@\\PFZFZ?lIGfD?tA?vA@xA?N?fA?nD?x@?pB?dA?fB?V??yB@oH?}IGeBQ{CC_AAcA?eC?kB@sC?eC@}BAgGlG@lF@fF?dF@DuH@mC?yB?aC?}B?aC^?`@?n@?",
       "from": [
         -122.3567,
         47.6387
       ],
       "to": [
-        -122.334,
-        47.6076
+        -122.3308,
+        47.6191
       ]
     },
-    "drive|p-kenmore-air-lake-union-seaplane-terminal|p-serious-pie-downtown-seattle": {
-      "poly": "ekuaHnnuiVT|@_BbAN`@bBeAfAq@b@Yn@WPAx@?H?F?R@d@?`A?bC?pC@\\?lA@x@?fC@fF@|D@j@?fF@`D@x@@LH@mCRAHEn@oADSAe@hAOp@I\\EZEpBWv@IjBhCdCnD`ArAb@l@V^xCcGvCcGNTv@fA`AtAs@xAw@`Bi@hAeArBp@z@",
+    "drive|p-kenmore-air-lake-union-seaplane-terminal|p-seattle-center": {
+      "poly": "ekuaHnnuiVT|@_BbAN`@bBeAfAq@b@Yn@WPAx@?H?F?R@d@?`A?bC?pC@?fDLxBPnCBzA?jS?xB?bCEbCCbCFb@?|AAxBAnK?dG@fBAx@?dB?~AA`D?h@?lA?J?hA?x@tA?`A?d@?LAx@@z@?dA?R?pA@?G?{B?}B??",
       "from": [
         -122.3395,
         47.628
       ],
       "to": [
-        -122.341,
-        47.6132
+        -122.354,
+        47.6221
       ]
     },
     "drive|p-kerry-park-seattle|p-how-to-cook-a-wolf-queen-anne-seattle": {
@@ -120,6 +131,17 @@
       "to": [
         -122.3567,
         47.6387
+      ]
+    },
+    "drive|p-lake-crescent-lodge-olympic-national-par|p-storm-king-ranger-station-marymere-falls": {
+      "poly": "w`idHterrVmBq@A]Ka@i@eBUyAWcJ?}J@qIaA?}@g@W[[aAEmACoB@q@?]Po@Xw@P`@BX@p@FRNP",
+      "from": [
+        -123.8,
+        48.0571
+      ],
+      "to": [
+        -123.7886,
+        48.0579
       ]
     },
     "drive|p-longmire-mount-rainier-national-park|p-31222-555th-street-east-ashford-wa-98304": {
@@ -144,6 +166,28 @@
         46.769
       ]
     },
+    "drive|p-next-door-gastropub-port-angeles-wa|p-tesla-supercharger-sequim-wa": {
+      "poly": "shudHvfkpVv@gCPi@h@gBx@kC`@oATw@zBsH|@uCh@eBHY^oAb@sAFURm@DMRo@f@aBVw@`@sAp@{B`A}Ct@gCNg@Pg@J_@@Ej@mBjBgGh@cBr@_Ct@eCj@iBPm@Z_AJ_@FSVu@BIJ]DMTu@Pg@lAaEDKJ]@GHWf@}Al@qBHWRo@Tu@Tu@HURo@Vy@HYNg@J[Ne@b@wA`@wArCoJTs@Ro@ZgAVy@`@mARs@JYVy@rEmOVcAPy@L_AZ{BNoAP_CHkBJyB^iFB]F_AHkAHgA^_EVgEl@sIt@eLXuFb@sHXyEHy@Bc@^{GJyAJkBXoER}DHgE?eDIgDMoCo@}MAiCAmB?aH?sN?w@?WAuEEoAKaBUoAy@}C}D}Kw@wBSm@e@qAK[cC{GqCiI}@gCy@gCg@}AUkAMmAIiB@u@DaAHs@VaB\\eAVs@d@{@t@y@~@k@vAYd@Cb@@dB^vCjAhA\\v@P~@BhAId@Mx@_@b@[t@q@b@i@b@aAh@gB\\qBH}@DyA?aAEkAIw@QmAQs@Ss@o@uA_@m@mKoM}@mAS]_@{@a@}AS}AIkB@qAJwAH_ATcA\\gAXk@bEiGjDgFNUlAiBjA_BbIcM~@eBt@sB`@qA`A}Cf@}A|C_Kn@uCRkA^{CrBeTNiBLsAtDc`@vE}h@TmCHsBDoA@gBFcYJqQBs]@eJDqOFiEFaCzB}_@x@wNx@eOP}ClAgU~@uPvA{Vj@_JHgBRmFXoJRkFBY^wGl@eLj@uJVoDb@kFl@_Ij@gJb@sHfCyd@Ba@Do@`AqQNoCbBk[TcE\\kGHkA^qG^uG\\}FnAeUZ}E|@qKJ{ADa@vAkPjDea@zAsPRaCxB}WTeD\\_IDiAX{D|@oKnAeOH}@~AyQtAwNlCuZ`CoWjB{RH{@~@yJxDua@`AiJlByTb@gFX_DJgAF}@|AcQbDw_@n@uH\\oEzAoQVoF~@uN\\oFh@cIzAmRjCc_@`Cm]zBi[ZcGPuFLmI@aFAeDFuQRgs@Fyf@@gJ`@a~@F}EVaLb@mOz@kPz@iMhA}Np@iHlBiP\\mC~@eG~@_FxIsb@h@gC`E}Rr@}CpBqHm@xAcDfKcA|Ba@p@aAvAeChCe@j@U^o@`Be@dByEvO]hAa@vAMb@iAtDf@\\t@aC",
+      "from": [
+        -123.4341,
+        48.1194
+      ],
+      "to": [
+        -123.0738,
+        48.0708
+      ]
+    },
+    "drive|p-olympic-game-farm-sequim-wa|p-lake-crescent-lodge-olympic-national-par": {
+      "poly": "_`xdHphsnVFkATcAL{@CgAMo@{ABq@LWl@CvC_A@uA?{@?c@?c@?CyB?cAFoC`@?r@AnNCbEFpCLxC|@nBPnAE|E_ApMHdFDr@L|CdAhBy@pAFrBd@jA`AbArBlDpAzC~@zAd@bDxCvDfFlDbHTTf@DDzM?xE@zG@bL?jF@tK?pb@@dLEvO?xB?|C?Z?vA?vL?~B@nF?xAAfA?|JC~OAp`@?f@?bM?dA?jYAjXbcAND~h@?zGArO?tG@bP?~F@`A?tM?nM@bD@jF?jODfC?lC?h@?`JGjTBn]?hA?b@?lG@zN?\\C~LC|IAtAAbAA`BOjGqArf@kBlk@e@pOUjGSxGOpFYnIS|GCpEDlDTpFd@|Et@xFb@~Cv@vFz@`GPtATlA|@zDbDvMhBtH`DpMHZlBtHrCbLdAxCzJbRn@lAhCjG~@fD~E|On@xBTn@VNf@?EhM@tNIxQG`YItDKrBq@jIaEfc@mDj_@MzAQhBiBjT]hCe@bCk@vBs@bCe@rAoBrGi@~Am@rB{@`CgAvBqBbDmC`Eg@v@y@pBmAhBOTkDfFcEhGYj@]fAUbAI~@KvAApAHjBR|A`@|A^z@R\\|@lAlKnM^l@n@tARr@Pr@PlAHv@DjA?`AExAI|@]pBi@fBc@`Ac@h@u@p@c@Zy@^e@LiAH_ACw@QiA]wCkAeB_@c@Ae@BwAX_Aj@u@x@e@z@Wr@]dAW`BIr@E`AAt@HhBLlATjAf@|Ax@fC|@fCpChIbCzGJZd@pARl@v@vB|D|Kx@|CTnAJ`BDnA@tE?V?v@?rN?`H@lB@hCn@|MLnCHfD?dDIfES|DYnEKjBKxA_@zGCb@Ix@YxEc@rHYtFu@dLm@rIWfE_@~DIfAIjAG~@C\\_@hFSlACZQt@Qf@OTe@d@i@^i@n@KLc@nAOf@CHSn@Wx@i@fB_@pAc@tAADs@~B_AtCa@pASr@y@lCADCFs@|B[~@Ql@Uv@Wt@y@rCg@bBc@tAY~@ELGTa@pAk@jB[bA_@jAGRGP[fAs@|Bc@xA}@pCOh@i@bBM`@Ob@CLc@rAUt@Sl@g@`B{@tC]jASj@Y|@Wz@CFGREN[~@?BSj@Od@Ql@W~@i@bBCLOb@ADUt@Ql@a@pAuB|GwCjJgFxPQh@o@rB_AxCMd@Ob@EPo@pBa@tAaA`D{@tC_@lAc@xA_@lA{@tCe@`BK\\CR?TTfEJ`BAn@FjAFlB?f@GhDGlDANC|AA`@Ih@q@tBw@dCu@`Cl@f@j@f@tAnAvApAn@z@v@xAdBvD~@nB|BdF`BjDvA~Bd@n@z@|@fAr@~DhE`DpDxC`FbAtBpAfBpAbAdGrBxAl@hAt@fApAj@x@|D~G`CvDf@t@jExGZb@Zp@dA|Ab@p@d@|@Xn@Tz@R|AXhDBZHh@^tATtA`@nIFxAJfBD~@Bj@B`@LhCRjEDz@FvAFdAPzDVlHRlFL~BZnGz@jQtAfYPfEXxFzBlf@LlCr@|OBZLhCn@zNt@nQxCbo@F~A^rHRtEBVlA~Vb@nKHjB`Ctf@PdDj@|Hf@pFfAdJhArHh@bDh@vCjB`JBLxAfGl@~Bn@tBn@hBPl@|AhE|Ovd@b[p}@d@jAl@|@l@v@t@p@bAd@hA`@bAFlAGdAS`Am@|FoExAa@hAOfAAfERxBVb@Nb@XZ\\Xl@rBfH~@pC`BrDn@dAdAhBvCzDzAtArC|BbUxPhBhBpAzAlAlBxBrEjE~J`@dAL^jAhGVz@Zr@\\r@l@r@h@b@d@VdAZh@Fv@?h@ChEi@`@A^Dh@Nd@XZXZj@N^Nl@TfBjA`MNbD?bCEjBe@lIUhHExB?~B@pBFlBJxBPbCb@zDj@pDh@fC`CxJ\\fBj@pDX~BPrBLnBJ`CHhFArBCvAKlCWnDa@fEg@dEkBnO}Dx[cAdIkClTmAvJu@bGSbBeApI{CnVwHzm@_BlMgA|Ie@xE_@pFWhGeDrwAiBbx@ErAa@hS_@`RqBj{@[~KSpCQzAUzA]`BwC|KgB`IwAtEgBfFaAbDIf@SbASpBQbCErA?lBJvFDvEK~Ac@nEiAxJqAvKW~BQ~@c@bBSb@O^_ApBc@l@wAvAUNcAl@mA^yBf@yAd@cAr@gBdBwCfE{@bB[z@YdAk@jCaAjFc@vCe@dDkC~QoEn[qEl\\[tDMzD?nCH|CRrCXfCd@hCn@dCx@bCdAhCnA|BfBnBbA~@xNzJ~AvAfAdBz@rB`@pAVtAPxAl@xJ^tFNz@l@pBjBhFz@dDh@jGd@dDHfABrACpAGxAe@tIEx@?x@BhATjCBt@AdBF|DJxBRdAd@zA|BxFpAtCf@rAb@|A|@hELz@JnABrAAjAWrCA|@@x@Fn@nA`JzApJF~@CbBKh@mAbEUlAE`A?`A@|@HbAH`ANdA`@pBn@vBrBvFjA~BdFfIdAtAl@j@hGpDd@PXDZA|AQ`BEj@Jt@RhAd@~@f@~GjFlAbBjA~@t@d@l@N~@JtJf@`@C^OlA}@XK`@G^B^JjDvB^d@d@`Al@~AX\\dDjClDtD`@vAPxAPjCl@vBj@dAzCrB`@`@b@p@b@hAT`AJ~@DxAEbITxCNbANv@Vv@`@|@pD`GYf@g@dAy@t@cANu@BApI?|JVbJTxAAfCx@\\lBp@",
+      "from": [
+        -123.1478,
+        48.1335
+      ],
+      "to": [
+        -123.8,
+        48.0571
+      ]
+    },
     "drive|p-paradise-jackson-visitor-center-mount-ra|p-narada-falls-mount-rainier": {
       "poly": "s{p|Gzm_fVA@In@?XBLJP\\L^Jb@N_@pE@`AHp@X`AnBhF^h@NLNFXDnABV?XFh@\\NTTh@J^F~@A~@IpAETW~@i@lAc@r@s@l@u@\\gAd@[ROPMVINIj@?|@Fd@DVR`@^ZRJVF^BfB?`I?d@F^LPJ`@ZVb@X`AL~@@ZGhAUlAq@xB{AjEUd@e@p@gCbBMLUh@Or@AX?t@@THZJVPTLPRJ`@HL?f@M`@c@Zw@Ns@\\kCLm@Tg@h@wAhA_CNSXUVURGt@MVAf@Bh@RZRp@x@bBdCXRPHPDf@@h@WZa@Ro@HaAAa@Gk@W}@wDuJq@yBe@mBa@}BWkBC}@CaADeDTaHHkAJc@Te@b@Wd@GVH`@XHPHRFVBh@?d@U~@g@bA]`AK`@Ip@?dAHpAZfCR~@Nf@fDrF`@h@TNF?TGFIHUBM?_@I]yAqB}@gAIOMa@AS@UBMLWLMLEFARDPPLP~CbJd@lAPVf@h@n@RnA@f@PRNZd@nD|HFa@QgAs@iB?e@BkA",
       "from": [
@@ -155,15 +199,15 @@
         46.775
       ]
     },
-    "drive|p-pike-place-market|p-washington-park-arboretum-seattle": {
-      "poly": "owqaH|}uiVsCtFmBsCSUvCaG|AuAvAkAXWv@q@\\[TS`@_@pCaCdEsD{AyE{A_Fo@sBi@eBi@cBMa@e@{Ak@iBCIIUc@wACU_A{CWq@OUYSc@IS?wAGsAQqAYsBm@iBo@iBkAQE_@KkDcAs@UQEm@OsJkCmBa@uEo@mAKqBK_CGkHKk_@@mAEkAOs@MiA[iAc@gAk@o@a@aAw@oDmDmDsDoAoA}@u@{@m@aAg@cBo@gHwB}Bm@iDi@kDWyEGoDG}BYwEOwDKcACe@GOEe@Y]]Wc@_@cAM}@GqAOkD[aFCi@AoBBo@?Im@yKO_ECoAGqSEiCI}BQgGQcEAeBNiD?oAA_AIq@GUOY{@mAW_AI_@a@cBEa@CoB@cCAeCGc@@sDB_ABa@Fc@F]Vu@\\q@b@e@XOZKZEP@F?NClF@TFVBJETAPGJGTg@De@B_@HYh@s@`@o@Xu@Zu@FHZMHMX@j@J`ANVBL@lAFlCCl@H",
+    "drive|p-pike-place-market|p-amazon-spheres-seattle": {
+      "poly": "owqaH|}uiVsCtFmBsCSUaAsA]c@QWQUeAyAaAuAaAwA_AqAeAyAw@iAMQ{@kAi@u@W_@wAsB}AR{APQBgBRjBhCt@dA",
       "from": [
         -122.3422,
         47.6097
       ],
       "to": [
-        -122.2946,
-        47.6377
+        -122.339,
+        47.6155
       ]
     },
     "drive|p-reflection-lakes-mount-rainier|p-stevens-canyon-road-mount-rainier": {
@@ -177,15 +221,15 @@
         46.758
       ]
     },
-    "drive|p-seattle-center-monorail-station|p-waterfront-park-pier-62-seattle": {
-      "poly": "adtaHxewiVFO?IGQQOIG?W?{@?u@`A@`@?X?bB?p@?|DF`@?j@AP?p@?tA?hA@LBbArA~@rAdAvA`ApAbAtA~@rAdAtAh@eAVg@h@gAhA}Bd@aA~@rA`AtAbAvA~@rAdA|Ah@p@lAyC~@oBBO`AoBlDeHT]~CiGzBoEx@cBjAcCJUFa@?g@AO",
+    "drive|p-seattle-center-monorail-station|p-kerry-park-seattle": {
+      "poly": "adtaHxewiVFO?IGQQOIG?W?{@?u@e@?i@?OMwA?s@?mAAiAAKLmA?U?cB?cA??bC?bCA`D?~A?vA?hAAdB?dA?|D?tA?f@A\\?H?`B?`DA|A@rF?Tc@?Q?kBAU?_A?[?kAAwA?Q?aA?iBA[C[CmCA@`G?bGAdC",
       "from": [
         -122.3495,
         47.6212
       ],
       "to": [
-        -122.3435,
-        47.6086
+        -122.3599,
+        47.6295
       ]
     },
     "drive|p-seattle-tacoma-international-airport|p-sharps-roasthouse-seatac-wa": {
@@ -221,28 +265,6 @@
         46.869
       ]
     },
-    "drive|p-suzzallo-library-university-of-washingto|p-gas-works-park-seattle": {
-      "poly": "gyzaHzeoiV_BjCiAhBO`@s@nACRE?IDOZGGkHEaD?MSeCA{@AyA??d@?xAAT?z@?x@?rA?ZAhBrB@tDB?Z?VAL?t@ArBfCB|CB?nBAtB?tBAdBEBAF@HDB?`BArBAjB?pBpA@zA@?rA?h@AhA?dEAnEz@@l@@fDBp@?TDFHFfADz@^xDBb@?xAXfA`@lBT`Bl@dFLp@TbAPj@^~@f@bAr@fAt@~@nAjAz@v@fBpBpA~AV\\dAbBnAlBb@n@tAzAHHHKLWFAr@VVAXKz@l@`Aj@`@TfB`AnBfANHnAn@ZPXVV\\LXTr@H\\@NDr@@`A\\?H@DDL^T~@",
-      "from": [
-        -122.308,
-        47.6558
-      ],
-      "to": [
-        -122.3344,
-        47.6456
-      ]
-    },
-    "drive|p-tehaleh-rainier-view-point-bonney-lake-w|p-ac-hotel-by-marriott-seattle-downtown": {
-      "poly": "i{s~GnnuhV@?^PZkA\\{@t@cAJITEH?RKFODO@KFe@H]t@kBdB}Ct@oAdCiEdCkEtBsDrFqJn@{@b@s@JGNCF@FANKDIDW@GE_@GMUKG?e@W_@c@[SY[YQu@_@}@O_@Eo@By@Nm@VyAbAcAt@o@ZcARq@@{I?iCIoFCgEIwFu@y[_@i@AqA?eADo@DyFt@yAHyCCsDCiBE}Cs@wB_@eB?a@BaCZ_Bb@[B_@@aIGi@?oB@oAK{GA_GEiMEaACsDUeBWs@]e@[a@a@y@aA}@yA_@g@iAy@yAc@g@G]?{BKeACOAaIOaIKgCIg@KiFaB}EeByCeAk@We@[OOiAkAa@VmChEkA~As@~@QPo@n@KF[FY?ONU?wAnYQjCW`Fi@lKUfFeAfTIpAMfAO~@a@`B[|@i@tAg@fAkAdCkAvByElHgD|EoAjBw@jA[d@gA`BeA|AsBzCcAvAu@hAaAzAaAbBwJvR_@t@[t@{GjN{KdUm@dAs@dAu@x@aAx@aAh@aAXaANkK|@eVfBeD\\{AZkAZwAf@eErBiAl@qE~BqAbAeAbA{@fAgAdBc@x@i@tAUv@u@|CSnAUjBIpAE|@CdCBjBLnBPfBb@xCjF~YpOb{@xIff@fAnGLz@VrCHrB@lAEfCO|BQzASrAYnA}@rCiWbt@oBbFeAdCcA~BcApB_JjQyBdEc@|@iAzBo@~@k@`AeA~AMNUPMF]DYAWK]Y[k@gBmFkAqF[gAo@oBuA_Eu@aBq@iAkA_B_BmBoAiAcAy@oAq@}B}@sBk@u@MuBOsv@H{ICuPB_ELyCTeEf@eGhAmEjAgDdAiVfIsWbJiZbKuE|AcKhD}A`@iDz@cJhBoVfF_B\\qb@~IaLbC}LrC_B\\aB^{G|A}EbAiANkAHwABwAGeAIaAKqB]{Bm@gGmB{VwHsAc@kCs@eEg@wAGaEGcLGgBCmAAs^UyEUyCIo[Q}CIyAIeD[oDk@qAYwCu@}DuAsBcAmDkBeHcEoEoCyKkGkDoBmJwFgEeC}MyH_GmDsBeAeEyBaE}BmFqBgD_AiCk@wFk@sBM_FMeDAaM?_k@KukAO}g@BgTCcs@QyDAmC?{F@kd@IcEEmI[cCKeNk@aBEqDCcC@oBFeNn@gBHsHRmGBuAAyBBgI@wAC}AC_BOcCe@mBm@_Bo@cB_AgCiBaA{@iAoAw@aAwAqBcNoU_BkCcGiKuDiGyBqDuDqGuK}QuAaCaI{MaFgIcAuAiByB}A{AcBsAoAy@wC_BmAe@sAa@eBc@aBWyAO{@EaCCiCBsYx@mDFoIXea@fAuRh@gALo@@qD@uACiCOcD[udCka@kC]iEW{CGqDD}@D_DV[CcCZi\\|FuJlBeD`@qCRiAD{EDm@?_JJ_FR_FCgA@yIEm@CmC?U?B`@T?z@@~A@^Ln@D^ZNTFZXlCFZL^LRj@d@~@r@RTR^L\\Pt@RbDFbBXfJ`@`JZrZHbFP`H?\\JdCV`EB\\VjCr@lFXfBlA`GfAnFnDpPlAzFjB|If@|BlCnMt@pDr@zCf@rCh@xCL`ANjBLpC?bDKlDGnA]hDW|AuAtHYnA}@lDi@zBi@xCIbBMvDMfFS~BKr@i@fBQ`@k@x@mAfAs@z@eDbC}E~B_FbBeM`CaG|@iGlAwD`AcV~I{@^o@TeB`@qC^s@DoB@qBKiDi@sCcAgB_Am@_@YSiBwA}AeBsImLuEeG]g@{BiCmAaAgAk@o@WcAUq@IaBKgA?cALsATyB~@q@d@}@v@_BdBcQhUcJfLaEvEcFnFgXrXqHlGqBbBkIbGiChBiL|HuZzSeEzC_GhDeBv@gW|JwBp@sVpFgItBwDfAaF~AmE|AqAd@kS`IyAt@uAt@yA~@}@n@cCrBgBbBiAnAu\\la@gJhKmI~IgCtCmCzDmB|CeFnJk@fA[j@iC`F_@dAoBlDsCtFg@r@qAzA}AtAeB`AaA^mAp@sAr@mHvDoIfF{ElCiBr@_Cl@uAV}AVaBH{BBsBI{Fm@_UkCoRyAwK[{EMaN[{DSQAwBYeDg@yB]yBUkBE_EHkRvCyF`@_Nb@uCP{J|Au@PoAR_CR_ABqBGiQ}BiBQeCEuADuBVsAZqBp@iB`AeAp@eBvA}@bAMP{@dAeMfQcBtBu@x@_EpDsDtCyCdC_@n@oAnAoFlE_An@k@Xc@^Qd@Gj@BdAD^?REXl@jBn@nBj@jBNb@L`@",
-      "from": [
-        -122.1758,
-        47.129
-      ],
-      "to": [
-        -122.334,
-        47.6076
-      ]
-    },
     "drive|p-tehaleh-rainier-view-point-bonney-lake-w|p-longmire-mount-rainier-national-park": {
       "poly": "i{s~GnnuhV@?^PZkA\\{@t@cAJITEH?RKFODO@KFe@H]t@kBdB}Ct@oAdCiEdCkEtBsDrFqJn@{@b@s@JGNCF@FANKDIDW@GE_@GMUKG?e@W_@c@[SY[YQu@_@}@O_@Eo@By@Nm@VyAbAcAt@o@ZcARq@@{I?iCIoFCgEIwFu@y[_@i@AqA?eADo@DyFt@yAHyCCsDCiBE}Cs@wB_@eB?a@BaCZ_Bb@[B_@@aIGi@?oB@oAK{GA_GE?~B@z@H`CX`DBrAAfBQ|BCr@Br@Fp@Bb@?dAK~EGdDIfC?x@EhFDjBDt@Jb@b@v@~@fAhBvBN^VjA\\bCs@T{@\\_@^MPU`@Yt@]lAcAlCCj@BTL\\RXtDtDlAvA^r@fAhCz@nB\\dA@TCXQd@SR_@LeAZe@RYb@MZEPMpACh@CvADr@RhBFbAAb@EfAM`Bs@tHo@~HQ|ByArOQt@Ud@s@~@{@dAML_BjBgA~AcAtBMR_AjB]l@yCdEYh@Uh@Ur@s@hDgAtEMx@MlAEdABpAJtAZzA^`AfA|BTt@Jr@@fACh@Gp@IXIR_A~@eAxAYb@QVe@v@KXIVEVC^@bAF~AJr@\\l@h@d@x@d@t@VPRVd@V`AHl@?p@E\\UdA?b@Rv@j@bAjBbCJH^Jn@BVIvAm@`@Cd@Fn@T`@P`Al@f@f@T\\LX\\dAbBxFlAbEXx@^h@dBtAd@V`@Ff@BlDEjA?zAXr@Xx@b@fBpAt@n@TVtB~A`DjBlAx@dB`BhCvC|BzBxC~AdAp@z@t@^f@d@|@h@hBLv@p@vGd@hF\\`EB~@_@vi@aD]u\\iDcCWsMmAgKcAg@JOTE`DAhACjFAdACbH@tAHbAHd@Vz@Rb@nAhAp@Zp@JlAATBZJb@Xz@lA~@h@|CnA^ZRPpBjCjAhBd@h@jBlBn@z@p@pAnBrEVp@Nn@TdB?`AG|@UxAKZi@jAgAbBaAxAo@dAe@fA[xAIn@Ch@CjA@`Ab@|FPzBD`C@n@VJx@n@lAtAdAzAd@fAr@fCb@hBl@|CfAxF^~Bh@vD\\hBX`AJVb@x@Zf@vAhB|@`A^Xr@XfANR?nCHxBN`BJtCV|BRfCTnDVnBPh@J~@d@dAx@bEtDf@`@z@XtE@|C@f@?|F@dA@lA?dC?hK@tB?vDF~FHvDAxA@lDBlDBzDB~@@lF@dDAvPEjM?hCC~A@tJDdCBrCB`JFbB@nEB`A@|EDnACfAKnDcAzKsDhDgAh@bFlBfPZfCVfCN~BDjAH|C@xCGvCEdAsBh^e@rHYhFChA@`BDnBN|Bt@xHVlCLvBBvBEfBM|AYrBgBfH]nAq@rC_@tBKlAEtB?jAzDDL?pA?hG@dh@TpAA~@@dD@dGBxBBR?rAA~B?jILvE@nCHfEHxEJf@Bb@@pEJdDJ\\@zADpABj@@X@rBDtAFh@@tCJ|L\\zP`@pFHdOBhH@hF@`O@jD@pFB`B?bB?bB?jA?hB@vC@lEAdBDJ?fLVpFJF@xBDvB@`BDzHTD?nJTl@@xHPjJZL@lOZnMXrA?lHJz@@bBFxDD|FH^?L@zCBrBB~@@jGF|BBnB?lC?|BF`GDzCF|LD`EB~GBzFBD?jD@nC@vEF~A@\\@~@@nDBrCBbB?bB@lHAzFKJArUa@pJU~T{@`Ok@jDKx@?nAF~D`@xBXlAPNBrALjE^`Eb@|I~@dFh@dNjAfCXtFh@rHj@tBHdADl@@rUIj`@UhL@jQCnLMz@Cd`@o@b[a@fAGnAS`AY`Aa@bBiAhAiAt@aA`AuA|CaFvDgGbYad@tBiElBaEpEcK\\u@t@oAr@{@b@c@pAiAbCgBf@[t@Yn@K`@C~@Bf@JdAb@l@d@bAjAxBdDt@x@~@j@bEbBdCz@j@HdAAh@Kl@SlByAlCgBlCkAdCi@tDY^CtG_@zDWtJ_@dA@\\Df@Jh@Hr@Xz@f@~@z@jBjC~D|Fr@fAtFpILPrF~HbDdEdCrCn@j@rA|@zAr@lNjFdDxAfBhApRpNjDlCB@lIlGhAt@zBhAh@N~AVj@DrD@nKEbIAvHElD@pMCjPAdGBjBZ~Af@fJ`FdCnAjBt@lBp@h@L`@HzAXhBXpCXjEJH?tCAz@@D?hABnGd@xJ~@p@Lt@VtAv@bDtC`@Th@Pd@F`@?^GTCXMr@g@h@o@rJuLrE}Fx@eAh@}@Tk@Pk@Ry@RmAJeB?gAOyHMiBc@mD[aBo@aBw@eA}AcB}@wAWo@Sm@YoAOiAMeBgAy]Ao@MyCIkBE_BEaAEuAMcEIyCUyGAs@SwGGsAMuF@oAFy@PgANi@Rg@fAaCh@aBViAf@qCZwAj@_BT_@t@eArBsBl@q@tAqB~B}DhDyFb@k@f@a@t@_@TIZE~@@lFEF?~B?vAA`@?l@?V?~@?P?n@?B?X?vAA^?Lq@BIBODO@KDOHa@F]H]He@Ry@VqAZwAPo@DQJe@Lc@BKd@gBNi@Jg@nAuFb@mC\\gDV}FBm@FqABs@J}BRmEP{BPqAZoAFQj@sAfAuB`AeBd@s@|@eAf@c@n@Wt@AXDl@TPJj@p@hFpH^b@v@v@j@b@zH|El@l@h@`Ab@rAbDzNrAdK`@vBx@tDl@zEHt@F^F\\n@zAt@fATR|@f@`@NXJh@\\TRb@n@Rl@`BlIp@rCX~@Vl@`@z@\\l@~FpIZ`@h@XTJbALxCb@f@?l@G~@a@l@q@^k@P]z@wBd@{AVaBRyCFq@PiAb@mBRo@nFoNXgAT}AHcABs@AcBM}BQoC]aDc@iDa@wBm@uByI_W]aAYu@Qw@O}AC_AHsAD[R}@Xu@l@gApHkGlA}@bA_@zHmBBApJyBt@GXAdADp@Px@b@VRj@h@l@r@pDlFxDjFp@p@d@`@r@^h@N~@Jn@BzLyA`B?fFVbE^~U~FvA\\`@PdA^xA~@^ZtAxAb@l@v@rAlCnGhA|CzDbJxBtF~JnVbAfCxBdD^b@z@t@xAbAt@ZlA\\hAPdBFrF?z@?lf@LrE@dG@jBB`AFpATnAb@pAp@dAv@|@|@vBvCfEvGrH`LhCzDf@|@f@lAzAxFZz@Zd@LJN@Hs@TeBh@yBf@qAXm@Zi@rA{AnAcAbEwCxHqFfF{DlAcAh@k@jAwAdA}AdBeDjDqHpJoSxAuCnVoh@~BgH|@_Ez@oFzBaQTcBNmAZ_Cl@uEHo@bM}`AjCyQd@iBzBaGfN}[`AgChBoF`J}XnBgGj@sAtA{DbDyHjA_D\\mAzBaKb@yCz@sIVyAVmAxA{FRaA`@iCbHoo@\\{CFi@X}Ah@aBJWv@aBZi@z@eAn@m@r@o@VOvAgAf@_@p@e@j@a@r@i@hAs@d@YzBaAf@Yb@c@b@u@Ne@Rw@Jq@Bk@?m@EkAScBeDwTMmAOaD?{@DuAPwBfB_P`Fc}@tAyWh@_Jb@iJjCmd@fEka@~AcOvFeh@nBiQpBiRr@yGpCoW|@yId@kFdCwb@f@_Kn@sKDs@jAcSb@aJpA}TFuD@aDCoBEuAMgCm@oHk@{F{Gir@y@kIYgDM{BK}DCaD?sGCqLG}GMyYCaDCuO[g{@McVGmT?}JIsLYoFYcDa@{Cg@yCwDwSs@sDg@sCa@iDIu@eBmWcAuNUaDCa@GyAEi@IsAEo@AMIcASoFAe@?g@DgERqD@WRqBTqBZoBF_@\\aCx@cFd@wCRyALy@^}Bx@iFh@kDjDwTLgATmDHuDAyOAaP?mO@mG?wBE_z@AyDMwZi@s_AAsB?[CyF?yWByJ?wJDyIVmCZaBh@uBtAcEx@kCVoAXmBTwBD_BC}A[oFAmAJyB@g@LcA`@wCh@qETgCJaCF}B?uBCkBGuBAk@CeAG{@s@qEi@kEEkAAqADaDP_G`@{P?qDEyDDkEJyBNiCR{BTmBRsAv@qEd@uBd@_Bf@uAvA}CxBeD~@kAdBkCv@sAf@kA^oA^iBR}Av@oL|AaVj@{I`@qFVmCb@wClAgIVmAT{@x@{A|BoCn@m@|AcBzDeDrCyAt@[t@S|@Od@GfCOx@Q|@a@p@e@\\]f@q@^m@b@cA`@qAjAsD|CiJb@kBL{AX_Gj@oGToBXy@h@q@ZcAXyAXiAd@eApBoBjAyAPa@Js@Fy@BiAK{A[yAu@cBw@wBo@yBUiAMgAOkCG]KUm@s@m@cAc@mAcAoGkCuKwAoF{@mE?_@@_@Hw@lCoL`AqEv@iEV{B@_C]mGWwGAyBKgA_BiFq@{CMkAAy@@c@Na@t@aAdAg@b@c@Tg@nAyEZ{IXmDh@kBrCyFtAuIhAuBzB_AfHwEzCeCjDoGnBiGVkAZkCRgAD{@?_AOkAUoAg@aA]]Wq@Qm@u@_Eo@uFm@gEs@yDe@iDCa@Ao@Dk@BiBPyOIwAuB}OEaA@u@H}@`@qD`@oDh@aEl@cENkAFu@JsCHaHD_ANaA~@kERiBLwCWqD?oARqCg@cIB}BNgBAcBHuEf@kE`@oBfAwCf@e@z@KjCQ|Cq@f@a@Pi@\\kC@iJJqAVmAb@cAdA}@l@o@P[Hi@Am@Ig@Ok@[][QiFU}FgCy@EsAf@m@KaDyEk@e@cCQw@m@u@uAiGgEgD_EeCeBm@w@m@kB{DwGmAqA}DuCiBwBsBmAkDcDkFwDu@s@_CsCwCgDoFwFoB{BqBqBMQSm@EYA_@EeHAaACe@K{@S}@Sg@Wi@m@m@R{@RuA",
       "from": [
@@ -252,6 +274,61 @@
       "to": [
         -121.812,
         46.7502
+      ]
+    },
+    "drive|p-tehaleh-rainier-view-point-bonney-lake-w|p-tesla-supercharger-southcenter-tukwila": {
+      "poly": "i{s~GnnuhV@?^PZkA\\{@t@cAJITEH?RKFODO@KFe@H]t@kBdB}Ct@oAdCiEdCkEtBsDrFqJn@{@b@s@JGNCF@FANKDIDW@GE_@GMUKG?e@W_@c@[SY[YQu@_@}@O_@Eo@By@Nm@VyAbAcAt@o@ZcARq@@{I?iCIoFCgEIwFu@y[_@i@AqA?eADo@DyFt@yAHyCCsDCiBE}Cs@wB_@eB?a@BaCZ_Bb@[B_@@aIGi@?oB@oAK{GA_GEiMEaACsDUeBWs@]e@[a@a@y@aA}@yA_@g@iAy@yAc@g@G]?{BKeACOAaIOaIKgCIg@KiFaB}EeByCeAk@We@[OOiAkAa@VmChEkA~As@~@QPo@n@KF[FY?ONU?wAnYQjCW`Fi@lKUfFeAfTIpAMfAO~@a@`B[|@i@tAg@fAkAdCkAvByElHgD|EoAjBw@jA[d@gA`BeA|AsBzCcAvAu@hAaAzAaAbBwJvR_@t@[t@{GjN{KdUm@dAs@dAu@x@aAx@aAh@aAXaANkK|@eVfBeD\\{AZkAZwAf@eErBiAl@qE~BqAbAeAbA{@fAgAdBc@x@i@tAUv@u@|CSnAUjBIpAE|@CdCBjBLnBPfBb@xCjF~YpOb{@xIff@fAnGLz@VrCHrB@lAEfCO|BQzASrAYnA}@rCiWbt@oBbFeAdCcA~BcApB_JjQyBdEc@|@iAzBo@~@k@`AeA~AMNUPMF]DYAWK]Y[k@gBmFkAqF[gAo@oBuA_Eu@aBq@iAkA_B_BmBoAiAcAy@oAq@}B}@sBk@u@MuBOsv@H{ICuPB_ELyCTeEf@eGhAmEjAgDdAiVfIsWbJiZbKuE|AcKhD}A`@iDz@cJhBoVfF_B\\qb@~IaLbC}LrC_B\\aB^{G|A}EbAiANkAHwABwAGeAIaAKqB]{Bm@gGmB{VwHsAc@kCs@eEg@wAGaEGcLGgBCmAAs^UyEUyCIo[Q}CIyAIeD[oDk@qAYwCu@}DuAsBcAmDkBeHcEoEoCyKkGkDoBmJwFgEeC}MyH_GmDsBeAeEyBaE}BmFqBgD_AiCk@wFk@sBM_FMeDAaM?_k@KukAO}g@BgTCcs@QyDAmC?{F@kd@IcEEmI[cCKeNk@aBEqDC_CM}FIiAUo@UgAm@yAy@e@KeAGS?@xI@xE@zC?|B?Z@dAJfXF|EHnBP`Cj@bFj@|Dz@xG|Gdf@JhALnBFzABfBClBMhC]lCk@vCi@lBqAhDe@x@wBlDw@tAgAjBkAlBiDzF{@rAeAtAwA|AiAdAgAz@cAp@qBdA}@^oA`@}@T}B^{LlAeHt@gARqA^gGnC{@d@w@p@s@v@m@|@y@dBe@pAQz@i@pDKvBB|CF~@T~BRvAZ|@P~AHfAJxCC|AEr@El@Eh@Sd@Y~AUNQP}@xBU^WXWPgC`AsDxAu@VUHqAf@qA\\{Gr@oQvCsKx@uCNmCJ{CBgFCoCIcHYcHq@aG}@yc@aIuEcA}Bm@qBu@yC{AsAw@}CyBsAgAoBkBkByBw@}@}@oA}DqGyIuO}Y}g@uDaHw@qAyB{C{CiDyAmAsBqAgAk@oAg@eDy@{K_Boi@qHkIcAgIsAqHgBmRcGeLoDwCgAkAk@wD_AoCi@mDMuGIqBSeA]SSEO?QPSd@L`D@H@HHL`@BUJ_@JULKRC`FC`@DPW?iE@c@KW@_A?q@?a@?iA?_AHyNn@@REJGTU?y@",
+      "from": [
+        -122.1758,
+        47.129
+      ],
+      "to": [
+        -122.2566,
+        47.4553
+      ]
+    },
+    "drive|p-tesla-supercharger-sequim-wa|p-bainbridge-island-ferry-terminal": {
+      "poly": "yzkdHnzdnVu@`Cg@]hAuDLc@`@wA\\iAxEwO`@k@TMZG`Aj@\\L^H\\Df@B|A?BiBBc@JgAbCeO`AmEz@eDpAmEb@iBvCmHrMeX|IgRbFmJ|@mA`AeAn@g@v@e@|Bq@jEs@dBq@tA{@vAuA|@kAx@yAdA_CrHeUzAwDbBiDnIcNbL_RdCeEn@gAp@kAXe@hAmBhAoBhFcJ|@oAjBuBz@m@`Ai@bBo@p@Mt@IvAEhGB^@dLAfAEhASjA_@nCwA~@m@`Ay@|AmBr@cAbK}Rj_@is@hJwOjCqEbA{AjAwAnDsDFGb@a@NOdC_CnAoAzAqBzAgC`BkDt@oBf@eBj@gCVsALqAFgBBuAEcBKoBa@wCQeAc@_B}CeJeDgJgBqFu@cBc@w@i@y@u@y@aAw@wBwAqAa@}Cw@uBa@{@[uAq@{@o@aCuBy@u@eFwEkAeAq@q@mBiBwIsHiAw@wEkDqM{I}QeMoT_OaCaBqAaAuAw@_EoC_Au@{A_B_A}A_@s@c@eAc@qAa@{A]aB{A}GeD{NcEoSmAaG]iDGkB?iX?wD?gPDsq@?kI@scAAkN@_JCk[BsTFwCJgCLyBLeAv@gH`@kDzCiV|Ega@vD}[~D{]rRy~AvCmX|@sGp@}Dz@cERu@l@gCp@mBd@iAj@}@hAyBp@cAvE_G`AmAfVc[zFgHbAgAvAkAxCmB|Aw@|B}@da@eNfCq@jB_@vb@yHj@KpEs@lCQlACvCNfC\\zBd@xWpG|J`C~C|@jBz@p@b@bBpAv@x@t@|@bA~AfAvBh@tA`@lA`@xA~@fEpAhGlOdu@p@dCn@fBf@hAf@dAfAdBjC~CLLLPrA|ANPzBlCpHnILNnGnHd@j@fBpBTVhDzDx@t@p@b@p@^ZNhAV^Fv@D|@CfAS^Kv@]h@Yp@i@d@g@~@kAn@mAZw@dCoIl@_BZo@j@}@Xa@X[x@q@`@U`Ae@v@U~@Kl@A|@DrARnFfBhBh@bBNd@?jAEvAW`A]hPmGdHiCbAUnAQhBKtGD\\?P?dBAxBOnAOrSoDvVqEdBStAAjAHb@J|Ah@nAt@jChB~A|@v@\\|@RnCRdIJfYXAzADp@Pd@TV\\Lj@FbADvACzDg@z@MpAGjABzAPfHrBj@F|AXnAFx@?j@E~A[jAa@p@[fAu@j@i@j@m@|@kAt@uAr@_BTs@`@wA`@oBVqBRqBfAmQhCcb@lE{s@jDok@VqC\\mCn@eDj@uBbHoRxi@gzAxi@{yAtAwDfAkDtAcFzA}GbC_N`@{BP_AdE{UbGc\\pDySvFg[x@oDXcAd@uAnAsChBgD`k@kdAdBcDpTea@|o@alAtEeJ`IgNpAoCf@uAj@qBb@kBV_BTgB~PqgBfBaR^iDJ_@n@cH\\mCr@sIJcBC_@hBiP^eCz@{Dp@sB~@{Bz@_Bn@cAhf@sq@bWg^zA_CpAuCp@oBXaAb@uBRqA^yC`@_EpHuz@t@uGVcCNmAb@mCXiAReAbAuDn@iBZiA`JeYPi@pBmGv@sCl@uDJuAFyADuECmBGuAQ}C{@eLgAcPu@_LwDuk@WqDOsAKuAGyC?mE@wED}AjAeM^oBXsAf@{B\\oA`HsS`@wAPy@\\wAVyAj@eEP}BH}ANsFr@ck@FQFi@JcB@k@AuABURa@DCHKDU?SEQB{@Fu@VmATw@AS`@mAj@yAdAsBdd@aaAvHkP~HwPrQc`@jJcSbBoDJSfB}DcBqByAmBgBaCm@aAs@wAe@gAk@cBw@qC[aB]aC_@gEGcBKmEEuAA_@IiCUqHAmADuCL}BB_@f@gGb@eFB_@RcCNwBB{@BmC@_IAiI?aC?uB?oI?Y?E?kB?[?aDBa@HUJQVGxJBvAAvADfABfAJnEx@nJxBbH~AfIrBhA\\|QdEtBP~B@z@Cz@C~BK`QmArCM~OgA~GWnBMlIy@vGi@xG]pIo@jCKdJq@ZCdCOnAIfCOpCQl@EnBIjD[lBKvBS~CMzCY`B]bAc@xAENAr@BjC@rAAvAO~B]RGPIzAoAVKd@Kp@@h@N\\R`@\\`B~A~@t@\\T\\LjFLt@GlAOxCu@z@MZ?h@AjDCdAEvAGhAA`GJ~EQhENjA?NC`@OH?NHTb@FNr@rAOg@@UJ]DIL?~@Pn@R`@^vAdBVVdAj@THh@HxB@bFC~EGjHHfCJdAGdBTf@AdAQd@YJMx@cAnAkBbCyD~@}AJu@FOhAq@`@]rAcB~@gA`@[lAArBB~BExBUbB[zCs@|AIdAGzBEvCBbBHrDUpAB^@lAKf@CZCZArCUXCTCbA?lAJfBFtDLn@BvEJpDF\\B\\HpAh@d@Pl@RhB\\`CZHAdAGxAQpEkALEpEoAxAWpEAL?hCAx@?`BAr@A`ELB?jBFh@B`ADv@@lADx@BdDJjDLbB@jAEhAMbEm@lAUfBWfBYRGbGaArASd@KtCi@`E}@nBo@PKp@c@x@s@|DoDhAy@z@c@dCyArAw@f@a@hEyBdAEpADPEfAi@|AmALOfAoBfAaBVi@Hk@HuBH{@Jo@p@eCd@kBb@cA~@_BTY^_@dAk@tAg@\\EpBC`@KH@p@Dx@Pj@L`@J~BX^@tBO~BIlCUZI\\e@L[r@wCRqAt@kCX_BVoAjCyFd@qATw@DUDo@@u@BwM?wOvBAvBAbA?T?\\?xBAnB?`C?j@?hA?tBAJ?pCM@~@HvANjADTZpAl@|AdA~BzFzL|@bBfAhBBBpFdIt@hAr@bA~IxMn@v@n@n@v@j@xAf@v@NhAHfHn@^BdDTfR~Av@B~AGd@AVAv@EAu@BmA?G@IJkAVeBRy@Ni@DO^gADMJ[pJwYpAmD~@qBd@q@bAiAv@m@pAm@t@UbAOpAEbD@xCCzASRB|Aw@JJD?JANIDET[zC}BnBmBnA_Ap@]dMwEV@BBJDRIHI@IVWdBy@JMzPoGnRcHdB}@nAw@dBsA~@}@nAqAv@{@|AaBdAkAlAqAfAkAbTgU`FoFBCvb@ud@h@k@fAmAfAkAVW|HoInCwCv@{@jHyHnCqChDwCzCuBnAy@jAq@dS_M`SwLrAw@lAw@zDeC|JkG|BqAtAo@jBo@zBg@vAQzAMhFKF?xHQdACtFKbBCnBGfJUfHGzCWhCc@bAWjAa@zCsApCmBbA}@rBuBdAsA`AkAbC}CnE{FzBaC~CaCfAq@hAi@pCgAjCk@zBWh@EpBCxAF|E^xAJrAHfTvApB@zBK|B[lD_AVG|Bu@lKkDtAYr@GlBEpA@d@?VEJEPMP[Pe@Tk@N_@DKBGVo@FOVKn@s@VSx@qBFk@Cq@PiAJ]l@iABg@RMr@]HIBO",
+      "from": [
+        -123.0738,
+        48.0708
+      ],
+      "to": [
+        -122.51,
+        47.6222
+      ]
+    },
+    "drive|p-tesla-supercharger-sequim-wa|p-olympic-game-farm-sequim-wa": {
+      "poly": "yzkdHnzdnVu@`Cg@]_A|CoBvGmIrXcDrKWx@kCrIa@vAcBvFqA`EkArDgBhGqAlEk@lB_@rAwA|EQn@Ol@c@xBUxAQzAK|@O`CExCA`C?r@?bAAfB?Z?|@?f@?d@?tA?d@AbC?b@?~JmC?m@AaB?oAAgB?oA@qDAeB?eCAg@@cD?o@?c@A_@?G?kB@g@AC?W?yA?aEAqB?iC?wA?oB?oD?}FAeD?a@?i@EESMQQ?ONEV{@DW?kIGU?kA?yDDmB@S?eA?iAAqD?]EqF@yOEkZG_WBwPIy@IEGc@WEUOSUEQHM\\m@^kALeBDkRFmAf@WJcBdBuCdGwG~IcBzCuAbDcA|BoCrG{C~G{BhEqGdK}GxIqBvBeGdFs@r@oBpAiFlDaAh@oBbAmCjAq@X}HhC{JvB}Ar@{Av@eB`BcApAkBzCWh@Qh@q@lBu@vCeArEo@fCO`@K^Wn@qBbEGNu@xAm@nA_@~@]~AIx@EfAAbD?|T?xUhIDxHBvI@VTRj@r@dFd@dCh@hBh@|Cd@Th@hBDdBfApFdBxCj@H|AWfDKGnC?bABxBb@?b@?z@?tA?~@ADjEBnAXb@fA`@p@TzCRbECh@SVk@`@yAp@gDA_BUoAq@q@oAu@oAKaB?CzBBh@XVj@A~@Dd@RRv@Er@Mj@_@j@w@DeFA_@c@Eo@",
+      "from": [
+        -123.0738,
+        48.0708
+      ],
+      "to": [
+        -123.1478,
+        48.1335
+      ]
+    },
+    "drive|p-tesla-supercharger-southcenter-tukwila|p-ac-hotel-by-marriott-seattle-downtown": {
+      "poly": "yrs`HvfeiV?x@UTKFSDo@ABqJ?cAAgBeCBu@A]?Y?_C?sAAY?W?mDAaF@g@?g@?cC@@~I?nBGnCGn@Gl@Y`DaAQwAe@kBg@o@KUdAYrAm@xCYjAS`As@fDWjA[xA]z@Y~@Wr@Q|@Gp@a@dEYzBU`Aa@x@a@f@e@^uC`BcB~@kDpAWJyEdAoDn@cIxBiGlAwD`AcV~I{@^o@TeB`@qC^s@DoB@qBKiDi@sCcAgB_Am@_@YSiBwA}AeBsImLuEeG]g@{BiCmAaAgAk@o@WcAUq@IaBKgA?cALsATyB~@q@d@}@v@_BdBcQhUcJfLaEvEcFnFgXrXqHlGqBbBkIbGiChBiL|HuZzSeEzC_GhDeBv@gW|JwBp@sVpFgItBwDfAaF~AmE|AqAd@kS`IyAt@uAt@yA~@}@n@cCrBgBbBiAnAu\\la@gJhKmI~IgCtCmCzDmB|CeFnJk@fA[j@iC`F_@dAoBlDsCtFg@r@qAzA}AtAeB`AaA^mAp@sAr@mHvDoIfF{ElCiBr@_Cl@uAV}AVaBH{BBsBI{Fm@_UkCoRyAwK[{EMaN[{DSQAwBYeDg@yB]yBUkBE_EHkRvCyF`@_Nb@uCP{J|Au@PoAR_CR_ABqBGiQ}BiBQeCEuADuBVsAZqBp@iB`AeAp@eBvA}@bAMP{@dAeMfQcBtBu@x@k@~@mA|Aw@p@yKtIwCzBiEhDg@Xc@Ry@VwAVo@Hw@DuA@aCKy@KqBa@}Cq@gBg@kQoFeFkAeB[kDWuBEyBF{BFcND|BZrAHhG?v@VXb@H|A@f@?~B?fB?T^?`@?n@?",
+      "from": [
+        -122.2566,
+        47.4553
+      ],
+      "to": [
+        -122.3308,
+        47.6191
+      ]
+    },
+    "drive|p-tesla-supercharger-southcenter-tukwila|p-tukwila-international-boulevard-station": {
+      "poly": "yrs`HvfeiV?x@UTKFSDo@AIxN?~@?hA?`@?p@A~@GV?lFuGFO\\KTK^CTC\\SvCIdAWjBK\\Q`@]f@_@Ze@Ts@HkA?oB?g@Ho@\\i@h@i@~@c@lAgBpFuA`Ec@hAu@rAaAhAe@`@y@f@a@NmAZmAHkB?CzBCd@QjAuCzJGf@_@xA[zAK|@UjCGlA?~AD`CJ~APbBh@hC^jAb@nA^|@`BvCnAtBv@|Av@jBN`@f@zBJl@NxCFnB?xAGpBMhBw@zGMCc@KSM",
+      "from": [
+        -122.2566,
+        47.4553
+      ],
+      "to": [
+        -122.2878,
+        47.4639
       ]
     },
     "drive|p-tipsoo-lake-mount-rainier|p-asadero-prime-kent-wa": {
@@ -265,70 +342,26 @@
         47.3831
       ]
     },
-    "drive|p-washington-park-arboretum-seattle|p-suzzallo-library-university-of-washingto": {
-      "poly": "khwaHbcmiVm@ImCBmAGMAWCaAOk@KYAKE[HIDUf@ATYt@a@n@i@r@IXC^Ed@Uf@KFQFU@ICe@EIBmFAOAYB[D[JYNc@d@]p@Wt@G\\Gb@C`@C~@ArDEj@@~B?zB@fAHrA`@fBuBbAJb@H`@Jh@d@~Cf@fChCnPLvBJrCPbYFlB\\rHLhEDjFAX@|@FlDZbF@`AGl@Ul@MRQL]JyBH{@?w@JiFQmDCiAA{E?gHBai@Q_CEcJ[wDMUc@mJ]y@Ky@U}DwBk@MaBKwCUa@IaB??oB?I?oB@aF@iE~A?bD@F?~A@?g@?_A?mB?kB@oB?iB?_B?qB?sB@oB?qBjC?rC?T?t@?@iB?[?sA?y@?{@@U?yAxA@z@?P?vA@Z?LQ`D?jHDFFXb@NSDQAOMOBSr@oANa@hAiB~AkC",
+    "drive|p-tukwila-international-boulevard-station|p-seattle-tacoma-international-airport": {
+      "poly": "wgu`HvhkiVRLb@JLB[tCQzBQ|DIlB_@dG?pAHfAJ~@R`Ad@pA^x@\\j@zKzLdE~EzInJ~@|@xAdApAh@nA^p@HfBFfELhB@bBAf@Av@KvD?v@Eh@GhA[x@_@JG`BqAz@QHO?mD?Q@cDAaAA{@AqEhCZ|Eb@x@DhBDbAErAAlDKhFQbCIfBInAC`EMbBEAc@aBH]@aCH",
       "from": [
-        -122.2946,
-        47.6377
+        -122.2878,
+        47.4639
       ],
       "to": [
-        -122.308,
-        47.6558
+        -122.2961,
+        47.4435
       ]
     },
-    "walk|p-amazon-spheres-seattle|p-seattle-center": {
-      "poly": "}{raHziuiVc@o@EJCDGJABCDWj@k@bA_AfB@BEHCFEHEHcC~EEHCBKL?BC@aCxEA@GPGNABA?gAvB@F?R?N?B?N?D?JAZ?D?D?~CA?O?I?E?AJ?F?HBXCD@B?X?bAAdB?HAF?D?J?NCJD??bBAzAB@A^?X?B[??D?BCp@CLQd@i@Be@T?p@CTu@?CDABADMZCD@@g@bAGLGFQBCv@?JFx@?hC?vB?HI?qC??d@?vA?R?Z?r@I??LK@EN?f@G?Ad@C?A@?V?FEDA?EDAPC?@^C?E@I?Dn@?XKfBGv@S?Q?e@?m@?W?G?WA?G",
+    "walk|p-seattle-center|p-seattle-center-monorail-station": {
+      "poly": "_ftaHplxiV?FV@F?V?l@?d@?P?R?Fw@JgB?YEo@H?DAB?A_@B?@QDE@?DE?G?W@AB?@e@F??g@DOJA?M?M?e@?e@?}@AiA?eC?gC?yAY??n@MD?IAEA@E?CsA",
       "from": [
-        -122.339,
-        47.6155
-      ],
-      "to": [
         -122.354,
         47.6221
-      ]
-    },
-    "walk|p-museum-of-pop-culture-seattle|p-seattle-center-monorail-station": {
-      "poly": "kataHn`wiVjB?B@?HW?DN@\\@??LCBBTAp@?h@@T?PI?k@?@h@H?BD?XC?Bj@",
-      "from": [
-        -122.3481,
-        47.6215
       ],
       "to": [
         -122.3495,
         47.6212
-      ]
-    },
-    "walk|p-seattle-center|p-museum-of-pop-culture-seattle": {
-      "poly": "_ftaHplxiV?FG?kA?C??W?mB?_@?K?g@?{@?{@?Ib@@?W@I?a@dA?F??I?kB?oC?wB?cC@cH@S@S?w@?W?{@?QJ@B@@E~A@",
-      "from": [
-        -122.354,
-        47.6221
-      ],
-      "to": [
-        -122.3481,
-        47.6215
-      ]
-    },
-    "walk|p-serious-pie-downtown-seattle|p-amazon-spheres-seattle": {
-      "poly": "gmraHxuuiVa@i@i@fA]r@ECIMMO?CE@o@}@CEAAm@{@?ACCCEOOGI@Cu@_Ao@_A?CCCKOIMCGC?}@qA",
-      "from": [
-        -122.341,
-        47.6132
-      ],
-      "to": [
-        -122.339,
-        47.6155
-      ]
-    },
-    "walk|p-waterfront-park-pier-62-seattle|p-elliott-s-oyster-house-pier-56-seattle": {
-      "poly": "wpqaHzeviVEWQu@LGDE?E@EHMHAdB{AFERONd@h@y@l@aA\\c@f@{@VWf@SBH`@]j@g@`A{@JIPQ^]z@u@@D@A?L@??pA@??JAAAf@B??T",
-      "from": [
-        -122.3435,
-        47.6086
-      ],
-      "to": [
-        -122.3409,
-        47.6054
       ]
     }
   }

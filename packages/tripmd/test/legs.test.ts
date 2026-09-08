@@ -35,7 +35,7 @@ detail: J
 \`\`\`
 `
 
-const LEGGED = `{mode: flight, carrier: K, from: A, to: B, dep_time: "10:00", arr_time: "20:00", stops: [{airport: C, arr_time: "12:00", dep_time: "14:00"}], legs: [{number: X1, cabin: Y, seat: 1A}, {number: X2, seat: 2B, refund: 不可改}]}`
+const LEGGED = `{mode: flight, carrier: K, from: A, to: B, dep_time: "10:00", arr_time: "20:00", stops: [{airport: C, arr_time: "12:00", dep_time: "14:00"}], legs: [{number: X1, cabin: Y, seat: 1A}, {number: X2, seat: 2B}]}`
 
 describe('transport.legs 分段信息', () => {
   it('逐段解析班次/客舱/座位，顶层 seat 不再折进 cabin', () => {
@@ -49,8 +49,8 @@ describe('transport.legs 分段信息', () => {
     expect(r2.diagnostics).toEqual([])
     const t2 = r2.trip!.days[0]!.events[0]!.transports[0]!
     expect(t2.legs).toEqual([
-      { number: 'X1', cabin: 'Y', seat: '1A', baggage: undefined, refund: undefined, note: undefined },
-      { number: 'X2', cabin: undefined, seat: '2B', baggage: undefined, refund: '不可改', note: undefined },
+      { number: 'X1', cabin: 'Y', seat: '1A' },
+      { number: 'X2', cabin: undefined, seat: '2B' },
     ])
   })
 
@@ -64,6 +64,16 @@ describe('transport.legs 分段信息', () => {
   it('legs 的未知字段警告 + 建议，不静默吞掉', () => {
     const r = parse(wrap(`{mode: flight, from: A, to: B, legs: [{numbr: X1}]}`))
     expect(r.diagnostics.some((d) => d.message.includes('numbr'))).toBe(true)
+  })
+
+  it('托运/退改是整张票的事：写在 legs 里会被当未知字段警告', () => {
+    const r = parse(wrap(`{mode: flight, from: A, to: B, legs: [{number: X1, refund: 不可改}]}`))
+    expect(r.diagnostics.some((d) => d.message.includes('refund'))).toBe(true)
+  })
+
+  it('through_check 已退役：写了会警告，直挂说明该进 note', () => {
+    const r = parse(wrap(`{mode: flight, from: A, to: B, through_check: 行李直挂}`))
+    expect(r.diagnostics.some((d) => d.message.includes('through_check'))).toBe(true)
   })
 
   it('serialize 往返语义幂等', () => {

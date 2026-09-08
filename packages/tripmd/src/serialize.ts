@@ -202,9 +202,6 @@ function transportValue(t: Transport): string {
                 ['number', l.number],
                 ['cabin', l.cabin],
                 ['seat', l.seat],
-                ['baggage', l.baggage],
-                ['refund', l.refund],
-                ['note', l.note],
               ]),
             )
             .join(', ')}]`,
@@ -227,7 +224,6 @@ function transportValue(t: Transport): string {
     ['cabin', t.cabin],
     ['seat', t.seat],
     ['baggage', t.baggage],
-    ['through_check', t.throughCheck],
     ['refund', t.refund],
     ['price', t.price],
     ['stops', stops],

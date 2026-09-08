@@ -87,7 +87,10 @@ export const TransportStopSchema = z.object({
   waitMin: z.number().int().positive().nullable().default(null),
 })
 
-/** 一个行进段自己的票面信息 —— 中转前后班次不同时逐段记录 */
+/**
+ * 一个行进段自己的票面信息 —— 中转前后班次不同时逐段记录。
+ * 只有「舱位格」的三样：班次号 / 客舱 / 座位。托运（含直挂）、退改是整张票的事，住顶层。
+ */
 export const TransportLegSchema = z.object({
   /** 该段班次号，如 "KE 882" */
   number: z.string().optional(),
@@ -95,12 +98,6 @@ export const TransportLegSchema = z.object({
   cabin: z.string().optional(),
   /** 该段座位号 */
   seat: z.string().optional(),
-  /** 该段托运差异（与顶层不同才写） */
-  baggage: z.string().optional(),
-  /** 该段退改差异（与顶层不同才写） */
-  refund: z.string().optional(),
-  /** 该段备注 */
-  note: z.string().optional(),
 })
 
 /**
@@ -152,10 +149,8 @@ export const TransportSchema = z.object({
   cabin: z.string().optional(),
   /** 座位号，如 "48J"。中转前后不同时写进 legs */
   seat: z.string().optional(),
-  /** 托运行李额说明，如 "2 件 23kg" / "无托运" */
+  /** 托运，如 "1 件" / "0 件"；中转票把直挂并在后面："1 件 · 直挂" */
   baggage: z.string().optional(),
-  /** 中转行李是否直挂，如 "行李直挂" / "需提取重新托运" —— 联程属性，只住顶层 */
-  throughCheck: z.string().optional(),
   /** 退改签政策，如 "改签 $200 起" / "发车前免费改签" */
   refund: z.string().optional(),
   /** 中转/停靠，按顺序 */
@@ -166,7 +161,7 @@ export const TransportSchema = z.object({
    * 全程一致的信息留在顶层字段，不要两头重复。
    */
   legs: z.array(TransportLegSchema).default([]),
-  /** 值机/检票/提车备注 */
+  /** 备注：值机/检票/提车提醒这类不进槽位的说明。航站楼写进地点名、直挂写进 baggage，不重复放这 */
   note: z.string().optional(),
 })
 

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { CATEGORIES, GROUPS, KINDS, type GroupKey, type Trip } from '@jjj/schema'
 import { CategoryChip } from '../../components/CategoryChip.tsx'
-import { fmtMoney, shortDate } from '../../lib/format.ts'
+import { fmtMoney, roundMoneyText, shortDate } from '../../lib/format.ts'
 import { Markdown } from '../../components/Markdown.tsx'
 import { isBudgetRef } from '../../lib/derive.ts'
 import { buildBudget } from '../../lib/budget.ts'
@@ -170,7 +170,7 @@ export default function BudgetView({ trip }: { trip: Trip }) {
                     </span>
                   </td>
                   <td className="max-w-[16rem] truncate py-2 pr-3 text-graphite" title={it.raw}>
-                    {it.raw}
+                    {roundMoneyText(it.raw)}
                   </td>
                   <td className="tnum py-2 text-right whitespace-nowrap text-ink">
                     {it.amount != null ? (

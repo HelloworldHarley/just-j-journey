@@ -67,10 +67,11 @@ apps/web/src/
 
 ### 本轮（2026-09-05 · seattle 行程照真实出行重写）
 
-- **seattle-2026-10 从示范行程变成真实行程 v1**：5 天 4 晚（10/1–10/5），机票已出票（她 KE/CX 经仁川/香港，我 DL 直飞 SNA），Ashford 木屋已订（Mt. Rainier Getaway，$339.42，坐标经 Nominatim 按门牌精确定位）。结构：Day 1 落地即提车南下 Ashford → Day 2 雷尼尔（Glacier Vista 中等线 + Narada Falls）夜宿回城 → Day 3–4 市区（水上飞机/玻璃球/派克市场/Kerry Park）→ Day 5 清晨机场还车。待定：租车（Sixt/Turo 二选一）、AC Hotel 三晚（坐标占位，订好回填）。
+- **seattle-2026-10 从示范行程变成真实行程 v1**：5 天 4 晚（10/1–10/5），机票已出票（她 KE/CX 经仁川/香港，我 DL 直飞 SNA），Ashford 木屋已订（Mt. Rainier Getaway，$339.42，坐标经 Nominatim 按门牌精确定位），租车已订（Turo Tesla Model Y LR，Tukwila 轻轨站交接，10/1 10:30–10/5 09:00，$343.60）。结构：Day 1 落地坐 Link 提车、接她、南下 Ashford → Day 2 雷尼尔（Glacier Vista 中等线 + Narada Falls）夜宿回城 → Day 3 市区（派克市场/玻璃球/水上飞机/Kerry Park）→ Day 4 渡轮过海去奥林匹克半岛（Sequim 超充 → Game Farm → Lake Crescent Lodge 午餐 → Marymere → 飓风岭 → PA 晚餐 → Sequim 超充 → 夜航回）→ Day 5 Southcenter 补电、Tukwila 交车、Link 一站到机场。Day 3/4 可按半岛天气互换（代价：玻璃球周六限定）。充电策略成表写进「租车 · 充电 · 停车」附录。待定：AC Hotel 三晚（门店已定为 AC Hotel Seattle Downtown，117 Yale Ave N，坐标按门牌精确定位；房还没订）。新地点坐标全部走 Nominatim/Overpass 定位，不再手猜 —— 手猜的两次（飓风岭、AC 占位）都被抓出来了。
 - **工作流**：Harley 分段给修改意见 → 改草稿过目 → 通过后才跑验证轮（enrich + 全关口 + 事实核查 + 截图）。事实核查修掉的坑：2120 周六无午市（免费停车口子中午不成立，午餐换 Serious Pie）、跨日界线西向航班必须写 `arr_date` 否则钟点回卷误标 +1（transport-dates.ts 规则 4，spec 就是这么设计的）。
 - 测试基线仍 **19 套件 / 272 测试**；`patch.test.ts` 的事件锚点从「晚餐」改成「午餐」（fixture 重写后 Day 1 正餐变了）。路网 30/30 全真实几何。
 - **分段票面（transport.legs）**：中转前后班次号/客舱/座位逐段记录（`legs` 数量必须 = stops + 1，错配响亮警告），联程属性（价格/全程/托运/直挂/共同退改）留顶层；顶层新增 `seat` 字段（此前 seat 只是 cabin 的兜底别名，cabin 存在时座位号被静默丢弃 —— 已修）。票面时间轴下加分段信息条，标题行班次号由各段自动拼出。同类修复：`_demo` 的 UA34 东行同日到达其实一直误标 +1（必须显式 `arr_date`），已补。测试基线 **20 套件 / 276 测试**（新增 legs.test.ts）。
+- **票面条款行定型（2026-09-08）**：标题行只放承运方 + 全程 + 票价；轴下方**一行**三格带图标 —— 舱位（班次 · 客舱 · 座位，中转每段一行叠在格里，legs 只剩这三样）· 托运（件数 + 直挂，如 `1 件 · 直挂`）· 退改；放不下整行横滑、藏滚动条（与时间轴同一套容器）。`through_check` 字段退役（写了会警告）；航站楼写进地点名（`PVG T1` / `SNA A`），note 只留真提醒。金额显示统一取整：`fmtMoney` + 新的 `roundMoneyText`（票面 price、cost 原文、预算明细原文这些自由文本里的金额一起抹小数）。
 - **预订状态并进标题角标**（Harley 拍板）：`需预订`（琥珀）/`已预订`（灰）挂在标题行「待定」旁，独立的 BookingModule 行删除；booking 的 deadline/note 由 DayTimeline 下沉进注意条目盒渲染（不静默丢数据），seattle 的 booking note 已全部迁到 notes 或删重。纯 `needs-booking` flag（无 booking 块）仍显示「待订」。机票信息改用票面结构化字段（carrier/number/duration/cabin/price/stops），不再塞 note。
 
 ### 上一轮（2026-08-20，四条 commit + worker 修复已推上线；.ics 接线本地完成）

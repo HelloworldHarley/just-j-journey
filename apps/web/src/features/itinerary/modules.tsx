@@ -2,7 +2,7 @@ import type React from 'react'
 import { KeyRound, MoonStar } from 'lucide-react'
 import type { Place, Rental, Stay, TripEvent } from '@jjj/schema'
 import { daysBetween } from '@jjj/tripmd'
-import { fmtMoney, formatMinutes, shortDate } from '../../lib/format.ts'
+import { fmtMoney, formatMinutes, roundMoneyText, shortDate } from '../../lib/format.ts'
 import { Arrow, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
 
 /**
@@ -19,7 +19,7 @@ export function CostText({ cost }: { cost: NonNullable<TripEvent['cost']> }) {
   if (cost.amount == null) {
     return (
       <span className="shrink-0 text-[11.5px] text-graphite" title={cost.raw}>
-        {cost.raw}
+        {roundMoneyText(cost.raw)}
       </span>
     )
   }
