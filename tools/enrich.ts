@@ -14,8 +14,7 @@
  * 2. **运行时零 API 调用**是地图的硬约束。所有网络请求只发生在这个离线工具里。
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { TRANSPORTS, type Place, type TransportMode, type Trip } from '@jjj/schema'
 import {
   formatDiagnostics,
@@ -25,13 +24,16 @@ import {
   type GeometryDoc,
   type GeometryRecord,
 } from '@jjj/tripmd'
+import { ROOT, dataDir } from './lib/paths.ts'
+import { bold, die, dim, green, red, yellow } from './lib/cli.ts'
 
-const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const DATA = join(ROOT, 'apps/web/public/data')
+const DATA = dataDir()
+if (process.env['JJJ_DATA_DIR']) console.log(dim(`数据目录 ${DATA}`))
 
 /**
  * key 从仓库根的 `.env` 读（已在 .gitignore 里，不进仓库）。
  * 显式 export 的环境变量优先 —— 临时换一个 key 时不用去改文件。
+ * 这里的 ROOT 是工具仓库根，不是数据目录：.env 跟着代码走，不跟着数据仓库走。
  */
 function secret(name: string): string | undefined {
   const exported = process.env[name]
@@ -42,19 +44,6 @@ function secret(name: string): string | undefined {
     return undefined // 没有 .env 是常态
   }
   return process.env[name]
-}
-
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`
-const red = (s: string) => `\x1b[31m${s}\x1b[0m`
-const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`
-const green = (s: string) => `\x1b[32m${s}\x1b[0m`
-const bold = (s: string) => `\x1b[1m${s}\x1b[0m`
-
-// 函数声明而非箭头常量：只有这样 TS 才认它「不返回」，`die()` 之后的代码
-// 才能拿到收窄过的类型（`if (!trip) die(...)` 之后 trip 非 null）
-function die(msg: string): never {
-  console.error(red(msg))
-  process.exit(1)
 }
 
 // geometry.json 的形状、键的算法、「该算哪些段」与「端点还对不对得上」

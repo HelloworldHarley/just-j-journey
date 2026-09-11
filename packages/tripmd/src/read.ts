@@ -138,3 +138,4 @@ export const TO_NEXT_KEYS = ['mode', 'minutes', 'min', 'km', 'label', 'note'] as
 export const TRANSPORT_KEYS = ['traveler', 'who', 'mode', 'carrier', 'airline', 'number', 'flight_no', 'flightNo', 'no', 'from', 'to', 'dep_date', 'depDate', 'dep_time', 'depTime', 'dep', 'arr_time', 'arrTime', 'arr', 'arr_date', 'arrDate', 'arr_day_offset', 'arrDayOffset', 'price', 'fare', 'duration', 'cabin', 'class', 'seat', 'baggage', 'refund', 'change_policy', 'change', 'stops', 'legs', 'note'] as const
 export const STOP_KEYS = ['airport', 'station', 'place', 'dep_airport', 'dep_station', 'dep_place', 'arr_time', 'arr', 'dep_time', 'dep', 'arr_date', 'dep_date', 'leg', 'wait'] as const
 export const LEG_KEYS = ['number', 'flight_no', 'flightNo', 'no', 'cabin', 'class', 'seat'] as const
+export const FRONTMATTER_KEYS = ['id', 'title', 'subtitle', 'destination', 'timezone', 'start', 'end', 'travelers', 'currency', 'visibility'] as const

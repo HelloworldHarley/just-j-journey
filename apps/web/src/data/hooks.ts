@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { createContext, useContext } from 'react'
-import type { Trip, TripSummary } from '@jjj/schema'
+import type { Space, Trip, TripSummary } from '@jjj/schema'
 import type { TripRepository } from './TripRepository.ts'
 
 export const RepositoryContext = createContext<TripRepository | null>(null)
@@ -23,4 +23,9 @@ export function useTrip(id: string | undefined): UseQueryResult<Trip> {
     queryFn: () => repo.getTrip(id as string),
     enabled: Boolean(id),
   })
+}
+
+export function useSpace(): UseQueryResult<Space | null> {
+  const repo = useRepository()
+  return useQuery({ queryKey: ['space'], queryFn: () => repo.getSpace() })
 }

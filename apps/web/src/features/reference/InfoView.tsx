@@ -5,6 +5,7 @@ import { RailLayout } from '../../components/RailLayout.tsx'
 import { isBudgetRef } from '../../lib/derive.ts'
 import { segChip } from '../../components/Segmented.tsx'
 import { CalendarExport } from './CalendarExport.tsx'
+import { PUBLIC_BUILD } from '../../lib/public.ts'
 
 /**
  * 资料页：打包、住宿备选、雨天预案、出发前清单…
@@ -23,7 +24,7 @@ export default function InfoView({ trip }: { trip: Trip }) {
   if (refs.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 pb-16 pt-6">
-        <CalendarExport trip={trip} />
+        {!PUBLIC_BUILD && <CalendarExport trip={trip} />}
         <p className="text-[13px] text-graphite">
           这份行程没有附录。在 plan.md 里用 <code>## 附录 · 标题</code> 添加。
         </p>
@@ -57,7 +58,7 @@ export default function InfoView({ trip }: { trip: Trip }) {
       </nav>
 
       <article className="min-w-0 pb-24 xl:pt-11">
-        <CalendarExport trip={trip} />
+        {!PUBLIC_BUILD && <CalendarExport trip={trip} />}
         {current && (
           <>
             <h2 className="display mb-4 flex items-center gap-2 text-[26px] tracking-[-0.02em] text-ink">

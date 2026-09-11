@@ -62,7 +62,7 @@ pnpm workspace, three packages:
 - **Date arithmetic always goes through `@jjj/tripmd`'s UTC-anchored helpers** (`addDays` / `daysBetween` / `mondayIndex`). Bare `new Date(iso)` is banned.
 - **Diagnostics are loud by design:** misspelled field → warning + suggestion, dangling reference → error + suggestion, unreferenced front-block record → warning. Silently dropping data is a bug. The `_broken` fixture pins this.
 
-Fixtures in `apps/web/public/data/`: `seattle-2026-10` (real trip, stress test) · `_example` (minimal) · `_demo` (every feature, **dev-only**) · `_broken` (must fail `data:check`). `_`-prefixed dirs stay out of `manifest.json` and CI deletes them from `dist/` before publishing.
+Fixtures in `apps/web/public/data/`: `seattle-2026-10` (real trip, stress test) · `_example` (minimal) · `_demo` (every feature, **dev-only**) · `_broken` (must fail `data:check`). `_`-prefixed dirs stay out of `manifest.json` and CI deletes them from `dist/` before publishing. The same directory holds `space.md` (the personal-space profile card; `data:check` validates it and the files it references) and `manifest.json` in the shape `{trips:[{id, visibility}]}`. `JJJ_DATA_DIR=<dir>` points every tool and the vite build at another data directory (the `jjj:data-dir` plugin serves it in dev and copies it into `dist/data` at build).
 
 ### Web app
 
@@ -96,6 +96,10 @@ The map (MapLibre GL + OpenFreeMap tiles) makes **zero API calls at runtime** �
 - **Chinese** for conversation, UI copy, and code comments. **English, single-line** for commit messages: `feature|fix|refactor|docs: description`. Large changes split into logical commits may add short bullets — verify each block compiles and tests independently (in a scratch copy) before splitting.
 - **Never run git write operations** (add/commit/push/checkout). Hand Harley a pasteable command; he runs it. Read-only git is fine.
 - Integrate deeply rather than patching. Before adding a feature, look for duplication to converge first; prefer a net deletion over a fourth layer of patches.
+
+## In progress (half-finished, committed as `wip:` on 2026-09-11)
+
+**Personal space + public sharing**, migration step 1 of `docs/superpowers/specs/2026-09-09-personal-space-sharing-design.md`. Tasks 1–6 of 11 are done and reviewed (`visibility` frontmatter, manifest `{trips:[{id,visibility}]}`, `space.md` profile + home-page header + tips sheet, `JJJ_DATA_DIR` via the `jjj:data-dir` vite plugin + `tools/lib`, `sanitize` whitelist, `findLeaks`); Task 7 (public-build UI hides 待填 / calendar export) has code in the tree but no review; Tasks 8–11 (`pnpm build:public`, `_showcase`, CI + data-repo workflow template + `docs/PUBLISHING.md`, docs) are not started. Resume from the 进度 table at the top of `docs/superpowers/plans/2026-09-09-personal-space-sharing.md`; the spec's 实现记录 lists every deviation. Rule learned this round: synthetic fixtures/tests must never contain a value from the real seattle trip — the repo is public. Development moved to Harley's local machine; on the shared EC2, close every dev/preview port when done.
 
 ## Backlog
 

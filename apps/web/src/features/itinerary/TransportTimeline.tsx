@@ -5,6 +5,7 @@ import { timelineDates } from '@jjj/tripmd'
 import { formatDurationCompact, roundMoneyText } from '../../lib/format.ts'
 import { segFlyDurations } from '../../lib/segment-durations.ts'
 import { Arrow, DateLine, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
+import { PUBLIC_BUILD } from '../../lib/public.ts'
 
 /**
  * 长途换乘时间轴 —— 电子客票的版式，不钉死为航班（mode 决定图标与槽位文案）：
@@ -109,9 +110,13 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
     return i === 0 || i === segs.length - 1 ? '4.75rem' : '3rem'
   }
 
+  // 完整版按 mode 决定要不要留空格位；公开版只画真有值的格
+  const showEmpty = !PUBLIC_BUILD
   const hasCabinRow =
-    slots.cabin !== null || cabinRows.some((r) => r.number || r.cabin || r.seat)
-  const hasTerms = hasCabinRow || slots.bag !== null || flight.baggage || flight.refund
+    (showEmpty && slots.cabin !== null) || cabinRows.some((r) => r.number || r.cabin || r.seat)
+  const hasBag = (showEmpty && slots.bag !== null) || Boolean(flight.baggage)
+  const hasRefund = showEmpty || Boolean(flight.refund)
+  const hasTerms = hasCabinRow || hasBag || hasRefund
 
   return (
     <div className="rounded-lg bg-[var(--paper-sunken)] px-3.5 pb-3 pt-2.5">
@@ -126,20 +131,24 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
           <ModeIcon size={12} className="shrink-0 text-graphite" aria-hidden />
           <SlotText value={flight.carrier} hint={slots.who} />
         </span>
-        <span className="tnum text-graphite">
-          {flight.durationMin !== null ? `全程 ${formatDurationCompact(flight.durationMin)}` : '全程 —'}
-        </span>
-        {/* 票价钉右上角：订好了是金色金额，没订是等着填的预算槽 */}
-        <span className="ml-auto inline-flex items-center gap-1.5">
-          {flight.price ? (
-            <span className="tnum text-[13px] font-semibold tint-faved">{roundMoneyText(flight.price)}</span>
-          ) : (
-            <>
-              <span className="text-graphite">预算</span>
-              <SlotText value={undefined} hint="待填" />
-            </>
-          )}
-        </span>
+        {(flight.durationMin !== null || showEmpty) && (
+          <span className="tnum text-graphite">
+            {flight.durationMin !== null ? `全程 ${formatDurationCompact(flight.durationMin)}` : '全程 —'}
+          </span>
+        )}
+        {/* 票价钉右上角：订好了是金色金额，没订是等着填的预算槽；公开版没钱这一格 */}
+        {(flight.price || showEmpty) && (
+          <span className="ml-auto inline-flex items-center gap-1.5">
+            {flight.price ? (
+              <span className="tnum text-[13px] font-semibold tint-faved">{roundMoneyText(flight.price)}</span>
+            ) : (
+              <>
+                <span className="text-graphite">预算</span>
+                <SlotText value={undefined} hint="待填" />
+              </>
+            )}
+          </span>
+        )}
       </div>
 
       {/* 行 3–5 是同一根轴的三层，必须同宽同步滚动 ——
@@ -323,18 +332,20 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
                   </span>
                 </span>
               )}
-              {(slots.bag !== null || flight.baggage) && (
+              {hasBag && (
                 <span className="inline-flex h-[18px] items-center gap-1.5">
                   <Luggage size={12} className="shrink-0 text-graphite" aria-hidden />
                   <span className="text-graphite">{slots.bag ?? '行李'}</span>
                   <SlotText value={flight.baggage} hint="待填" />
                 </span>
               )}
-              <span className="inline-flex h-[18px] items-center gap-1.5">
-                <ArrowLeftRight size={12} className="shrink-0 text-graphite" aria-hidden />
-                <span className="text-graphite">退改</span>
-                <SlotText value={flight.refund} hint="待填" />
-              </span>
+              {hasRefund && (
+                <span className="inline-flex h-[18px] items-center gap-1.5">
+                  <ArrowLeftRight size={12} className="shrink-0 text-graphite" aria-hidden />
+                  <span className="text-graphite">退改</span>
+                  <SlotText value={flight.refund} hint="待填" />
+                </span>
+              )}
             </div>
           </div>
         </div>

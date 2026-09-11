@@ -1,5 +1,6 @@
 import { shortDate } from '../../lib/format.ts'
 import { dayOffsetOf } from '@jjj/tripmd'
+import { PUBLIC_BUILD } from '../../lib/public.ts'
 
 /**
  * 票面共用零件。换乘时间轴（机票/火车/巴士/轮渡）和租车区间卡共用同一套 ——
@@ -56,6 +57,8 @@ export function SlotText({
       </span>
     )
   }
+  // 公开版：缺就是缺，不画待填 —— 「待填」是给作者的提醒，读者看到只会困惑
+  if (PUBLIC_BUILD) return null
   // 待填槽是行内 flex 盒、固定高度、文字居中 —— 放进条款行时和旁边的正文共用同一个
   // 18px 行盒，不会因为多了边框和内边距把整行撑高、把邻居的基线挤歪
   return (
@@ -123,13 +126,15 @@ export function DateLine({ date, base }: { date?: string; base?: string }) {
 
 /** 票面底部的条款行：客舱 / 托运 / 里程 / 保险 / 退改 这类成对的「标签 + 值」 */
 export function TermsRow({ terms }: { terms: { label: string; value?: string }[] }) {
-  if (terms.length === 0) return null
+  // 公开版里没值的条款整格不画（标签也不留）；完整版留待填槽
+  const shown = PUBLIC_BUILD ? terms.filter((t) => t.value) : terms
+  if (shown.length === 0) return null
   return (
     <div
       className="mt-2 flex flex-wrap items-center gap-x-3.5 gap-y-1 border-t
                  border-[var(--hairline)] pt-2 text-[11px]"
     >
-      {terms.map((t) => (
+      {shown.map((t) => (
         <span key={t.label} className="inline-flex items-center gap-1.5">
           <span className="text-graphite">{t.label}</span>
           <SlotText value={t.value} hint="待填" />

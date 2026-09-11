@@ -29,7 +29,7 @@
 - `pnpm dev` → localhost:5173（配置了 `host: true`，远程可访问）。路由带 `#`：`/#/trip/seattle-2026-10/list`。
 - Playwright 截图脚本模式：`chromium.launch({ executablePath: <chrome 路径> })`。**新机器要先 `npx playwright install chromium`** 并找到对应路径（旧机器在 `~/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome`）。
 - `pnpm typecheck` = 根 tsconfig（管 `tools/`）+ 各包 `tsc --noEmit`。别用 `tsc -b`（与全仓 noEmit 相悖）。
-- Fixtures：`apps/web/public/data/` 下 `seattle-2026-10`（真实行程，压力测试）、`_example`（最小示例）、`_demo`（全要素演示，**仅本地 dev 可见**，github.io 上没有）、`_broken`（必须恰好报 6 个错，`data:check` 拿它当负向对照）。
+- Fixtures：`apps/web/public/data/` 下 `seattle-2026-10`（真实行程，压力测试）、`_example`（最小示例）、`_demo`（全要素演示，**仅本地 dev 可见**，github.io 上没有）、`_broken`（必须恰好报 6 个错，`data:check` 拿它当负向对照）。同目录下还有 `space.md`（个人空间名片，`data:check` 一并校验）；`JJJ_DATA_DIR` 可把数据目录指到别处（2026-09-11 起）。
 
 ## 四、TripMD 当前形态（v1 + 前置块改造后）
 
@@ -65,7 +65,16 @@ apps/web/src/
 
 ## 六、当前状态
 
-### 本轮（2026-09-05 · seattle 行程照真实出行重写）
+### 本轮（2026-09-09 → 09-11 · 个人空间与分享，**半成品**，开发迁到 Harley 本地）
+
+- **目标**：把「工具 / 私人数据 / 公开数据」三个面切开 —— 工具仓库开源可 fork，Harley 的 `space.md` + 真行程住私有数据仓库，公开版（抹过敏感信息）发到数据仓库的 GitHub Pages，完整版发 Cloudflare Pages + Access。设计：`docs/superpowers/specs/2026-09-09-personal-space-sharing-design.md`（含「已拍板」表与「实现记录」）；实施计划：`docs/superpowers/plans/2026-09-09-personal-space-sharing.md`（**顶部「进度」表是接手入口**）。
+- **做到哪**：11 个 Task 里 1–6 完成并过审（`visibility` 字段、manifest 带 visibility + `PUBLIC_BUILD`、`space.md` 个人空间 + 首页名片 + 打赏抽屉、`JJJ_DATA_DIR` 数据目录可配置 + `tools/lib`、`sanitize` 白名单抹除、`findLeaks` 抹净扫描）；Task 7（公开构建下不画待填 / 藏日历入口）**代码已改但没过审**；8–11（`pnpm build:public`、`_showcase`、CI + 数据仓库工作流模板 + `PUBLISHING.md`、文档收尾）未开始。以 `wip:` commit 提交，接手从 Task 7 的验证开始。
+- **打赏**（Harley 2026-09-09 追加）：`space.md` 的 `tips` 列表（`label` + `image` 二维码 / `url` 链接二选一）→ 名片「☕ 打赏」chip → 底部抽屉。工具仓库的示范 `space.md` 不带 tips。
+- 测试基线 **25 套件 / 313 测试**；`pnpm data:check` 现在也校验 `space.md`（含头像 / 二维码文件存在性）；`manifest.json` 形状变了：`{trips:[{id, visibility}]}`。
+- 执行方式是子代理驱动（每 Task 一个实现者 + 独立审核 + 修复轮）；审核抓出的三个真 bug 已修：打赏遮罩 `bg-ink/30` 深色下发亮、dev 数据中间件路径穿越、sanitize 合成 fixture 里混进真行程的值。**新规矩**：合成 fixture 与测试里不能出现真行程（seattle）的任何值 —— 仓库是公开的。
+- **环境变化**：EC2 是公用机器，dev / preview 服务器的端口别人看得见 —— 本轮结束时 :5173 / :5174 已全部关掉，**后续开发在 Harley 本地进行**（`git clone` 后 `pnpm install`、`npx playwright install chromium`，其余照 CLAUDE.md）。在公用机器上验证完必须关端口。
+
+### 上一轮（2026-09-05 · seattle 行程照真实出行重写）
 
 - **seattle-2026-10 从示范行程变成真实行程 v1**：5 天 4 晚（10/1–10/5），机票已出票（她 KE/CX 经仁川/香港，我 DL 直飞 SNA），Ashford 木屋已订（Mt. Rainier Getaway，$339.42，坐标经 Nominatim 按门牌精确定位），租车已订（Turo Tesla Model Y LR，Tukwila 轻轨站交接，10/1 10:30–10/5 09:00，$343.60）。结构：Day 1 落地坐 Link 提车、接她、南下 Ashford → Day 2 雷尼尔（Glacier Vista 中等线 + Narada Falls）夜宿回城 → Day 3 市区（派克市场/玻璃球/水上飞机/Kerry Park）→ Day 4 渡轮过海去奥林匹克半岛（Sequim 超充 → Game Farm → Lake Crescent Lodge 午餐 → Marymere → 飓风岭 → PA 晚餐 → Sequim 超充 → 夜航回）→ Day 5 Southcenter 补电、Tukwila 交车、Link 一站到机场。Day 3/4 可按半岛天气互换（代价：玻璃球周六限定）。充电策略成表写进「租车 · 充电 · 停车」附录。待定：AC Hotel 三晚（门店已定为 AC Hotel Seattle Downtown，117 Yale Ave N，坐标按门牌精确定位；房还没订）。新地点坐标全部走 Nominatim/Overpass 定位，不再手猜 —— 手猜的两次（飓风岭、AC 占位）都被抓出来了。
 - **工作流**：Harley 分段给修改意见 → 改草稿过目 → 通过后才跑验证轮（enrich + 全关口 + 事实核查 + 截图）。事实核查修掉的坑：2120 周六无午市（免费停车口子中午不成立，午餐换 Serious Pie）、跨日界线西向航班必须写 `arr_date` 否则钟点回卷误标 +1（transport-dates.ts 规则 4，spec 就是这么设计的）。

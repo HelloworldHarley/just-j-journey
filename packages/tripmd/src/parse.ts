@@ -1,7 +1,7 @@
-import { TripSchema, type Reference, type Trip } from '@jjj/schema'
+import { TripSchema, VISIBILITIES, type Reference, type Trip, type Visibility } from '@jjj/schema'
 import { DiagnosticBag, type Diagnostic } from './diagnostics.ts'
 import { lex } from './lexer.ts'
-import { asRecord, num, str, yamlOf } from './read.ts'
+import { asRecord, checkKeys, num, str, yamlOf, FRONTMATTER_KEYS } from './read.ts'
 import { scanSections } from './sections.ts'
 import {
   makePlaceResolver,
@@ -41,6 +41,7 @@ export function parse(src: string): ParseResult {
     return { trip: null, diagnostics: bag.sorted() }
   }
   const meta = asRecord(yamlOf(bag, 0, fm.yaml, 'frontmatter')) ?? {}
+  checkKeys(bag, meta, FRONTMATTER_KEYS, fm.line, 'frontmatter')
 
   const required = ['id', 'title', 'destination', 'timezone', 'start', 'end'] as const
   for (const k of required) {
@@ -53,6 +54,14 @@ export function parse(src: string): ParseResult {
   }
   if (isIsoDate(start) && isIsoDate(end) && daysBetween(start, end) < 0) {
     bag.error(fm.line, `frontmatter 的 \`end\` (${end}) 早于 \`start\` (${start})`)
+  }
+
+  // 拼错的 visibility 不能兜成 public —— 那是把私事发出去；按 private 处理并大声说
+  const visRaw = str(meta['visibility'])
+  let visibility: Visibility = 'private'
+  if (visRaw) {
+    if ((VISIBILITIES as readonly string[]).includes(visRaw)) visibility = visRaw as Visibility
+    else bag.warn(fm.line, `frontmatter 的 visibility "${visRaw}" 无效，按 private 处理`, `可选值：${VISIBILITIES.join(' / ')}`)
   }
 
   const ctx: ParseCtx = {
@@ -122,6 +131,7 @@ export function parse(src: string): ParseResult {
     dates: { start, end },
     travelers: num(meta['travelers']),
     currency: str(meta['currency']),
+    visibility,
     constraints,
     journeys,
     stays,

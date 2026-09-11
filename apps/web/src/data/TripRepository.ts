@@ -1,4 +1,4 @@
-import type { Trip, TripSummary } from '@jjj/schema'
+import type { Space, Trip, TripSummary } from '@jjj/schema'
 
 /**
  * 数据访问的唯一切换点。
@@ -11,6 +11,8 @@ import type { Trip, TripSummary } from '@jjj/schema'
 export interface TripRepository {
   listTrips(): Promise<TripSummary[]>
   getTrip(id: string): Promise<Trip>
+  /** 个人空间名片；数据目录里没有 space.md 时为 null（首页退回工具默认头部） */
+  getSpace(): Promise<Space | null>
   /** Phase 6 才有 */
   saveTrip?(trip: Trip): Promise<void>
 }

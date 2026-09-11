@@ -1,6 +1,8 @@
 node_modules/
 dist/
 dist-check/
+dist-public/
+.public-data/
 .DS_Store
 *.tsbuildinfo
 .env

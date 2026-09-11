@@ -25,19 +25,15 @@ import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { homedir } from 'node:os'
-import { extname, join, resolve } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { extname, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { ROOT } from './lib/paths.ts'
+import { dim, green, red, yellow } from './lib/cli.ts'
 
-const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
 /** base 用真实仓库名 —— 检查的就是「挂在子路径下」这个 CI 形态 */
 const BASE = '/just-j-journey/'
 /** 独立产物目录，不覆盖手动 `pnpm build` 的 dist */
 const OUT = join(ROOT, 'apps/web/dist-check')
-
-const green = (s: string) => `\x1b[32m${s}\x1b[0m`
-const red = (s: string) => `\x1b[31m${s}\x1b[0m`
-const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`
 
 const fails: string[] = []
 const ok = (msg: string) => console.log(`${green('✓')} ${msg}`)

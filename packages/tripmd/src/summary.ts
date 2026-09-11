@@ -39,6 +39,7 @@ export function summarize(trip: Trip): TripSummary {
     destination: trip.destination,
     timezone: trip.timezone,
     dates: trip.dates,
+    visibility: trip.visibility,
     travelers: trip.travelers,
     dayCount: trip.days.length,
     eventCount: trip.days.reduce((n, d) => n + d.events.length, 0),

@@ -57,6 +57,7 @@ const trip = (days: Day[], places: Place[], over: Partial<Trip> = {}): Trip => (
   destination: 'X',
   timezone: 'UTC',
   dates: { start: '2026-10-01', end: '2026-10-05' },
+  visibility: 'private',
   constraints: [],
   journeys: [],
   stays: [],

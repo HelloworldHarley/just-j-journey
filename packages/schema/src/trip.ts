@@ -358,6 +358,13 @@ export const ReferenceSchema = z.object({
   markdown: z.string(),
 })
 
+/**
+ * 行程对外可见性。public 进公开版（经 sanitize 抹除后发到个人空间站），
+ * private 只进完整版；缺省 private —— 忘了写不会把私事发出去。不做 unlisted。
+ */
+export const VISIBILITIES = ['public', 'private'] as const
+export type Visibility = (typeof VISIBILITIES)[number]
+
 export const TripSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -367,6 +374,7 @@ export const TripSchema = z.object({
   dates: z.object({ start: z.string().regex(iso), end: z.string().regex(iso) }),
   travelers: z.number().int().positive().optional(),
   currency: z.string().optional(),
+  visibility: z.enum(VISIBILITIES).default('private'),
   constraints: z.array(ConstraintSchema).default([]),
   /** 长途（前置声明，事件按名引用） */
   journeys: z.array(JourneySchema).default([]),
@@ -386,6 +394,7 @@ export const TripSummarySchema = TripSchema.pick({
   dates: true,
   /** 首页的倒计时要按目的地的「今天」算，和行程内视图同一口径 */
   timezone: true,
+  visibility: true,
 }).extend({
   travelers: z.number().int().positive().optional(),
   dayCount: z.number().int().positive(),

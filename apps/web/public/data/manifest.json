@@ -1,5 +1,8 @@
 {
   "trips": [
-    "seattle-2026-10"
+    {
+      "id": "seattle-2026-10",
+      "visibility": "private"
+    }
   ]
 }

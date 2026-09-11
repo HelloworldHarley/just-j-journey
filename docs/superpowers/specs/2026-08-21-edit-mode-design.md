@@ -57,12 +57,14 @@ UI 表单 / agent 提案(审核后) ──→ TripPatchOp[] ──→ applyPatch
    - coord 用 **`{lat,lng}` 对象**而非数组（作者格式 lat,lng、CoordSchema 是 [lng,lat]，数组必被填反，对 agent 尤甚）；applyPatch 内转 `[lng,lat]`。geo 派生量 re-parse 自动变 `authored`，零特判。
 3. **新 op `update_trip`**：`{op, fields: {title?, subtitle?|null, destination?, timezone?, travelers?|null, currency?|null}}`。**不含 dates**（牵动所有 trip-day，明确拒绝，不进 schema）。v1 UI 只用 title（收编改名）。
 4. **PatchResult 扩展**：
-   - `Diagnostic` 加可选 `opIndex?: number`；`opError`（patch.ts:61）带上索引 —— 表单才能把错误定位到输入框。
+   - `Diagnostic` 加可选 `opIndex?: number`；`opError`（patch.ts:61）带上索引 —— 表单才能把错误定位到输入框。同一批加 `dayIndex?` / `eventId?`：`lintDayFlow` / `lintDayOpening` 产出时填上，② 的卡片级告警靠它定位（2026-09-08 增补）。
    - 返回 `idMap: Record<string,string>`（旧 id→新 id，仅含变化者）。实现按位置 zip：serialize 前的 clone 与 re-parse 后的 trip 天数/每日事件数一一对应，不复制 id 公式。
    - schema 顶部注释写明**批内引用限制**：ops 只能引用批前已存在的 id（新增事件批内不可被后续 op 引用）。
 5. **测试**：每个新 op 成功/目标缺失(带 opIndex)/null 清除/应用后 markdown 再 parse 语义幂等；add/move 后 idMap 完整性（同天后续全漂、跨天两天都漂）；`ops: []` 短路；roundtrip 不回归。
 
-验收：全套关口（data:check/build 应零行为变化）。
+6. **geometry.json 顺手记下 ORS 时长**（2026-09-08 增补）：`tools/enrich.ts` 把每条路线的 `duration`（分钟，取整）与折线一起写入记录，`geometry.ts` 的合并逻辑原样带出（坐标对不上照旧整条丢弃）。这是编辑模式「改了地点 / 时间之后通勤时长过时」问题的唯一参考数据源 —— 运行时不许调路由 API，只能靠离线缓存。`data:check` 的健康行顺带打印「作者写的 to_next 分钟 vs ORS 分钟」差值超过 15 分钟的段，人工排期也受益。
+
+验收：全套关口（data:check/build 应零行为变化，除健康行多一段差值提示）。
 
 ## 里程碑 ②：草稿层 + 保存管线 + 手工编辑 UI
 
@@ -74,7 +76,12 @@ UI 表单 / agent 提案(审核后) ──→ TripPatchOp[] ──→ applyPatch
 - `MarkdownTripRepository`（apps/web/src/data/MarkdownTripRepository.ts）：
   - `getTrip`：草稿优先（parse 草稿；防御性：error 级诊断 → 丢草稿回退远端 + console.error）→ mergeGeometry 照旧。**追平清理**：后台 fetch 远端 plan.md，文本 === 草稿 → clearDraft + invalidate（部署窗口期草稿自然兜底）。
   - `saveTrip`：parse → mergeGeometry → 替换 parsed Map 条目 → writeDraft → 返回 trip。**双缓存唯一写点**。
-- 新 `apps/web/src/data/useSaveTrip.ts`（UI 与 agent 共用管线）：取缓存 trip → applyPatch → `!ok` 返回 diagnostics（不落盘）→ `remapFavorites(id, idMap)`（useFavorites 新导出纯函数：读→映射→写→广播）→ `repo.saveTrip` → `setQueryData(['trip',id])` + `invalidateQueries(['trips'])` → 通知同步调度器（本里程碑为桩）→ 返回 `{ok, warnings}`。
+- 新 `apps/web/src/data/useSaveTrip.ts`（UI 与 agent 共用管线）：取缓存 trip → applyPatch → `!ok` 返回 diagnostics（不落盘）→ `remapFavorites(id, idMap)`（useFavorites 新导出纯函数：读→映射→写→广播）→ `repo.saveTrip` → `setQueryData(['trip',id])` + `invalidateQueries(['trips'])` → 通知同步调度器（本里程碑为桩）→ 返回 `{ok, added, resolved}`。
+- **时间线复核是自动的，要设计的是「怎么显」**（2026-09-08 增补）。每次写入都重新 parse，`lintDayFlow`（时间倒退 / 时段重叠 / 通勤余量）随 `PatchResult.diagnostics` 一起回来 —— 不需要额外触发机制，但今天网页端从未渲染过 diagnostics。规则：
+  - **只报变化，不报存量**：`lib/edit/diagnostics-diff.ts` 纯函数 `diffDiagnostics(before, after) → {added, resolved}`（按 message 文本比对，行号会漂不能当 key）+ 单测。保存后的 toast 列 `added` 的 warning（「Day 2：Narada Falls 那段路差 10 分钟」），`resolved` 折成一句「顺带修掉 1 条旧告警」。存量 warning 不吵 —— 一份带 3 条历史告警的文档每次保存都弹三条，用户会关掉提示。
+  - **告警落到卡片上**：`TripRepository.getTrip` 连 diagnostics 一起返回（今天只回 trip），DayTimeline 的通勤条读到「本段余量不足」就在时长旁挂琥珀提示；`from_stay` 缺失挂在日头。渲染只认 diagnostics 里的 `dayIndex` / `eventId` 定位字段 —— 所以 lint 产出的 Diagnostic 要补这两个可选字段（① 里 `opIndex` 同一批加）。
+  - **只告警，不顺延**：手工编辑一改一动，系统不替用户把后面五站各挪 15 分钟 —— 级联顺延是 ④ agent 面板的活（「帮我把 Day 2 下午理顺」），结构上就是一批 `update_event` 的提案走审核。
+  - **改了地点要提醒时长过时**：`update_place {coord}` 或事件换地点后，牵涉的 `to_next.minutes` 是作者手写的旧数，lint 算不出新的。保存 toast 追加一句「地点变了，X 段通勤时长请复核」；有 ORS 时长缓存（① 第 6 条）时直接给参考值「ORS 估 48 分钟，你写的 35」。
 - **撤销**：toast「撤销」payload = `{markdown: prevMarkdown, favorites: 保存前快照}`（收藏重映射不可逆，须整组快照），撤销 = saveTrip(prev) + 恢复收藏。
 - **收编 useTripOverrides**：删 `useTripOverrides.ts`；HomePage TitleEditor 改走 `update_trip {title}` 管线；挂载时一次性迁移 `jjj:overrides`（逐条 getTrip → title 不同则 applyPatch 落草稿 → 删条目，幂等）。
 
@@ -109,7 +116,7 @@ UI 表单 / agent 提案(审核后) ──→ TripPatchOp[] ──→ applyPatch
 - 依赖 `pnpm add --filter @jjj/web @anthropic-ai/sdk`（装完重跑 `pnpm install`），随 lazy chunk 加载。
 - **`LlmProvider` 接口**（`lib/agent/provider.ts`）：`stream(messages, tools) → 事件流`。唯一实现 `AnthropicProvider`（`dangerouslyAllowBrowser: true`，SDK 自动带 CORS 头；model 从 settings 读，默认 claude-sonnet-5）。
 - **提示词**（`lib/agent/prompt.ts` 纯函数 + 单测）：system = 角色 + TripMD 语义要点 + op 限制（批内禁引新增 id；保存后 id 漂移，一次一批）+ 收藏事件清单（「用户亲自标记，未经要求不得删/移」）。user = 当前 markdown（草稿优先）+ **id 对照表**（`lib/agent/idTable.ts` 纯函数：markdown 里没有 id，必须附「Day1 #1 <id> 08:30 标题」+ place id 表）+ 用户指令。
-- **tool `propose_patch`** `{summary, ops}`：input_schema 为**手写 JSON Schema 常量**（`lib/agent/patch-json-schema.ts`，zod v3 无 toJSONSchema；配同步测试内省 zod shape 逐项比对钉住双份一致）。不强制 tool_choice；无 tool_use 的回复按聊天文本显示。
+- **tool `propose_patch`** `{summary, ops}`：input_schema 为**手写 JSON Schema 常量**（`lib/agent/patch-json-schema.ts`，zod v3 无 toJSONSchema；配同步测试内省 zod shape 逐项比对钉住双份一致）。不强制 tool_choice；无 tool_use 的回复按聊天文本显示。**注意 Transport 形状已变（2026-09-08）**：多了 `seat` 和 `legs[{number, cabin, seat}]`，`through_check` 已拔掉 —— 手写 schema 照当前 zod 写，那条内省比对测试就是防它再漂的。
 - **三道闸**（`features/agent/AgentPanel.tsx`）：① `z.array(TripPatchOpSchema).safeParse`（该 schema 首次获得运行时调用点；失败以 tool_result is_error 回传让模型自修一次）→ ② dry-run applyPatch 不落盘（失败同样回传重试一次）→ ③ 预览 UI：结构化摘要为主（`lib/edit/describeOps.ts` 纯函数：op→中文人话，update 列「字段：旧→新」+ 单测）+ 折叠行级 diff（`lib/diff.ts` 自实现 LCS + 单测，不引依赖）+ warning 列表。
 - **通过** → 应用时刻**再 dry-run 最新 trip**（预览期间用户可能手改，id 已漂 → locate 失败即「提案过期，请重新生成」）→ 走同一 useSaveTrip 管线。**用户优先 = agent 永远叠加在最新状态、过期作废，结构上不存在反向覆盖。** 拒绝 → tool_result「用户已拒绝：<理由>」，会话内继续调整。
 - 面板挂 TripPage（侧栏/Sheet，390px 底部滑出）。key 未配 → 面板内引导去设置。
@@ -132,6 +139,8 @@ UI 表单 / agent 提案(审核后) ──→ TripPatchOp[] ──→ applyPatch
 
 | 风险 | 处置 |
 |---|---|
+| 改时间 / 换地点后通勤时长过时（`to_next.minutes` 是手写值，lint 只能拿它算余量） | 只告警不顺延；换地点时 toast 点名要复核的段；geometry.json 缓存 ORS 时长给参考值（① 第 6 条） |
+| 存量 warning 每次保存都弹，用户关掉提示 | `diffDiagnostics` 只报新增 / 消失，存量落在卡片上静态显示 |
 | 事件 id 漂移（add/remove/move 后同天后续全换） | PatchResult.idMap 重映射收藏（+撤销快照）；agent 提案跨保存即过期重生成；ics UID 漂移是既有已知行为 |
 | PAT / API key 明文 localStorage | 用户拍板；文案强制引导 fine-grained 单仓 Contents；设置里可一键清除 |
 | 双缓存不一致 | saveTrip 是 parsed Map + react-query 的唯一写点，无第二写路径 |
@@ -142,7 +151,7 @@ UI 表单 / agent 提案(审核后) ──→ TripPatchOp[] ──→ applyPatch
 
 ## 纯函数 + 单测清单（铁律）
 
-tripmd patch 新 op/idMap · `lib/edit/eventForm.ts` · `lib/edit/reorder.ts` · `lib/edit/coord.ts` · `lib/edit/describeOps.ts` · `lib/diff.ts` · `data/github.ts` 纯函数半区 · `lib/agent/prompt.ts` · `lib/agent/idTable.ts` · `lib/agent/patch-json-schema.ts` · slug 校验。每条配负向对照。
+tripmd patch 新 op/idMap · `lib/edit/eventForm.ts` · `lib/edit/reorder.ts` · `lib/edit/coord.ts` · `lib/edit/describeOps.ts` · `lib/edit/diagnostics-diff.ts` · `lib/diff.ts` · `data/github.ts` 纯函数半区 · `lib/agent/prompt.ts` · `lib/agent/idTable.ts` · `lib/agent/patch-json-schema.ts` · slug 校验 · geometry 时长合并。每条配负向对照。
 
 ## 全局验收
 

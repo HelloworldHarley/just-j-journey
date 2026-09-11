@@ -16,21 +16,16 @@
  *      文件被 gitignore —— 重新生成零成本，不值得进版本库吃 DTSTAMP 抖动的 diff）
  */
 import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs'
-import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { parse, formatDiagnostics, mergeGeometry, summarize, toIcs } from '@jjj/tripmd'
+import { join } from 'node:path'
+import { parse, parseSpace, formatDiagnostics, mergeGeometry, summarize, toIcs, buildManifest, type ManifestEntry } from '@jjj/tripmd'
 import type { Trip } from '@jjj/schema'
+import { dataDir } from './lib/paths.ts'
+import { bold, dim, green, red, yellow } from './lib/cli.ts'
 
-const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const DATA = join(ROOT, 'apps/web/public/data')
+const DATA = dataDir()
+if (process.env['JJJ_DATA_DIR']) console.log(dim(`数据目录 ${DATA}`))
 
 const only = process.argv[2]
-
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`
-const red = (s: string) => `\x1b[31m${s}\x1b[0m`
-const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`
-const green = (s: string) => `\x1b[32m${s}\x1b[0m`
-const bold = (s: string) => `\x1b[1m${s}\x1b[0m`
 
 const dirs = readdirSync(DATA)
   .filter((d) => !d.startsWith('.') && statSync(join(DATA, d)).isDirectory())
@@ -43,7 +38,7 @@ if (dirs.length === 0) {
 }
 
 let failed = 0
-const manifest: string[] = []
+const manifest: ManifestEntry[] = []
 
 for (const dir of dirs) {
   const mdPath = join(DATA, dir, 'plan.md')
@@ -89,7 +84,7 @@ for (const dir of dirs) {
   // 解析通过就生成订阅文件 —— `_` 前缀行程也生成（本地 dev 可订阅试用），
   // 反正 CI 部署前会把 _* 目录整个从 dist 里删掉，线上不会多出东西
   writeFileSync(join(DATA, dir, 'calendar.ics'), toIcs(trip))
-  if (!dir.startsWith('_')) manifest.push(dir)
+  manifest.push({ id: dir, visibility: trip.visibility })
 }
 
 /**
@@ -126,10 +121,32 @@ function geometryHealth(dir: string, trip: Trip): void {
   console.log(`  ${dim(`路线 ${r.used}/${r.needed} 有效`)} ${tail}`)
 }
 
+// space.md 与 plan.md 同一待遇：有就校验，写坏了 CI 拦下；没有不算错
+const spacePath = join(DATA, 'space.md')
+if (existsSync(spacePath)) {
+  const { space, diagnostics } = parseSpace(readFileSync(spacePath, 'utf8'))
+  if (diagnostics.length > 0) console.log(formatDiagnostics('space.md', diagnostics))
+  if (!space) {
+    console.error(red('✗ space.md 解析失败'))
+    failed++
+  } else {
+    // 名片引用的文件（头像、打赏二维码）必须在数据目录里，否则线上是一张裂图
+    const files = [space.avatar, ...space.tips.map((t) => t.image)].filter((f): f is string => Boolean(f))
+    const missing = files.filter((f) => !existsSync(join(DATA, f)))
+    if (missing.length > 0) {
+      console.error(red(`✗ space.md 引用的文件在数据目录里找不到：${missing.join(', ')}`))
+      failed++
+    } else {
+      console.log(`${green('✓')} ${bold('space.md')} ${dim(`${space.name}${space.handle ? ` @${space.handle}` : ''} · ${space.links.length} 个链接 · ${space.tips.length} 个打赏入口`)}`)
+    }
+  }
+}
+
 // 全量跑的时候顺手把 manifest 对齐 —— 新增行程 = 建目录 + 跑一次 check
 if (!only && failed === 0) {
-  writeFileSync(join(DATA, 'manifest.json'), JSON.stringify({ trips: manifest }, null, 2) + '\n')
-  console.log(dim(`\nmanifest.json ← [${manifest.join(', ')}]`))
+  const doc = buildManifest(manifest)
+  writeFileSync(join(DATA, 'manifest.json'), JSON.stringify(doc, null, 2) + '\n')
+  console.log(dim(`\nmanifest.json ← [${doc.trips.map((t) => `${t.id}${t.visibility === 'public' ? ' (public)' : ''}`).join(', ')}]`))
 }
 
 process.exit(failed > 0 ? 1 : 0)

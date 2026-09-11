@@ -1,5 +1,5 @@
-import type { Trip, TripSummary } from '@jjj/schema'
-import { formatDiagnostics, mergeGeometry, parse, summarize } from '@jjj/tripmd'
+import type { Space, Trip, TripSummary } from '@jjj/schema'
+import { formatDiagnostics, manifestIds, mergeGeometry, parse, parseSpace, summarize } from '@jjj/tripmd'
 import { TripNotFoundError, type TripRepository } from './TripRepository.ts'
 
 /**
@@ -18,7 +18,7 @@ export class MarkdownTripRepository implements TripRepository {
   async listTrips(): Promise<TripSummary[]> {
     const res = await fetch(`${this.base}/manifest.json`)
     if (!res.ok) throw new Error(`行程清单加载失败（HTTP ${res.status}）— 运行 pnpm data:check 生成`)
-    const ids: string[] = ((await res.json()) as { trips?: string[] }).trips ?? []
+    const ids = manifestIds(await res.json())
 
     // 全要素演示行程只在本地开发时出现：`_` 前缀不入 manifest，
     // CI 部署前还会把 _* 目录从产物里删掉 —— 线上连直链都打不开
@@ -54,6 +54,16 @@ export class MarkdownTripRepository implements TripRepository {
     await this.mergeGeometry(id, trip)
     this.parsed.set(id, trip)
     return trip
+  }
+
+  async getSpace(): Promise<Space | null> {
+    const res = await fetch(`${this.base}/space.md`)
+    if (res.status === 404) return null // 没写 space.md 是常态，不是错
+    if (!res.ok) throw new Error(`space.md 加载失败（HTTP ${res.status}）`)
+    const { space, diagnostics } = parseSpace(await res.text())
+    // 写坏了要看得见：与 plan.md 同一待遇，带行号的诊断直接上屏
+    if (!space) throw new Error(formatDiagnostics('space.md', diagnostics))
+    return space
   }
 
   /**

@@ -25,7 +25,7 @@ import { formatDurationCompact } from './values.ts'
  * 按需加引号。宁可多引不可少引 —— "13:11" 不引会被 YAML 1.1 解析器
  * 读成六十进制 791，布尔/空值形似字符串同理。
  */
-function scalar(v: string): string {
+export function scalar(v: string): string {
   if (v === '') return '""'
   const needsQuote =
     /[:#{}[\],&*!|>'"%@`\\\n]/.test(v) ||
@@ -41,9 +41,9 @@ function scalar(v: string): string {
  * 值三种形态：字符串走 scalar() 引号规则；数字原样；{raw} 已渲染好的 YAML 片段
  * （嵌套流式列表用，不能再被引号包一层）。
  */
-type FlowVal = string | number | { raw: string } | undefined | null
+export type FlowVal = string | number | { raw: string } | undefined | null
 
-function flowMap(entries: [string, FlowVal][]): string {
+export function flowMap(entries: [string, FlowVal][]): string {
   const parts = entries
     .filter((e): e is [string, string | number | { raw: string }] => e[1] !== undefined && e[1] !== null)
     .map(([k, v]) =>
@@ -65,6 +65,8 @@ function frontmatter(trip: Trip): string {
   L.push(`end: ${trip.dates.end}`)
   if (trip.travelers !== undefined) L.push(`travelers: ${trip.travelers}`)
   if (trip.currency) L.push(`currency: ${scalar(trip.currency)}`)
+  // 缺省值不写：规范形态不留默认值歧义，二次往返字节稳定
+  if (trip.visibility !== 'private') L.push(`visibility: ${trip.visibility}`)
   L.push('---')
   return L.join('\n')
 }

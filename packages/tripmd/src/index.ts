@@ -24,3 +24,7 @@ export {
 export { lex, proseOf, type Token } from './lexer.ts'
 export { toIcs, type IcsOptions } from './ics.ts'
 export * from './values.ts'
+export { buildManifest, manifestIds, publicEntries, type Manifest, type ManifestEntry } from './manifest.ts'
+export { parseSpace, serializeSpace, SPACE_KEYS, type SpaceParseResult } from './space.ts'
+export { sanitize, sanitizeTransport, transportRole, blurCoord, type TransportRole } from './sanitize.ts'
+export { findLeaks, sensitiveValues, type Leak } from './leaks.ts'

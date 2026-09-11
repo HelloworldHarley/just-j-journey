@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Pencil, Settings2, Star, X } from 'lucide-react'
+import { Check, Pencil, Star, X } from 'lucide-react'
 import type { TripSummary } from '@jjj/schema'
-import { useTripList } from '../../data/hooks.ts'
+import { useSpace, useTripList } from '../../data/hooks.ts'
 import { useTripTitle } from '../../data/useTripOverrides.ts'
 import { useFavorites } from '../../data/useFavorites.ts'
 import { shortDate } from '../../lib/format.ts'
@@ -11,14 +11,19 @@ import { Loading, Problem } from '../../components/States.tsx'
 import { CompositionBar } from '../../components/CompositionBar.tsx'
 import { dayBarLayout } from '../../lib/day-bars.ts'
 import { useIsNarrow } from '../../lib/useMediaQuery.ts'
+import { PUBLIC_BUILD } from '../../lib/public.ts'
 import { SettingsSheet } from './SettingsSheet.tsx'
+import { SpaceHeader } from './SpaceHeader.tsx'
 
 export function HomePage() {
   const { data, isPending, error } = useTripList()
+  const space = useSpace()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  if (isPending) return <Loading />
+  // 两份数据都到齐再画，否则头部先画默认再闪成名片
+  if (isPending || space.isPending) return <Loading />
   if (error) return <Problem title="行程列表加载失败" detail={String(error)} />
+  if (space.error) return <Problem title="space.md 解析失败" detail={String(space.error)} />
 
   // 「过没过」按各自目的地的今天判 —— 与行程内视图同一口径。
   // 统一用 'UTC' 会在跨日界的那几小时把还在进行的行程归进「已完成」。
@@ -27,30 +32,14 @@ export function HomePage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-12">
-      <div className="flex items-start justify-between gap-3">
-        <h1 className="display text-[34px] leading-none tracking-[-0.03em] text-ink sm:text-[40px]">
-          Just J Journey
-        </h1>
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-          aria-label="设置"
-          title="设置"
-          className="mt-1 rounded-full bg-sunken p-2 text-graphite transition-colors hover:text-ink"
-        >
-          <Settings2 size={16} aria-hidden />
-        </button>
-      </div>
-      <p className="mt-3 max-w-md text-[14px] leading-relaxed text-graphite">
-        把 Markdown 行程读成时间的形状。It's just a J thing.
-      </p>
+      <SpaceHeader space={space.data ?? null} onSettings={() => setSettingsOpen(true)} />
 
       {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
 
       {data.length === 0 && (
         <Problem
           title="还没有行程"
-          detail="在 apps/web/public/data/ 下建一个目录放 plan.md，然后运行 pnpm data:check"
+          detail="在数据目录（默认 apps/web/public/data，或 JJJ_DATA_DIR）下建一个目录放 plan.md，然后运行 pnpm data:check"
         />
       )}
 
@@ -168,9 +157,17 @@ function TripCard({ trip, muted }: { trip: TripSummary; muted?: boolean }) {
           {trip.travelers != null && <Stat n={trip.travelers} unit="人" />}
           <Stat n={trip.dayCount} unit="天" />
           <Stat n={trip.eventCount} unit="个安排" />
-          {trip.bookingCount > 0 && (
+          {!PUBLIC_BUILD && trip.bookingCount > 0 && (
             <span className="todo-badge tnum rounded-full px-2 py-[1.5px] text-[11px] font-medium">
               {trip.bookingCount} 项待订
+            </span>
+          )}
+          {!PUBLIC_BUILD && trip.visibility === 'public' && (
+            <span
+              className="rounded-full border border-[var(--hairline)] px-2 py-[1.5px] text-[11px] text-graphite"
+              title="visibility: public —— 会出现在公开版个人空间里"
+            >
+              公开
             </span>
           )}
           {favorites.count > 0 && (
