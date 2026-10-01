@@ -29,6 +29,7 @@ end: 2026-11-16                    # 必需
 subtitle: 红叶季 · 定稿             # 可选
 travelers: 2                       # 可选
 currency: JPY                      # 可选
+visibility: private                # 可选 · public 才进公开分享的版本（抹过敏感信息）；缺省 private
 ---
 
 # 京都 3 天 2 夜

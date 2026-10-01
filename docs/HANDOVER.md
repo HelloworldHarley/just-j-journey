@@ -25,11 +25,12 @@
 
 ## 三、环境
 
-- pnpm workspace：`@jjj/schema`（枚举 + zod）、`@jjj/tripmd`（parse/serialize/patch/summary/ics/values）、`@jjj/web`（Vite + React + Tailwind v4 + HashRouter）。
+- pnpm workspace：`@jjj/schema`（枚举 + zod）、`@jjj/tripmd`（parse/serialize/patch/summary/ics/values/sanitize/publicPlan）、`@jjj/datadir`（数据目录的文件层，唯一带 node:fs 的包）、`@jjj/web`（Vite + React + Tailwind v4 + HashRouter；`vite/data-routes.ts` + `data-plugin.ts` 是数据目录接进 dev 的那层）。**Node ≥ 24**（`.nvmrc`）—— vite.config 间接 import 的 workspace 包入口是 `.ts`，Node 20 跑不了，两份工作流已钉 24。
 - `pnpm dev` → localhost:5173（配置了 `host: true`，远程可访问）。路由带 `#`：`/#/trip/seattle-2026-10/list`。
-- Playwright 截图脚本模式：`chromium.launch({ executablePath: <chrome 路径> })`。**新机器要先 `npx playwright install chromium`** 并找到对应路径（旧机器在 `~/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome`）。
+- Playwright 截图脚本模式：`chromium.launch({ executablePath: <chrome 路径> })`。**新机器要先 `npx playwright install chromium`** 并找到对应路径（Linux 在 `~/.cache/ms-playwright/chromium-<rev>/chrome-linux64/chrome`，macOS 在 `~/Library/Caches/ms-playwright/chromium-<rev>/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing`；`check:built` 两处都会自己找）。`playwright-core` 临时 `npm i` 在会话 scratchpad 里，不进仓库。
+- **改完代码看一眼用 `pnpm look`**（2026-09-14 起）：起 dev 服务器并在 Chrome 里开首页，`--public` 开公开版、`--both` 两个一起；Chrome profile 自动选仓库 `git user.email` 登录的那个，在它当前窗口里加标签页；端口被占自动往上找。Harley 自己跑，agent 只给命令。
 - `pnpm typecheck` = 根 tsconfig（管 `tools/`）+ 各包 `tsc --noEmit`。别用 `tsc -b`（与全仓 noEmit 相悖）。
-- Fixtures：`apps/web/public/data/` 下 `seattle-2026-10`（真实行程，压力测试）、`_example`（最小示例）、`_demo`（全要素演示，**仅本地 dev 可见**，github.io 上没有）、`_broken`（必须恰好报 6 个错，`data:check` 拿它当负向对照）。同目录下还有 `space.md`（个人空间名片，`data:check` 一并校验）；`JJJ_DATA_DIR` 可把数据目录指到别处（2026-09-11 起）。
+- Fixtures：`apps/web/public/data/` 下 `seattle-2026-10`（真实行程，压力测试）、`_example`（最小示例）、`_demo`（全要素演示，**仅本地 dev 可见**，github.io 上没有）、`_broken`（必须恰好报 6 个错，`data:check` 拿它当负向对照）、`_showcase`（seattle 抹除后的公开版副本，`pnpm showcase:refresh seattle-2026-10` 重生成，roundtrip / patch 测试吃它，同样仅 dev 可见；别对它跑 `enrich`）。同目录下还有 `space.md`（个人空间名片，`data:check` 一并校验）；`JJJ_DATA_DIR` 可把数据目录指到别处（2026-09-11 起）。**合成 fixture 与测试里不能出现真行程（seattle）的任何值** —— 仓库是公开的；`_showcase` 是唯一例外，它本身就是抹过的公开版。
 
 ## 四、TripMD 当前形态（v1 + 前置块改造后）
 
@@ -65,14 +66,27 @@ apps/web/src/
 
 ## 六、当前状态
 
-### 本轮（2026-09-09 → 09-11 · 个人空间与分享，**半成品**，开发迁到 Harley 本地）
+### 本轮（2026-09-09 → 09-30 · 个人空间与分享，迁移第 1 步**代码完成 + 审查轮**，待 Harley 检查后提交）
 
-- **目标**：把「工具 / 私人数据 / 公开数据」三个面切开 —— 工具仓库开源可 fork，Harley 的 `space.md` + 真行程住私有数据仓库，公开版（抹过敏感信息）发到数据仓库的 GitHub Pages，完整版发 Cloudflare Pages + Access。设计：`docs/superpowers/specs/2026-09-09-personal-space-sharing-design.md`（含「已拍板」表与「实现记录」）；实施计划：`docs/superpowers/plans/2026-09-09-personal-space-sharing.md`（**顶部「进度」表是接手入口**）。
-- **做到哪**：11 个 Task 里 1–6 完成并过审（`visibility` 字段、manifest 带 visibility + `PUBLIC_BUILD`、`space.md` 个人空间 + 首页名片 + 打赏抽屉、`JJJ_DATA_DIR` 数据目录可配置 + `tools/lib`、`sanitize` 白名单抹除、`findLeaks` 抹净扫描）；Task 7（公开构建下不画待填 / 藏日历入口）**代码已改但没过审**；8–11（`pnpm build:public`、`_showcase`、CI + 数据仓库工作流模板 + `PUBLISHING.md`、文档收尾）未开始。以 `wip:` commit 提交，接手从 Task 7 的验证开始。
+- **目标**：把「工具 / 私人数据 / 公开数据」三个面切开 —— 工具仓库开源可 fork，Harley 的 `space.md` + 真行程住私有数据仓库，两份产物各发一个 Cloudflare Pages 项目：公开版（抹过敏感信息）不挂 Access，完整版挂 Access（09-30 裁决：Harley 的个人 GitHub 是 Free，Pages 发不了私有仓库，原定的「数据仓库自己的 GitHub Pages」作废）。设计：`docs/superpowers/specs/2026-09-09-personal-space-sharing-design.md`（含「已拍板」表与「实现记录」）；实施计划：`docs/superpowers/plans/2026-09-09-personal-space-sharing.md`（**顶部「进度」表是接手入口**）。
+- **做到哪**：11 个 Task 全部在树里。1–6（`visibility` 字段、manifest 带 visibility + `PUBLIC_BUILD`、`space.md` 个人空间 + 首页名片 + 打赏抽屉、`JJJ_DATA_DIR` + `tools/lib`、`sanitize` 白名单、`findLeaks`）09-11 以 `wip:` 提交；7–11 在 09-15 → 09-18 完成，**未提交**：Task 7 复审补了 5 处作者专用面（住宿 / 租车模块的悬空标签与字面「待填」、事件「待订」角标、航班空骨架、月视图待订数、地图缺坐标 chip）；Task 8 `pnpm build:public`（`tools/publish.ts` + `tools/lib/stage-public.ts`）与 `check:built --public`；Task 9 `_showcase` + `pnpm showcase:refresh`，roundtrip / patch 测试改吃它；Task 10 CI 加两道关口（本仓库仍只发完整版）、`templates/publish.yml`、`docs/PUBLISHING.md`；Task 11 文档。Harley 的要求是**先改完测完，他检查过再统一提交**。
 - **打赏**（Harley 2026-09-09 追加）：`space.md` 的 `tips` 列表（`label` + `image` 二维码 / `url` 链接二选一）→ 名片「☕ 打赏」chip → 底部抽屉。工具仓库的示范 `space.md` 不带 tips。
-- 测试基线 **25 套件 / 313 测试**；`pnpm data:check` 现在也校验 `space.md`（含头像 / 二维码文件存在性）；`manifest.json` 形状变了：`{trips:[{id, visibility}]}`。
+- 测试基线 **32 套件 / 370 测试**（09-30 四条裁决落地后，spec 实现记录 32）；关口链 `pnpm typecheck && pnpm test && pnpm data:check && pnpm build && pnpm build:public && pnpm check:built && pnpm check:built --public` 全绿（浏览器层在 Mac 上真跑）。`pnpm data:check` 现在也校验 `space.md`（含头像 / 二维码文件存在性）；`manifest.json` 形状变了：`{trips:[{id, visibility}]}`；seattle 标了 `visibility: public`（仓库本来公开，不改变暴露面，`build:public` 才有东西可抹）。
 - 执行方式是子代理驱动（每 Task 一个实现者 + 独立审核 + 修复轮）；审核抓出的三个真 bug 已修：打赏遮罩 `bg-ink/30` 深色下发亮、dev 数据中间件路径穿越、sanitize 合成 fixture 里混进真行程的值。**新规矩**：合成 fixture 与测试里不能出现真行程（seattle）的任何值 —— 仓库是公开的。
-- **环境变化**：EC2 是公用机器，dev / preview 服务器的端口别人看得见 —— 本轮结束时 :5173 / :5174 已全部关掉，**后续开发在 Harley 本地进行**（`git clone` 后 `pnpm install`、`npx playwright install chromium`，其余照 CLAUDE.md）。在公用机器上验证完必须关端口。
+- **环境变化**：EC2 是公用机器，dev / preview 服务器的端口别人看得见 —— 本轮结束时 :5173 / :5174 已全部关掉，**后续开发在 Harley 本地进行**（`git clone` 后 `pnpm install`、`npx playwright install chromium`，其余照 CLAUDE.md）。在公用机器上验证完必须关端口。Mac 上 pnpm 是 `corepack enable` 装的（package.json 钉 10.28.2）。
+- **09-15 → 18 这轮的发现与裁决**（细节在 spec 实现记录 13–19）：
+  1. **抹净断言第一次实跑就拦下 `trip-constraints`**：label 里有航班号、note 里有 Global Entry / 倒推链 / 合同截止。这块全站不渲染却会随 plan.md 发出去 → `sanitize` 整块不带它（超出 spec v1「只抹前置块」范围，**09-30 Harley 确认维持**）。fixture 补了带真值形态的 constraints，3 条测试负向对照会红。
+  2. **两个只有抹除后数据才暴露的票面 bug**：抵达票的 `SEA` 滑到出发端（`justify-between` 只剩一个子元素）、被抹那端挂着派生的孤日期。`TimeStack` 公开版无时刻就整栈空、两端各包一层占位空盒。
+  3. **正文残余面实证**：seattle 附录「预算」里有一条只在正文出现的确认号，扫描器黑名单从结构化字段现算，**看不到它**，也不会抹。09-30 Harley 让删，已删（Global Entry 四处一并删掉，她没有）；8 处金额命中都在附录预算表，按设计只警告。今天什么都还没发出去。
+  4. 预订角标：09-30 Harley 裁决**三种都不进公开版**，`sanitize` 在数据层去掉 `booking` 块与 `needs-booking` 标记（spec 实现记录 32）。
+  5. `_showcase` 标题带「公开示范 ·」前缀，但**不上 dev 首页**（Harley 09-29：完整版首页不要两个西雅图；09-30 审查轮曾把它误放回首页，已改回，spec 实现记录 33）。dev 首页 = 真行程 + `_demo`，由 `data-routes.ts` 的 `DEV_HOME_FIXTURES` 决定。
+  6. 两种产物都对 `/favicon.ico` 404，index.html 本来就没引用图标，线上今天也这样，没动。
+- **09-29 Harley 看过本地效果后追加三条**（spec 实现记录 20–22）：首页头像换成他的 GitHub 头像（`avatar.png` 进数据目录，`dataUrl` / `data:check` 顺带放行绝对 URL）；公开版里抵达 / 离开事件的正文全清（票面抹了的信息正文在复述）；**首页卡片右下角「公开 / 私有」开关** —— 第一条浏览器写回 plan.md 的路径，只改 frontmatter 一行、dev-only、再解析验收，真浏览器往返后文件与 HEAD 字节一致。`_showcase` 不再上 dev 首页。测试基线 **26 套件 / 325 测试**。随后 Harley 发现 `pnpm look --public` 仍显示详细信息 —— dev 喂的是原始 plan.md，sanitize 只在 build:public 跑；补了 vite 插件 `jjj:public-data`，公开版 dev 逐请求现抹、manifest 扫目录现算、非 public 与 ics 404（spec 实现记录 23）。**规矩：任何标着「公开版」的入口，数据都必须是抹过的，UI 层的隐藏只是第二道**。
+- **行程本身**（09-29，Harley 口述）：玻璃球订到 10/3 13:30、水上飞机 16:00–16:30、AC Hotel 三晚已订。Day 3 连锁：派克市场延到 13:10、Seattle Center 推到 16:40 缩到 25 分钟，单轨 / 凯里公园 / 晚餐不动；附录待办 1–3 打勾。待订剩 2 项（HTCAW、Asadero）。玻璃球出来到起飞中间空一个多小时，Harley 未决定怎么填。
+- **迁移第 2 步的本地部分已做**（spec 实现记录 24）：数据仓库脚手架在 `projects/journeys/`（`trips/` 含 space.md、头像、seattle、manifest；工作流模板；README；.gitignore 忽略 ics），以它为数据源整条链全绿；`JJJ_DATA_DIR` 在仓库外时 dev 也会监听并整页刷新。`space.md` 里还是工具的示范文案，Harley 要改成自己的。编辑模式 spec 里程碑 ③ 的写回目标已改成数据仓库（迁移第 5 步的文档部分）。
+- **09-30 审查轮**（Harley 要求下一步前做一轮整体审查；spec 实现记录 25）：三处「同一件事写了三遍」收敛 —— 新包 `@jjj/datadir` 独占数据目录的文件层（工具、暂存、vite 插件共用；唯一带 `node:fs` 的包）；三个 vite 插件合成 `jjj:data` 一个，搬到 `apps/web/vite/data-plugin.ts`，`vite.config.ts` 回到纯配置，开关端点契约在 `src/data/visibility-api.ts`；公开版「空槽不画」收成 `lib/public.ts` 的 `showsField` / `shownTerms` + `ticket-parts.tsx` 的 `Field`，六个组件里的散判全删。`tools/look.ts` 的 Chrome 那半拆到 `tools/lib/chrome.ts`。行为零变化（四个 dev 服务器逐条断言 + 双主题截图核对）。**同日第二轮**（spec 实现记录 27–30）：五个子代理对抗式审查，坐实并修掉 —— geometry.json 原样拷带走民宿门牌与精确坐标（`filterGeometry`）、role 按行程首末日判会把居家日行程的两班全留（改按引用日期跨度）、黑名单不收硬约束、抵达卡后面的 `to_next` label 没清；公开版 dev 非规范路径（`//`、`%2e`）绕过抹除直出原文、坏转义打死进程、开关端点无 CSRF、写回非原子（插件拆成可单测的 `vite/data-routes.ts`，公开版改白名单、规则链与构建同一个 `publicPlan`）；**工作流钉的 Node 20 跑不了新的 vite.config**（改 Node 24 + `.nvmrc`）；两处 UI 回归（网约车 baggage 静默丢、长站名不省略）。**同日第三轮**：Harley 装上 Anthropic 官方 code-review 插件后再审一遍，抓到第二轮修复自己的两道缝 —— role 跨度混进了住宿租车的引用、`/%64ata/…` 的前缀在解码前比较导致公开版 dev 直出原文 —— 以及离开卡前那段路没清、公开版 dev 仍有写端点、符号链接能被写出数据目录、名片资源路径不校验（spec 实现记录 31）。
+- **09-30 裁决：公开站改发 Cloudflare Pages**（spec 实现记录 26）—— Harley 的个人 GitHub 是 Free。`templates/publish.yml` 两步 wrangler 直传、去掉 Pages 权限，Variables `CF_PROJECT_PUBLIC` / `CF_PROJECT_FULL`；`PUBLISHING.md` 第五节改成五步；脚手架里的工作流与 README 已同步。
+- **Harley 待办**：检查整份 diff 后提交并打 tag `v0.2.0` 推上去；改 `journeys/trips/space.md` 成自己的名片；按 `docs/PUBLISHING.md` 第四节推数据仓库、第五节 Cloudflare 五步、然后删真行程、`_showcase` 改名；**第 4 步之前别对外分享**。
 
 ### 上一轮（2026-09-05 · seattle 行程照真实出行重写）
 
@@ -175,9 +189,9 @@ apps/web/src/
    - **补坐标算这里的一个用例**：地图右下角那枚「N 个地点缺坐标」的 chip 今天纯只读
      （`missingCoords(trip)` 出名单，点开列名字，没有输入口）。用户想现场提供地址时该往哪写，
      等编辑模式一并处理 —— 别单独给它开一条写路径。
-   - 写回这条路今天在仓库里不存在：`TripRepository` 只有 `listTrips` / `getTrip`，
-     `saveTrip?` 标着「Phase 6 才有」且无实现。这是第一条「浏览器 → plan.md」的写路径，
-     动它就是动数据源那个唯一切换点。
+   - 整份写回这条路今天在仓库里不存在：`TripRepository` 只有 `listTrips` / `getTrip` / `getSpace`
+     和窄到只改一行的 `setVisibility?`（那个 `saveTrip?` 空桩 09-30 审查轮删了，零引用）。
+     `saveTrip(id, markdown)` 落地时就是动数据源那个唯一切换点。
 3. **Agent 管道** —— 让 agent 填「待填」槽位；`AUTHORING_PROMPT.md` 是给 LLM 的写作规范（骨架示例经真解析器验证零警告，改它时要保持这一点）。`parse.ts` 的拆分已在 2026-08-11 完成。
 4. Phase 6 后端（远期）：`TripRepository` 换 HTTP 实现、收藏/改名上云。
 

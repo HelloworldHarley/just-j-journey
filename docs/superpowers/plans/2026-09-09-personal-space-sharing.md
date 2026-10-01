@@ -10,9 +10,9 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-09-personal-space-sharing-design.md`（本计划只覆盖 spec 迁移顺序的**第 1 步**「工具仓库先长出能力，数据不动」，外加第 2/3 步要用的模板与文档；第 2–5 步是 Harley 在数据仓库 / Cloudflare 侧的操作，见 Task 10 的 `docs/PUBLISHING.md`）
 
-## 进度（2026-09-11 暂停，半成品已提交）
+## 进度（2026-09-18 · 11 个 Task 全部完成，待 Harley 检查后提交）
 
-执行方式：子代理驱动（每个 Task 一个新鲜实现者 + 独立审核 + 修复轮复审），全部在 main 工作树上未提交地进行，最后一次性以 `wip:` commit 提交。开发环境从公用 EC2 迁到 Harley 本地，**下一个 agent 从这里接**：
+执行方式：Task 1–6 子代理驱动（每个 Task 一个新鲜实现者 + 独立审核 + 修复轮复审），09-11 以 `wip:` commit 提交；Task 7 复审与 8–11 由单个 agent 在 Harley 本地 Mac 上完成（09-15 → 09-18），**未提交** —— Harley 要求先改完测完，他检查过再统一提交。偏差与裁决见 spec「实现记录」13–19。
 
 | Task | 状态 | 备注 |
 |---|---|---|
@@ -22,13 +22,13 @@
 | 4 `JJJ_DATA_DIR` + tools/lib | ✅ 过审（1 轮修复） | 修复：dev 中间件加目录边界检查（`resolve` + `root + sep`），dev 服务器是 `host: true` |
 | 5 `sanitize` | ✅ 过审（1 轮修复） | 修复：fixture 里混进的真行程值全部换成编造值；民宿 / 住宿 / 租车改逐字段白名单，民宿还抹 `url` / `gmaps_place_id`；`dep_date` 全抹；补了空断言与 unreferenced 用例 |
 | 6 `findLeaks` | ✅ 过审（1 轮修复） | 修复：吃 `lex()` 的 fence token 而不是手数 ```；金额千分位逗号友好 |
-| 7 公开构建 UI | ⚠️ **代码已改、未过审** | `ticket-parts.tsx` / `TransportTimeline.tsx` / `InfoView.tsx` 三处改动在树里，typecheck/test/build 全绿；子代理在截图验证时被叫停，**没有审核报告**。接手先按 Task 7 Step 4 做一遍 `VITE_PUBLIC=1` 的视觉核对，再走一次审核 |
-| 8 `build:public` | ⬜ 未开始 | brief 里的代码可直接用 |
-| 9 `_showcase` | ⬜ 未开始 | 依赖 8（seattle 标 `visibility: public` 也在 8） |
-| 10 CI + 模板 + `PUBLISHING.md` | ⬜ 未开始 | |
-| 11 文档收尾 + 全套关口 | ⬜ 未开始 | spec 的实现记录已先写了一版（见 spec 末尾），Task 11 时补齐 |
+| 7 公开构建 UI | ✅ 复审通过（补 5 处） | 原三处按 Step 4 用 `VITE_PUBLIC=1` 截图核对无误；复审补上住宿 / 租车模块悬空标签与字面「待填」、「待订」角标、航班空骨架、月视图待订数、地图缺坐标 chip。「需预订 / 已预订」保留，待 Harley 拍板 |
+| 8 `build:public` | ✅ 完成 | 首次实跑抹净断言拦下 `trip-constraints` 里的航班号 → sanitize 整块不带 constraints（**超出 spec v1 范围，待 Harley 确认**）；Step 6 截图抓到单端票面两处布局 bug 并修；`check:built` 补 macOS Chromium 路径，浏览器层真跑 |
+| 9 `_showcase` | ✅ 完成 | `publicMarkdown` 与 build:public 共用；标题加「· 公开示范」后缀（首页卡片不显示 subtitle）；roundtrip +1 fixture，patch 改吃它无需改断言 |
+| 10 CI + 模板 + `PUBLISHING.md` | ✅ 完成 | deploy.yml 加 `build:public` 与两轮 `check:built` 关口（仍只发完整版）；`templates/publish.yml` 经 yaml 解析验证；`PUBLISHING.md` 七节 |
+| 11 文档收尾 + 全套关口 | ✅ 完成 | TRIPMD_SPEC / AUTHORING_PROMPT / CLAUDE.md / HANDOVER / spec 实现记录 13–19 / 记忆；关口链全绿 |
 
-测试基线：开始 20 套 / 280 → 现在 **25 套 / 313**，全绿；`pnpm data:check` 多出 `✓ space.md`；`pnpm build` 绿。
+测试基线：开始 20 套 / 280 → 09-18 25 套 / 317 → 09-30 三轮审查后 **32 套 / 369**（新包 `@jjj/datadir`、`lib/public.ts` 谓词、`spaceAssets`、`publicPlan`、`vite/data-routes`、`stagePublic` 各带测试；审查轮的收敛项见 spec 实现记录 25，下面各 Task 行里提到的 `tools/lib/paths.ts#dataDir`、`jjj:data-dir` / `jjj:public-data` / `jjj:visibility` 三个插件是当时的形态，现在分别是 `@jjj/datadir` 与单个 `jjj:data`），全绿；关口链 `pnpm typecheck && pnpm test && pnpm data:check && pnpm build && pnpm build:public && pnpm check:built && pnpm check:built --public` 全过。
 
 执行时对计划的偏差与裁决全部写进了 spec 的「实现记录」一节（本地 `.superpowers/` 工作目录是 gitignored 的，不随仓库走）。**接手时的注意事项**：Task 8/9 的 brief 引用的 fixture 值以 `packages/tripmd/test/fixtures/sanitize-full.md` 现状为准；Task 9 把 `patch.test.ts` 换到 `_showcase` 前先确认它没有断言 seattle 前置块里的真值；在公用机器上起 dev / preview 服务器验证完**必须关掉端口**（本地开发不受此限）。
 

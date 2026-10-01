@@ -2,7 +2,7 @@
 
 ## Context
 
-just-j-journey 目前是纯只读站点：浏览器 fetch plan.md 现场解析，五个视图全部只消费。写入阀门 `applyPatch`（apply → serialize → re-parse，解析器唯一校验）早已在 `packages/tripmd/src/patch.ts:82` 就绪并有测试，但**全仓零调用点**；`TripRepository.saveTrip?` 是未实现的桩。
+just-j-journey 目前是纯只读站点：浏览器 fetch plan.md 现场解析，五个视图全部只消费。写入阀门 `applyPatch`（apply → serialize → re-parse，解析器唯一校验）早已在 `packages/tripmd/src/patch.ts:82` 就绪并有测试，但**全仓零调用点**；`TripRepository` 上曾有一个 `saveTrip?(trip)` 的空桩，2026-09-30 审查轮删掉了（零引用、签名与下文不符），实施里程碑 ① 时按下面的 `saveTrip(id, markdown)` 新增。
 
 Harley 要的完整产品是三条入口汇进同一条编辑管线：
 
@@ -102,8 +102,8 @@ UI 表单 / agent 提案(审核后) ──→ TripPatchOp[] ──→ applyPatch
 
 ## 里程碑 ③：GitHub 自动同步
 
-- `lib/settings.ts` 加 `github: {pat, repo /*默认 HelloworldHarley/just-j-journey*/, branch /*默认 main*/} | null` 与 `anthropicKey/model`（⑤ 用，一次动完形状）。SettingsSheet 加「同步」区（PAT 用 password input，文案：fine-grained、仅此仓库、仅 Contents 读写）。
-- **`SyncBackend` 接口**（`apps/web/src/data/sync.ts`）：`fetchRemote(tripId) → {sha, markdown} | null` / `push(tripId, markdown, baseSha) → {sha}`。**唯一实现 `GithubSyncBackend`**（`data/github.ts`）：Contents API GET/PUT（`Bearer PAT`、`application/vnd.github+json`），路径 `apps/web/public/data/<id>/plan.md`，commit message `edit: <tripId> via web`。纯函数半区（单测）：`contentsUrl` / `encodeBase64Utf8`+decode（中文 emoji 往返）/ `decideSync({draftMd, remoteMd, remoteSha, baseRemoteSha}) → 'clean'|'push'|'conflict'`。
+- `lib/settings.ts` 加 `github: {pat, repo /*默认空 —— 填**数据仓库**，如 HelloworldHarley/journeys；不是工具仓库*/, branch /*默认 main*/, dataDir /*默认 trips*/} | null` 与 `anthropicKey/model`（⑤ 用，一次动完形状）。SettingsSheet 加「同步」区（PAT 用 password input，文案：fine-grained、仅数据仓库、仅 Contents 读写）。**写回的是完整版 plan.md；公开版永远由数据仓库的工作流派生，编辑器不直接碰它**（2026-09-29 改：个人空间与分享落地后，真行程住数据仓库，见 `docs/PUBLISHING.md`）。
+- **`SyncBackend` 接口**（`apps/web/src/data/sync.ts`）：`fetchRemote(tripId) → {sha, markdown} | null` / `push(tripId, markdown, baseSha) → {sha}`。**唯一实现 `GithubSyncBackend`**（`data/github.ts`）：Contents API GET/PUT（`Bearer PAT`、`application/vnd.github+json`），路径 `<dataDir>/<id>/plan.md`（数据仓库布局 `trips/<id>/plan.md`），commit message `edit: <tripId> via web`。**已有先例可沿用**：首页「公开 / 私有」开关走的 `setFrontmatterScalar` → 再 parse 验收 → 写回，就是这条通道的最小形态。纯函数半区（单测）：`contentsUrl` / `encodeBase64Utf8`+decode（中文 emoji 往返）/ `decideSync({draftMd, remoteMd, remoteSha, baseRemoteSha}) → 'clean'|'push'|'conflict'`。
 - `data/useSync.ts`：模块级单例调度器 + hook 读状态。状态机 per trip：`localOnly → pending(debounce 5s 合并连续保存) → pushing → pushed(等部署) → clean`，旁路 `conflict/error`。409/422 → 重取 sha 重判一次。`window 'online'` 重试 + 手动「立即推送」。
 - **冲突 UI**：TripPage 顶部横幅两键 ——「以本地为准覆盖推送」/「丢弃本地草稿」。
 - **状态指示**：TripPage 头部 chip（仅本地·灰 / 待推送·琥珀 / 推送中 / 部署中「约 1-2 分钟」/ 已同步·绿短暂 / 冲突失败·红）；HomePage 草稿卡片角标。

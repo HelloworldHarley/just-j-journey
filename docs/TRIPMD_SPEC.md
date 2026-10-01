@@ -70,6 +70,7 @@ end: 2026-10-05              # 必需 · YYYY-MM-DD
 subtitle: 2026/10/01–10/05 · 最终版   # 副标题，页头小字
 travelers: 2                 # 人数 —— cost 里的「/人」按它乘成总额
 currency: USD                # 预算主币种的兜底（cost 文本没带货币符号时用它）
+visibility: public           # public 进公开版（抹过敏感信息）；private 只进完整版；缺省 private
 ---
 ```
 
@@ -496,6 +497,35 @@ icon: 💰
 也接受 `#### 备选 · X` / `#### Variant · X`。
 
 > **这是 TripMD 最重要的特性。** 「有雪就改走往返」「海雾没散就顺延到 12:30 场」——这类条件分支是一份好行程最值钱的部分，多数工具会压扁丢掉。这里是一等公民，UI 上折叠可展开。
+
+---
+
+## 个人空间 `space.md`
+
+数据目录根下一份 `space.md`，frontmatter 是名片，正文是自由 Markdown。首页从「行程列表」变成「个人主页」：名片在上，行程卡片在下。没有这份文件时首页显示工具默认头部。
+
+```yaml
+---
+name: Harley                # 必需
+handle: harley              # 可选 · 显示成 @handle
+avatar: avatar.jpg          # 可选 · 相对 space.md 的路径
+bio: 一句话简介              # 可选
+links:                      # 可选 · 名片上的链接 chip
+  - {label: 小红书, url: https://…}
+tips:                       # 可选 · 打赏入口，有一项就在名片上长出「打赏」按钮
+  - {label: 微信, image: tips/wechat.png}     # 二维码图片，相对 space.md
+  - {label: Buy Me a Coffee, url: https://…}  # 或一个链接；image / url 二选一
+---
+自我介绍、怎么读这些攻略、免责声明……
+```
+
+`pnpm data:check` 一并校验它：拼错的键警告，缺 `name` 是错误，`avatar` / `tips[].image` 指向的文件必须真的在数据目录里。
+
+---
+
+## 公开版抹除
+
+`pnpm build:public` 只收 `visibility: public` 的行程，每份过 `sanitize`（白名单：只有显式抄过去的字段能进公开版）：长途按**首次引用落在哪一天**判 —— 首日只留到达端（`to` / `arr_time` / `arr_date`）、末日只留出发端（`from` / `dep_time`）、中间日两端全留、没被引用只留 `traveler` / `mode`，其余票面字段与记录级 `cost` 全抹；住宿 / 租车只抹 `cost`；`homestay` 地点坐标模糊到两位小数并删 `en` / `note` / `url` / `gmaps_place_id`；`trip-constraints` 整块不进公开版（它不渲染，却会随 plan.md 发出去）；事件卡、正文、附录、事件散项 `cost` 一字不动；不生成 `calendar.ics`。抹完的 plan.md 必须仍是合法 TripMD，构建时会再解析一遍并扫一遍敏感值。规则、理由与「正文里的东西扫描器看不到」这条残余面见 `docs/PUBLISHING.md`。
 
 ---
 
