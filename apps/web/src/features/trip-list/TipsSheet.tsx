@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { ExternalLink, X } from 'lucide-react'
 import type { SpaceTip } from '@jjj/schema'
-import { dataUrl } from '../../lib/data-url.ts'
+import { useRepository } from '../../data/hooks.ts'
 
 /**
  * 打赏抽屉 —— 二维码横排（手机上一屏一张、可左右滑，不显示滚动条），链接项渲染成按钮。
@@ -13,6 +13,7 @@ import { dataUrl } from '../../lib/data-url.ts'
  * `sm:items-center` + `sm:rounded-2xl` 让宽屏上居中弹窗，而不是永远贴底。
  */
 export function TipsSheet({ tips, onClose }: { tips: SpaceTip[]; onClose: () => void }) {
+  const repo = useRepository()
   const images = tips.filter((t) => t.image)
   const links = tips.filter((t) => t.url)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -54,7 +55,7 @@ export function TipsSheet({ tips, onClose }: { tips: SpaceTip[]; onClose: () => 
           <div className="-mx-5 mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {images.map((t) => (
               <figure key={t.image} className="w-[220px] shrink-0 snap-center">
-                <img src={dataUrl(t.image!)} alt={`${t.label}打赏二维码`} className="h-[220px] w-[220px] rounded-xl bg-paper object-contain" />
+                <img src={repo.assetUrl(t.image!)} alt={`${t.label}打赏二维码`} className="h-[220px] w-[220px] rounded-xl bg-paper object-contain" />
                 <figcaption className="mt-2 text-center text-[12.5px] text-graphite">{t.label}</figcaption>
               </figure>
             ))}

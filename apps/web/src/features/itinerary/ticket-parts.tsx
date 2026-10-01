@@ -1,6 +1,7 @@
+import type React from 'react'
 import { shortDate } from '../../lib/format.ts'
 import { dayOffsetOf } from '@jjj/tripmd'
-import { PUBLIC_BUILD } from '../../lib/public.ts'
+import { shownTerms, showsField } from '../../lib/public.ts'
 
 /**
  * 票面共用零件。换乘时间轴（机票/火车/巴士/轮渡）和租车区间卡共用同一套 ——
@@ -8,6 +9,9 @@ import { PUBLIC_BUILD } from '../../lib/public.ts'
  *
  * 抽出来是因为原先租车模块反向 import 了换乘时间轴的内部零件，
  * 依赖方向不对；将来日历的事件弹层大概率也要用同一套。
+ *
+ * 缺值的画法全站只有一条规矩（lib/public.ts 的 showsField）：完整版画虚线「待填」槽，
+ * 公开版整格不画。SlotText 管值那一格，Field 管「标签 + 值」一整格，容器用 shownTerms 判要不要出现。
  */
 
 /** 时间轴上的节点圆点 */
@@ -33,7 +37,7 @@ export function Arrow() {
 
 /**
  * 值缺失时渲染「待填」空位：虚线框 + 提示词，一眼可见这里等着填。
- * 票常常晚于行程定下来，骨架要始终完整。
+ * 票常常晚于行程定下来，骨架要始终完整。公开版缺就是缺，什么都不画。
  */
 export function SlotText({
   value,
@@ -57,8 +61,7 @@ export function SlotText({
       </span>
     )
   }
-  // 公开版：缺就是缺，不画待填 —— 「待填」是给作者的提醒，读者看到只会困惑
-  if (PUBLIC_BUILD) return null
+  if (!showsField(value)) return null
   // 待填槽是行内 flex 盒、固定高度、文字居中 —— 放进条款行时和旁边的正文共用同一个
   // 18px 行盒，不会因为多了边框和内边距把整行撑高、把邻居的基线挤歪
   return (
@@ -75,11 +78,45 @@ export function SlotText({
 }
 
 /**
+ * 「标签 + 值」一格：条款行、住宿卡的栏目、票面头行的预算都是它。
+ * 值缺了完整版画待填槽，公开版整格不画 —— 标签、图标一起消失，不留悬空的「房型」二字。
+ * `children` 给出时替代默认的 SlotText（星级画成 ★★★★ 那种）；`value` 仍用于判画不画。
+ */
+export function Field({
+  label,
+  value,
+  hint = '待填',
+  icon,
+  className,
+  children,
+}: {
+  label: string
+  value: string | undefined
+  hint?: string
+  icon?: React.ReactNode
+  className?: string
+  children?: React.ReactNode
+}) {
+  if (!showsField(value)) return null
+  return (
+    <span className={`inline-flex items-center gap-1.5 ${className ?? ''}`}>
+      {icon}
+      <span className="shrink-0 text-graphite">{label}</span>
+      {children ?? <SlotText value={value} hint={hint} />}
+    </span>
+  )
+}
+
+/**
  * 时间轴端点的两行栈：时刻（大）在上、日期（小）在下。
  *
  * `base` 给出时才算跨日角标 —— 红色 `+n` 的含义是「比出发晚了 n 天，别看错日子」。
  * 租车这类天然跨多天的凭证不传 base：跨天是常态不是意外，而这套设计里
  * 红色只留给真会出事的东西，天数已经在头行写着了。
+ *
+ * 公开版里被抹掉的那一端连日期也不画：那个日期是从事件所在天派生出来的，
+ * 时刻没了还挂着它，读起来像「这里有一班没写清的车」。**空盒仍然渲染** ——
+ * 它是 justify-between 的占位子元素，塌掉的话另一端会滑到错误的一侧。
  */
 export function TimeStack({
   time,
@@ -96,8 +133,12 @@ export function TimeStack({
     <span
       className={`flex min-w-0 flex-col ${align === 'right' ? 'items-end text-right' : 'items-start'}`}
     >
-      <SlotText value={time} hint="--:--" mono strong />
-      <DateLine date={date} base={base} />
+      {showsField(time) && (
+        <>
+          <SlotText value={time} hint="--:--" mono strong />
+          <DateLine date={date} base={base} />
+        </>
+      )}
     </span>
   )
 }
@@ -124,10 +165,9 @@ export function DateLine({ date, base }: { date?: string; base?: string }) {
   )
 }
 
-/** 票面底部的条款行：客舱 / 托运 / 里程 / 保险 / 退改 这类成对的「标签 + 值」 */
+/** 票面底部的条款行：客舱 / 托运 / 里程 / 保险 / 退改 这类成对的「标签 + 值」；一格都没有就整行不画 */
 export function TermsRow({ terms }: { terms: { label: string; value?: string }[] }) {
-  // 公开版里没值的条款整格不画（标签也不留）；完整版留待填槽
-  const shown = PUBLIC_BUILD ? terms.filter((t) => t.value) : terms
+  const shown = shownTerms(terms)
   if (shown.length === 0) return null
   return (
     <div
@@ -135,10 +175,7 @@ export function TermsRow({ terms }: { terms: { label: string; value?: string }[]
                  border-[var(--hairline)] pt-2 text-[11px]"
     >
       {shown.map((t) => (
-        <span key={t.label} className="inline-flex items-center gap-1.5">
-          <span className="text-graphite">{t.label}</span>
-          <SlotText value={t.value} hint="待填" />
-        </span>
+        <Field key={t.label} label={t.label} value={t.value} />
       ))}
     </div>
   )

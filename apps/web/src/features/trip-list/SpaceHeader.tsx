@@ -1,7 +1,7 @@
 import { Suspense, lazy, useState } from 'react'
 import { Coffee, ExternalLink, Settings2 } from 'lucide-react'
 import type { Space } from '@jjj/schema'
-import { dataUrl } from '../../lib/data-url.ts'
+import { useRepository } from '../../data/hooks.ts'
 import { TipsSheet } from './TipsSheet.tsx'
 
 // 正文用与行程相同的 Markdown 渲染，但 react-markdown 不该进首页壳 —— 按需加载
@@ -14,9 +14,10 @@ const Markdown = lazy(() => import('../../components/Markdown.tsx').then((m) => 
  */
 export function SpaceHeader({ space, onSettings }: { space: Space | null; onSettings: () => void }) {
   const [tipsOpen, setTipsOpen] = useState(false)
+  const repo = useRepository()
   const name = space?.name ?? 'Just J Journey'
   const bio = space?.bio ?? '把 Markdown 行程读成时间的形状。It\'s just a J thing.'
-  const avatarUrl = space?.avatar ? dataUrl(space.avatar) : null
+  const avatarUrl = space?.avatar ? repo.assetUrl(space.avatar) : null
 
   return (
     <header>

@@ -21,8 +21,9 @@ import { fmtDurationZh, formatMinutes, shortDate } from '../../lib/format.ts'
 import { CostText, RentalModule, StayModule } from './modules.tsx'
 import { MapLinkButton } from '../../components/MapLinkButton.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
+import { PUBLIC_BUILD } from '../../lib/public.ts'
 
-/** flight 事件没写 transport 块时的空骨架 —— 所有槽位都显示「待填」 */
+/** flight 事件没写 transport 块时的空骨架 —— 所有槽位都显示「待填」（公开版不画：整张都是给作者的提醒） */
 const EMPTY_TRANSPORT: Transport = { mode: 'flight', arrDayOffset: 0, durationMin: null, stops: [], legs: [] }
 
 /** 时间列宽度。卡片内外共用，保证通勤条的竖线对得上卡片里的时间列。 */
@@ -134,6 +135,7 @@ function EventCard({
   const warned = event.flags.includes('warning')
   const tentative = event.flags.includes('tentative')
   const optional = event.flags.includes('optional')
+  // 预订角标（需预订 / 已预订 / 待订）在公开版里不出现：sanitize 把 booking 块与 needs-booking 标记都去掉了，这里不用分支
   const needsBooking = event.flags.includes('needs-booking') && !event.booking
   const bookingStatus = event.booking?.status ?? 'none'
   const isPeriod = event.timeKind === 'period' || event.timeKind === 'allday'
@@ -233,11 +235,11 @@ function EventCard({
           </div>
         )}
 
-        {/* 信息模块：换乘时间轴（有 transport 块就画；flight 没写块画待填骨架）、
+        {/* 信息模块：换乘时间轴（有 transport 块就画；flight 没写块画待填骨架，公开版不画骨架）、
             住宿区间（只在区间首晚的入住卡上）、租车区间（取车卡上）、预订 */}
         {event.transports.length > 0 ? (
           <TransportTimeline transports={event.transports} date={date} />
-        ) : event.category === 'flight' ? (
+        ) : event.category === 'flight' && !PUBLIC_BUILD ? (
           <TransportTimeline transports={[EMPTY_TRANSPORT]} date={date} />
         ) : null}
         {stay && <StayModule stay={stay} />}

@@ -183,6 +183,7 @@ function Cell({
   // 长途换乘点：带票面时间轴的那种事件。取/还车没有 transport 块，天然不在其中
   const transfer = day?.events.find((e) => e.transports.length > 0)
   // 全局唯一表示「你得做点什么」的数字，和首页卡片上那个是同一个口径
+  // 待订数是作者的待办；公开版的数据里没有 needs-booking（sanitize 去掉了），自然是 0
   const todo = day?.events.filter((e) => e.flags.includes('needs-booking')).length ?? 0
   const TransferIcon = iconFor(TRANSPORTS[transfer?.transports[0]?.mode ?? 'flight'].icon)
 

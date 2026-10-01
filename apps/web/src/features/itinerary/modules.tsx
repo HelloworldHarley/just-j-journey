@@ -3,7 +3,8 @@ import { KeyRound, MoonStar } from 'lucide-react'
 import type { Place, Rental, Stay, TripEvent } from '@jjj/schema'
 import { daysBetween } from '@jjj/tripmd'
 import { fmtMoney, formatMinutes, roundMoneyText, shortDate } from '../../lib/format.ts'
-import { Arrow, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
+import { Arrow, Dot, Field, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
+import { SHOW_EMPTY_SLOTS, shownTerms } from '../../lib/public.ts'
 
 /**
  * 首次引用长出的**信息模块** —— 住宿 / 租车的票面卡。
@@ -37,28 +38,36 @@ export function CostText({ cost }: { cost: NonNullable<TripEvent['cost']> }) {
 /**
  * 住宿模块 —— 订房 App 卡片的字段。首行 入住 → 退房 · 几晚 · 房型；
  * 下面两栏：左栏 平台 / 星级（几星就画几颗星），右栏 停车 / 早餐。
- * 只出现在入住当天那张卡上。缺的字段渲染「待填」空位，之后补进 trip-stays 块。
+ * 只出现在入住当天那张卡上。缺的字段完整版渲染「待填」空位，之后补进 trip-stays 块；
+ * 公开版缺就整格不画（Field 自己判），一栏空了整栏不画（shownTerms 判）。
  */
+interface StayCell {
+  label: string
+  value: string | undefined
+  /** 值的自定义画法（星级画成 ★★★★）；不给就是 SlotText */
+  node?: React.ReactNode
+}
+
 export function StayModule({ stay }: { stay: Stay }) {
   const nights = Math.max(1, daysBetween(stay.from.date, stay.to.date))
-  const left: { label: string; value: React.ReactNode }[] = [
-    { label: '平台', value: <SlotText value={stay.platform} hint="待填" /> },
-    {
-      label: '星级',
-      value:
-        stay.stars !== undefined ? (
-          <span className="tint-faved tracking-[1px]" title={`${stay.stars} 星`}>
-            {'★'.repeat(stay.stars)}
-          </span>
-        ) : (
-          <SlotText value={undefined} hint="待填" />
-        ),
-    },
+  const stars =
+    stay.stars === undefined ? undefined : (
+      <span className="tint-faved tracking-[1px]" title={`${stay.stars} 星`}>
+        {'★'.repeat(stay.stars)}
+      </span>
+    )
+  const cols: StayCell[][] = [
+    [
+      { label: '平台', value: stay.platform },
+      { label: '星级', value: stay.stars?.toString(), node: stars },
+    ],
+    [
+      { label: '停车', value: stay.parking },
+      { label: '早餐', value: stay.breakfast },
+    ],
   ]
-  const right: { label: string; value: React.ReactNode }[] = [
-    { label: '停车', value: <SlotText value={stay.parking} hint="待填" /> },
-    { label: '早餐', value: <SlotText value={stay.breakfast} hint="待填" /> },
-  ]
+    .map((col) => shownTerms(col))
+    .filter((col) => col.length > 0)
   return (
     <div className="mt-2.5 rounded-lg bg-[var(--paper-sunken)] px-3.5 py-2.5 text-[12px]">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
@@ -69,28 +78,29 @@ export function StayModule({ stay }: { stay: Stay }) {
           {formatMinutes(stay.to.minute)}
         </span>
         <span className="text-graphite">{nights} 晚</span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="text-graphite">房型</span>
-          <SlotText value={stay.room} hint="待填" />
-        </span>
+        <Field label="房型" value={stay.room} />
         {stay.cost && (
           <span className="ml-auto">
             <CostText cost={stay.cost} />
           </span>
         )}
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11.5px]">
-        {[left, right].map((col, ci) => (
-          <div key={ci} className="min-w-0 space-y-1.5">
-            {col.map((s) => (
-              <div key={s.label} className="flex items-center gap-1.5">
-                <span className="shrink-0 text-graphite">{s.label}</span>
-                {s.value}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+      {cols.length > 0 && (
+        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11.5px]">
+          {cols.map((col, ci) => (
+            <div key={ci} className="min-w-0 space-y-1.5">
+              {col.map((c) => (
+                // 每格包一层块级盒：Field 是 inline-flex，直接放进 space-y 栏里会并排在同一行
+                <div key={c.label} className="flex">
+                  <Field label={c.label} value={c.value}>
+                    {c.node}
+                  </Field>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
       {/* 与租车同构：缺的字段渲染「待填」空位，不是整行消失 */}
       <TermsRow terms={[{ label: '退改', value: stay.refund }]} />
       {stay.note && (
@@ -127,6 +137,9 @@ export function RentalModule({
   const cost = rental.cost ?? eventCost
   const pickup = rental.pickupPlaceId ? places.get(rental.pickupPlaceId) : undefined
   const dropoff = rental.dropoffPlaceId ? places.get(rental.dropoffPlaceId) : undefined
+  // 取还地点缺了：完整版写「待填」提醒作者，公开版这一侧不写
+  const pickupName = pickup?.name ?? (SHOW_EMPTY_SLOTS ? '待填' : undefined)
+  const dropoffName = dropoff?.name ?? (SHOW_EMPTY_SLOTS ? '待填' : undefined)
   const sameSpot = Boolean(pickup && dropoff && pickup.id === dropoff.id)
   const days = Math.max(1, daysBetween(rental.from.date, rental.to.date))
 
@@ -165,10 +178,12 @@ export function RentalModule({
         <Arrow />
       </div>
 
-      <div className="mt-1 flex items-start justify-between gap-3 text-[10.5px] leading-4 text-graphite">
-        <span className="min-w-0 truncate">取 {pickup?.name ?? '待填'}</span>
-        <span className="min-w-0 truncate text-right">还 {dropoff?.name ?? '待填'}</span>
-      </div>
+      {(pickupName || dropoffName) && (
+        <div className="mt-1 flex items-start justify-between gap-3 text-[10.5px] leading-4 text-graphite">
+          <span className="min-w-0 truncate">{pickupName && `取 ${pickupName}`}</span>
+          <span className="min-w-0 truncate text-right">{dropoffName && `还 ${dropoffName}`}</span>
+        </div>
+      )}
 
       {/* 行 3：还车方式 · 里程 · 保险 · 退改 */}
       <TermsRow

@@ -30,6 +30,7 @@ import {
 import { Segmented, segChip } from '../../components/Segmented.tsx'
 import { Problem } from '../../components/States.tsx'
 import { readViewState, writeViewState } from '../../lib/settings.ts'
+import { PUBLIC_BUILD } from '../../lib/public.ts'
 import { PlaceCard } from './PlaceCard.tsx'
 
 /**
@@ -129,7 +130,8 @@ const FLAG_SVG =
 export default function MapView({ trip }: { trip: Trip }) {
   const navigate = useNavigate()
   const paths = useMemo(() => dayPaths(trip), [trip])
-  const missing = useMemo(() => missingCoords(trip), [trip])
+  // 缺坐标清单是补数据的工作清单，公开版不挂这枚 chip —— 读者没有 plan.md 可补
+  const missing = useMemo(() => (PUBLIC_BUILD ? [] : missingCoords(trip)), [trip])
   const places = useMemo(() => new Map(trip.places.map((p) => [p.id, p])), [trip])
   const events = useMemo(
     () => new Map(trip.days.flatMap((d) => d.events).map((e) => [e.id, e])),

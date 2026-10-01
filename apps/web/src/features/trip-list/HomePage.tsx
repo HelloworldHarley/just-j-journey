@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Pencil, Star, X } from 'lucide-react'
-import type { TripSummary } from '@jjj/schema'
-import { useSpace, useTripList } from '../../data/hooks.ts'
+import { Check, Globe, Lock, Pencil, Star, X } from 'lucide-react'
+import type { TripSummary, Visibility } from '@jjj/schema'
+import { useRepository, useSetVisibility, useSpace, useTripList } from '../../data/hooks.ts'
 import { useTripTitle } from '../../data/useTripOverrides.ts'
 import { useFavorites } from '../../data/useFavorites.ts'
 import { shortDate } from '../../lib/format.ts'
@@ -157,17 +157,9 @@ function TripCard({ trip, muted }: { trip: TripSummary; muted?: boolean }) {
           {trip.travelers != null && <Stat n={trip.travelers} unit="人" />}
           <Stat n={trip.dayCount} unit="天" />
           <Stat n={trip.eventCount} unit="个安排" />
-          {!PUBLIC_BUILD && trip.bookingCount > 0 && (
+          {trip.bookingCount > 0 && (
             <span className="todo-badge tnum rounded-full px-2 py-[1.5px] text-[11px] font-medium">
               {trip.bookingCount} 项待订
-            </span>
-          )}
-          {!PUBLIC_BUILD && trip.visibility === 'public' && (
-            <span
-              className="rounded-full border border-[var(--hairline)] px-2 py-[1.5px] text-[11px] text-graphite"
-              title="visibility: public —— 会出现在公开版个人空间里"
-            >
-              公开
             </span>
           )}
           {favorites.count > 0 && (
@@ -176,9 +168,67 @@ function TripCard({ trip, muted }: { trip: TripSummary; muted?: boolean }) {
               <span className="tnum">{favorites.count}</span>
             </span>
           )}
+          <VisibilityControl trip={trip} />
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * 卡片右下角的「公开 / 私有」。
+ *
+ * 数据源有写路径（本地 dev）时是一枚开关：点一下改 plan.md 的 frontmatter 那一行，
+ * 标成公开的行程下次 `pnpm build:public` 就上架公开版、自动抹去敏感信息。
+ * 没有写路径的构建（线上静态托管）只画一枚静态「公开」角标；公开版本身什么都不画。
+ * `relative z-10` 是为了浮在整卡的拉伸链接之上，和收藏 / 重命名按钮同一层。
+ */
+function VisibilityControl({ trip }: { trip: TripSummary }) {
+  const repo = useRepository()
+  const set = useSetVisibility()
+  if (PUBLIC_BUILD) return null
+  const isPublic = trip.visibility === 'public'
+
+  if (!repo.setVisibility) {
+    return isPublic ? (
+      <span
+        className="ml-auto rounded-full border border-[var(--hairline)] px-2 py-[1.5px] text-[11px] text-graphite"
+        title="visibility: public —— 会出现在公开版个人空间里"
+      >
+        公开
+      </span>
+    ) : null
+  }
+
+  const next: Visibility = isPublic ? 'private' : 'public'
+  return (
+    <span className="relative z-10 ml-auto inline-flex items-center gap-1.5">
+      {set.error && (
+        <span className="text-[11px] text-[var(--tight)]" title={set.error.message}>
+          改不了
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={() => set.mutate({ id: trip.id, visibility: next })}
+        disabled={set.isPending}
+        aria-pressed={isPublic}
+        title={
+          isPublic
+            ? '已公开：会出现在公开版个人空间里（抹过敏感信息）。点击改为私有'
+            : '私有：只在完整版里。点击公开 —— 上架公开版时自动抹去敏感信息'
+        }
+        className={`inline-flex items-center gap-1 rounded-full border px-2 py-[1.5px] text-[11px]
+                    transition-colors disabled:opacity-60 ${
+                      isPublic
+                        ? 'border-ink bg-ink text-paper'
+                        : 'border-[var(--hairline)] text-graphite hover:border-ink/30 hover:text-ink'
+                    }`}
+      >
+        {isPublic ? <Globe size={11} aria-hidden /> : <Lock size={11} aria-hidden />}
+        {isPublic ? '公开' : '私有'}
+      </button>
+    </span>
   )
 }
 

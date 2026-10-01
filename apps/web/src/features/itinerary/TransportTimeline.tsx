@@ -4,8 +4,8 @@ import { iconFor } from '../../lib/icons.tsx'
 import { timelineDates } from '@jjj/tripmd'
 import { formatDurationCompact, roundMoneyText } from '../../lib/format.ts'
 import { segFlyDurations } from '../../lib/segment-durations.ts'
-import { Arrow, DateLine, Dot, SlotText, TermsRow, TimeStack } from './ticket-parts.tsx'
-import { PUBLIC_BUILD } from '../../lib/public.ts'
+import { Arrow, DateLine, Dot, Field, SlotText, TimeStack } from './ticket-parts.tsx'
+import { SHOW_EMPTY_SLOTS, shownTerms } from '../../lib/public.ts'
 
 /**
  * 长途换乘时间轴 —— 电子客票的版式，不钉死为航班（mode 决定图标与槽位文案）：
@@ -110,13 +110,16 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
     return i === 0 || i === segs.length - 1 ? '4.75rem' : '3rem'
   }
 
-  // 完整版按 mode 决定要不要留空格位；公开版只画真有值的格
-  const showEmpty = !PUBLIC_BUILD
+  // 条款行的三格。舱位格按 mode 决定有没有（单轨、步行没有座席这回事），且中转时一段一行，
+  // 所以单独判；托运 / 退改是普通的「标签 + 值」，缺值画不画交给 shownTerms。
+  // mode 没有行李这一格（步行、网约车）时不留空槽，但作者真写了 baggage 就照画 —— 静默丢数据是 bug
   const hasCabinRow =
-    (showEmpty && slots.cabin !== null) || cabinRows.some((r) => r.number || r.cabin || r.seat)
-  const hasBag = (showEmpty && slots.bag !== null) || Boolean(flight.baggage)
-  const hasRefund = showEmpty || Boolean(flight.refund)
-  const hasTerms = hasCabinRow || hasBag || hasRefund
+    (SHOW_EMPTY_SLOTS && slots.cabin !== null) || cabinRows.some((r) => r.number || r.cabin || r.seat)
+  const terms = shownTerms([
+    ...(slots.bag !== null || flight.baggage ? [{ label: slots.bag ?? '行李', value: flight.baggage, Icon: Luggage }] : []),
+    { label: '退改', value: flight.refund, Icon: ArrowLeftRight },
+  ])
+  const hasTerms = hasCabinRow || terms.length > 0
 
   return (
     <div className="rounded-lg bg-[var(--paper-sunken)] px-3.5 pb-3 pt-2.5">
@@ -131,23 +134,16 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
           <ModeIcon size={12} className="shrink-0 text-graphite" aria-hidden />
           <SlotText value={flight.carrier} hint={slots.who} />
         </span>
-        {(flight.durationMin !== null || showEmpty) && (
+        {(flight.durationMin !== null || SHOW_EMPTY_SLOTS) && (
           <span className="tnum text-graphite">
             {flight.durationMin !== null ? `全程 ${formatDurationCompact(flight.durationMin)}` : '全程 —'}
           </span>
         )}
         {/* 票价钉右上角：订好了是金色金额，没订是等着填的预算槽；公开版没钱这一格 */}
-        {(flight.price || showEmpty) && (
-          <span className="ml-auto inline-flex items-center gap-1.5">
-            {flight.price ? (
-              <span className="tnum text-[13px] font-semibold tint-faved">{roundMoneyText(flight.price)}</span>
-            ) : (
-              <>
-                <span className="text-graphite">预算</span>
-                <SlotText value={undefined} hint="待填" />
-              </>
-            )}
-          </span>
+        {flight.price ? (
+          <span className="tnum ml-auto text-[13px] font-semibold tint-faved">{roundMoneyText(flight.price)}</span>
+        ) : (
+          <Field label="预算" value={undefined} className="ml-auto" />
         )}
       </div>
 
@@ -293,8 +289,21 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
               }`}
               style={{ flexGrow: s.grow, flexBasis: 0, minWidth: minW(s, i) }}
             >
-              {first && <SlotText value={flight.from} hint={slots.from} />}
-              {last && <SlotText value={flight.to} hint={slots.to} />}
+              {/* 两端各自包一层：公开版里被抹掉的那一端 SlotText 返回 null，
+                  不留这个空盒的话 justify-between 只剩一个子元素，
+                  目的地会滑到出发端的位置（抵达票上「SEA」跑到左边）。
+                  包的这层必须是 flex：SlotText 的 truncate 只在它自己是 flex 子项（块级化）时生效，
+                  套在普通 inline 盒里 overflow 不作用，长站名就撑破分段、三行轴对不齐 */}
+              {first && (
+                <span className="flex min-w-0">
+                  <SlotText value={flight.from} hint={slots.from} />
+                </span>
+              )}
+              {last && (
+                <span className="flex min-w-0">
+                  <SlotText value={flight.to} hint={slots.to} />
+                </span>
+              )}
             </span>
           )
         })}
@@ -332,20 +341,15 @@ function SingleTransport({ t: flight, date }: { t: Transport; date?: string }) {
                   </span>
                 </span>
               )}
-              {hasBag && (
-                <span className="inline-flex h-[18px] items-center gap-1.5">
-                  <Luggage size={12} className="shrink-0 text-graphite" aria-hidden />
-                  <span className="text-graphite">{slots.bag ?? '行李'}</span>
-                  <SlotText value={flight.baggage} hint="待填" />
-                </span>
-              )}
-              {hasRefund && (
-                <span className="inline-flex h-[18px] items-center gap-1.5">
-                  <ArrowLeftRight size={12} className="shrink-0 text-graphite" aria-hidden />
-                  <span className="text-graphite">退改</span>
-                  <SlotText value={flight.refund} hint="待填" />
-                </span>
-              )}
+              {terms.map(({ label, value, Icon }) => (
+                <Field
+                  key={label}
+                  label={label}
+                  value={value}
+                  className="h-[18px]"
+                  icon={<Icon size={12} className="shrink-0 text-graphite" aria-hidden />}
+                />
+              ))}
             </div>
           </div>
         </div>

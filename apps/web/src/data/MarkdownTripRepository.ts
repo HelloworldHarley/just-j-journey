@@ -1,6 +1,7 @@
-import type { Space, Trip, TripSummary } from '@jjj/schema'
-import { formatDiagnostics, manifestIds, mergeGeometry, parse, parseSpace, summarize } from '@jjj/tripmd'
+import type { Space, Trip, TripSummary, Visibility } from '@jjj/schema'
+import { formatDiagnostics, isAbsoluteUrl, manifestIds, mergeGeometry, parse, parseSpace, summarize } from '@jjj/tripmd'
 import { TripNotFoundError, type TripRepository } from './TripRepository.ts'
+import { VISIBILITY_ENDPOINT, type VisibilityRequest } from './visibility-api.ts'
 
 /**
  * 单工件数据源：浏览器直接 fetch plan.md，现场解析。
@@ -18,11 +19,9 @@ export class MarkdownTripRepository implements TripRepository {
   async listTrips(): Promise<TripSummary[]> {
     const res = await fetch(`${this.base}/manifest.json`)
     if (!res.ok) throw new Error(`行程清单加载失败（HTTP ${res.status}）— 运行 pnpm data:check 生成`)
+    // 有哪些行程只有清单知道：dev 服务器现算（示范目录也在），构建产物里是 data:check 写的文件。
+    // 浏览器不认识任何一个具体 id —— 示范数据是数据目录的事
     const ids = manifestIds(await res.json())
-
-    // 全要素演示行程只在本地开发时出现：`_` 前缀不入 manifest，
-    // CI 部署前还会把 _* 目录从产物里删掉 —— 线上连直链都打不开
-    if (import.meta.env.DEV) ids.push('_demo')
 
     // 一份坏文件不该拖垮整个首页：坏的跳过并在控制台报出，其余照常
     const settled = await Promise.allSettled(ids.map((id) => this.getTrip(id)))
@@ -54,6 +53,33 @@ export class MarkdownTripRepository implements TripRepository {
     await this.mergeGeometry(id, trip)
     this.parsed.set(id, trip)
     return trip
+  }
+
+  /**
+   * 首页「公开 / 私有」开关 —— 浏览器到 plan.md 的第一条写路径，范围极小：只改 frontmatter 一行。
+   * 只有 dev 服务器有这个端点（vite 插件 jjj:data，纯文本改一行再 parse 验收；契约在 visibility-api.ts）；
+   * 线上是静态托管，没有写路径，这个方法就不存在，首页也不画开关。
+   * 写成功后丢掉这份的解析缓存，下一次 getTrip 重新 fetch。
+   */
+  readonly setVisibility = import.meta.env.DEV
+    ? async (id: string, visibility: Visibility): Promise<void> => {
+        const body: VisibilityRequest = { id, visibility }
+        const res = await fetch(`${import.meta.env.BASE_URL}${VISIBILITY_ENDPOINT}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        if (!res.ok) {
+          const msg = await res.text().catch(() => '')
+          throw new Error(msg || `改不了（HTTP ${res.status}）`)
+        }
+        this.parsed.delete(id)
+      }
+    : undefined
+
+  /** 绝对 URL 原样放行 —— 想直接指 GitHub 头像也行，但公开站上每个访客都会去请求那个地址；本地文件更稳 */
+  assetUrl(rel: string): string {
+    return isAbsoluteUrl(rel) ? rel : `${this.base}/${rel}`
   }
 
   async getSpace(): Promise<Space | null> {
