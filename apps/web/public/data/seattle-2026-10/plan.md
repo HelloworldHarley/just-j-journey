@@ -7,6 +7,7 @@ start: 2026-10-01
 end: 2026-10-05
 travelers: 2
 currency: USD
+visibility: public
 ---
 
 # 西雅图 5 天 4 夜
@@ -17,7 +18,7 @@ currency: USD
 - kind: arrive
   at: 2026-10-01 10:40
   label: 她抵达 SEA · 国际航班
-  note: 我 10:05 先落地，坐 Link 一站去 Tukwila 提车，开回航站楼接她。她过海关取行李约 11:45–12:15 出来，有 Global Entry 约 11:30
+  note: 我 10:05 先落地，坐 Link 一站去 Tukwila 提车，开回航站楼接她。她过海关取行李约 11:45–12:15 出来
 - kind: deadline
   at: 2026-10-05 08:30
   label: 必须还完车（Tukwila 轻轨站）
@@ -269,7 +270,7 @@ flags: [warning]
 to_next: {mode: drive, minutes: 10, label: 出机场上 WA-518 转南下}
 ```
 
-她**过海关 + 取行李约 11:45–12:15 出来，有 Global Entry 约 11:30**。出来直接上车，行李进后备箱就走。
+她**过海关 + 取行李约 11:45–12:15 出来**。出来直接上车，行李进后备箱就走。
 
 ### 午餐 · 机场边的烟熏烤肉
 
@@ -508,8 +509,7 @@ time: "20:50"
 category: hotel
 place: AC Hotel
 detail: AC Hotel
-flags: [tentative, needs-booking]
-booking: {status: required}
+booking: {status: booked}
 cost: SpotHero 地库过夜 $15–30/晚 × 3
 notes:
   - 行李全部搬进房间，车里不留任何东西 —— 西雅图车内盗窃率很高
@@ -534,7 +534,7 @@ from_stay: {mode: drive, minutes: 8, label: 地库取车去派克市场, note: �
 ### 派克市场 · 泡一个上午
 
 ```trip-event
-time: 10:15–12:45
+time: 10:15–13:10
 category: food
 place: 派克市场
 cost: 市场地库停车约 $15–20
@@ -552,15 +552,14 @@ to_next: {mode: drive, minutes: 6, label: 出地库停进玻璃球访客车库�
 ### 亚马逊玻璃球
 
 ```trip-event
-time: 13:00–14:15
+time: 13:30–14:45
 category: sight
 place: 亚马逊玻璃球
-flags: [needs-booking]
-booking: {status: required}
+booking: {status: booked}
 cost: 访客车库 2021 7th Ave 约 $15
 notes:
-  - "预约窗口：9/18 上午 10 点开放、10/2 中午 12 点截止 —— 免费但即抢即空，9/18 定好闹钟，订 13:00 场"
-to_next: {mode: drive, minutes: 10, label: 北上联合湖码头, note: 码头有收费停车场}
+  - "已预约 13:30 场，免费，凭预约进入"
+to_next: {mode: drive, minutes: 10, label: 北上联合湖码头, note: 码头有收费停车场；16:00 起飞前有一个多小时富余}
 ```
 
 **这趟唯一的开放日**（每月仅第一、三个周六对公众开放），凭预约进入。玻璃穹顶内的热带雨林，1 小时够。
@@ -568,14 +567,13 @@ to_next: {mode: drive, minutes: 10, label: 北上联合湖码头, note: 码头�
 ### 水上飞机天际线之旅
 
 ```trip-event
-time: 15:00–16:00
+time: 16:00–16:30
 category: experience
 place: Kenmore Air 联合湖码头
-flags: [needs-booking]
-booking: {status: required}
+booking: {status: booked}
 cost: $159 × 2 = $318
 notes:
-  - 订 15:00 前后的场次，订时问清取消改期政策
+  - "已订 16:00–16:30 场"
   - 下午热对流比上午明显，会颠一点 —— 非嗜睡型晕车药 + 姜糖，起飞前 30 分钟吃
   - "被取消没有当天备份 —— 唯一的补救是和 Day 4 整体互换（见上）"
   - 市中心上空有空域限制，不会绕着太空针塔盘旋，是从侧上方远观
@@ -587,7 +585,7 @@ to_next: {mode: drive, minutes: 8, label: 去 Seattle Center 停车场, note: �
 ### Seattle Center
 
 ```trip-event
-time: 16:20–17:05
+time: 16:40–17:05
 category: sight
 place: Seattle Center
 flags: [optional]
@@ -924,9 +922,9 @@ icon: ✅
 
 ### 现在就做
 
-1. **AC Hotel Seattle Downtown 三晚（10/2–10/5）** —— 117 Yale Ave N，万豪系点数换划算；三晚一个订单别拆
-2. **亚马逊玻璃球 10/3 预约 —— 9/18（周五）上午 10:00 开抢，定好闹钟** —— 免费但即抢即空，窗口到 10/2 中午 12:00 截止；订 13:00 场
-3. **水上飞机 10/3 · 订 15:00 前后场** —— Kenmore Air（950 Westlake Ave N，开车 10 分钟，码头有收费停车）。问清取消改期政策 —— 下午场被取消没有当天备份
+1. ✅ **AC Hotel Seattle Downtown 三晚（10/2–10/5）—— 已订**，117 Yale Ave N
+2. ✅ **亚马逊玻璃球 10/3 —— 已订 13:30 场**（免费，凭预约进入）
+3. ✅ **水上飞机 10/3 —— 已订 16:00–16:30 场**，Kenmore Air（950 Westlake Ave N，开车 10 分钟，码头有收费停车）。下午场被取消没有当天备份
 4. **Turo 车主三件事** —— Tukwila 站交接的具体位置和联系方式 / 还车电量要求 / FSD 是否已在这辆车上开通
 
 ### 一周内
@@ -1069,7 +1067,7 @@ icon: 💰
 
 双人，不含机票。逐项金额看上方的自动统计，这里只放数字之外的判断。
 
-**机票已出票（不进下方统计）：** 我 SNA↔SEA 往返 $226.80（确认号 F9PJ3C，不含托运）；她 PVG↔SEA 两张单程共 $1,662.93，实付 46,185 点 + $1,201.08（各含 1 件托运）。
+**机票已出票（不进下方统计）：** 我 SNA↔SEA 往返 $226.80（不含托运）；她 PVG↔SEA 两张单程共 $1,662.93，实付 46,185 点 + $1,201.08（各含 1 件托运）。
 
 **💡 已锁定的大项：木屋 $339.42 + 租车 $343.60。** AC 三晚目标走点数，现金再出三晚停车。统计里没出现的隐性支出：**充电约 $80**（四次超充，替代了油费）、餐饮日均 $130–160、冰爪 + 登山杖一次性装备 $60–100。
 
@@ -1105,4 +1103,3 @@ icon: 🎒
 - **泳衣 + 拖鞋** —— 木屋若带泡池/浴缸就用得上，出发前看一眼房源设施清单
 - 保温杯 / 车载充电器 / 移动电源
 - ORCA 卡，或手机 Apple Pay 直接刷闸机（Link、单轨都能刷；渡轮车道是刷卡窗口）
-- **Global Entry 卡（如果有）** —— Day 1 她出关能省 30 分钟

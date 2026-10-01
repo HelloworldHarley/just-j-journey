@@ -2,7 +2,7 @@
   "trips": [
     {
       "id": "seattle-2026-10",
-      "visibility": "private"
+      "visibility": "public"
     }
   ]
 }
