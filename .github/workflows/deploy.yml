@@ -28,9 +28,10 @@ jobs:
 
       - uses: pnpm/action-setup@v4 # 版本读 package.json 的 packageManager
 
+      # Node ≥ 22.18：vite.config.ts 引用 workspace 包的 .ts 入口，靠 Node 原生剥类型执行；20 上会 ERR_UNKNOWN_FILE_EXTENSION
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -45,11 +46,20 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      # 公开版关口 —— 本仓库仍只发完整版；公开版由数据仓库发（templates/publish.yml），
+      # 这里只保证它构得出、抹得净：抹除后结构块里仍有敏感值会直接失败
+      - name: Public build (gate only)
+        run: pnpm build:public --base=/${{ github.event.repository.name }}/
+
+      # 地图 worker 的两层历史坑要在两种产物上都重放；CI 没有 Chromium，浏览器层明确报跳过
+      - name: Built-map gate, full and public
+        run: pnpm check:built && pnpm check:built --public
+
       # 项目页挂在 https://<user>.github.io/<repo>/ 下
       - name: Build
         run: pnpm --filter @jjj/web build --base=/${{ github.event.repository.name }}/
 
-      - name: Strip dev-only fixtures (_demo / _example / _broken)
+      - name: Strip dev-only fixtures (_demo / _example / _broken / _showcase)
         run: find apps/web/dist/data -maxdepth 1 -type d -name '_*' -exec rm -rf {} +
 
       - uses: actions/configure-pages@v5
