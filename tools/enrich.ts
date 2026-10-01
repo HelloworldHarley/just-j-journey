@@ -24,7 +24,8 @@ import {
   type GeometryDoc,
   type GeometryRecord,
 } from '@jjj/tripmd'
-import { ROOT, dataDir } from './lib/paths.ts'
+import { dataDir, planFile, readTrip } from '@jjj/datadir'
+import { ROOT } from './lib/paths.ts'
 import { bold, die, dim, green, red, yellow } from './lib/cli.ts'
 
 const DATA = dataDir()
@@ -71,13 +72,13 @@ if (flags.has('--apply') && !flags.has('--geocode')) {
   die('--apply 只跟 --geocode 一起用（路线本来就直接写 geometry.json）')
 }
 
-const mdPath = join(DATA, dir!, 'plan.md')
-if (!existsSync(mdPath)) die(`找不到 ${dir}/plan.md`)
-
-const { trip, diagnostics } = parse(readFileSync(mdPath, 'utf8'))
-const errors = diagnostics.filter((d) => d.severity === 'error')
-if (!trip || errors.length > 0) {
-  console.error(formatDiagnostics(`data/${dir}/plan.md`, errors))
+// 读与 --apply 写回用同一个路径：planFile 查过它真的在数据目录里。
+// `?? die()` 而不是 if 收窄 —— 下面的函数声明会提升，看不到顶层 if 的收窄
+const mdPath = planFile(DATA, dir!) ?? die(`找不到 ${dir}/plan.md`)
+const read = readTrip(DATA, dir!) ?? die(`找不到 ${dir}/plan.md`)
+const { trip, diagnostics, label } = read
+if (!trip) {
+  console.error(formatDiagnostics(`data/${label}`, diagnostics))
   die(`${dir} 解析失败 —— 先把 plan.md 修好（pnpm data:check ${dir}）`)
 }
 

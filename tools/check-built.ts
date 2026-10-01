@@ -2,7 +2,8 @@
 /**
  * 构建产物体检 —— 验「打包出来的网站，地图到底能不能画」。
  *
- *   pnpm check:built
+ *   pnpm check:built              完整版产物
+ *   pnpm check:built --public     公开版产物（抹除后的数据 + VITE_PUBLIC=1，base 路径同样是子路径）
  *
  * 为什么必须对产物验：dev 直接从 node_modules 加载 maplibre（worker 就躺在旁边），
  * `vite preview` 又有 SPA 回退（缺失文件回 200 + index.html）—— 两处都照不出
@@ -27,8 +28,10 @@ import { createServer } from 'node:http'
 import { homedir } from 'node:os'
 import { extname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { DATA_MIME, dataDir, readManifestIds } from '@jjj/datadir'
 import { ROOT } from './lib/paths.ts'
-import { dim, green, red, yellow } from './lib/cli.ts'
+import { die, dim, green, red, yellow } from './lib/cli.ts'
+import { STAGE_DIR, stagePublic } from './lib/stage-public.ts'
 
 /** base 用真实仓库名 —— 检查的就是「挂在子路径下」这个 CI 形态 */
 const BASE = '/just-j-journey/'
@@ -43,10 +46,22 @@ const bad = (msg: string) => {
 }
 
 // ── 构建（与 CI 同一形态：子路径 base）─────────────────────────
-console.log(dim(`vite build --base=${BASE} → apps/web/dist-check`))
+// 公开版走的是同一份 SPA，只是数据换成抹除后的暂存目录、置 VITE_PUBLIC=1 ——
+// base 路径变了就得把 worker 那两层历史坑重放一遍，所以两种产物都要过这个关口
+const isPublic = process.argv.includes('--public')
+if (isPublic) {
+  console.log(dim('公开版：先生成抹除后的暂存数据目录'))
+  try {
+    stagePublic(dataDir(), STAGE_DIR)
+  } catch (e) {
+    die(e instanceof Error ? e.message : String(e))
+  }
+}
+console.log(dim(`vite build --base=${BASE} → apps/web/dist-check${isPublic ? '（公开版）' : ''}`))
 execSync(`pnpm --filter @jjj/web exec vite build --base=${BASE} --outDir dist-check`, {
   cwd: ROOT,
   stdio: ['ignore', 'ignore', 'inherit'],
+  env: isPublic ? { ...process.env, JJJ_DATA_DIR: STAGE_DIR, VITE_PUBLIC: '1' } : process.env,
 })
 
 // ── 结构层 ──────────────────────────────────────────────────────
@@ -72,6 +87,13 @@ if (worker) {
   else bad('没有任何 chunk 引用 worker 文件名 —— setWorkerUrl 的接线断了，maplibre 会退回运行时拼地址')
 }
 
+// 订阅日历是作者自己用的，公开版不生成也不该被带进产物
+if (isPublic) {
+  const hasIcs = readdirSync(join(OUT, 'data'), { recursive: true }).some((f) => String(f).endsWith('.ics'))
+  if (hasIcs) bad('公开版产物里有 calendar.ics —— 订阅是作者自己用的，不该发出去')
+  else ok('公开版产物里没有 calendar.ics')
+}
+
 // ── 浏览器层（可选）────────────────────────────────────────────
 const chromium = findChromium()
 const pw = await loadPlaywright()
@@ -95,10 +117,10 @@ process.exit(fails.length ? 1 : 0)
 
 /** 模拟 GitHub Pages：静态直出、缺文件就 404 —— **绝不**回退 index.html */
 function serve(): Promise<{ port: number; close: () => void }> {
+  // 数据文件的类型与 dev 服务器同一张表，这里只多出构建产物自己的几种
   const MIME: Record<string, string> = {
-    '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
-    '.css': 'text/css', '.json': 'application/json', '.png': 'image/png',
-    '.ics': 'text/calendar', '.woff2': 'font/woff2', '.md': 'text/markdown',
+    ...DATA_MIME,
+    '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2',
   }
   const server = createServer((req, res) => {
     const path = (req.url ?? '').split('?')[0]!
@@ -118,6 +140,12 @@ function serve(): Promise<{ port: number; close: () => void }> {
 }
 
 async function browserPass(pw: { chromium: { launch: (o: object) => Promise<Browser> } }, exe: string): Promise<void> {
+  // 产物里第一份入册行程 —— 公开版与完整版的清单不同，不能写死某个 id
+  const tripId = readManifestIds(join(OUT, 'data'))[0]
+  if (!tripId) {
+    bad('产物 manifest 里没有任何行程，浏览器层无从验起')
+    return
+  }
   const { port, close } = await serve()
   const browser = await pw.chromium.launch({ executablePath: exe })
   try {
@@ -126,7 +154,7 @@ async function browserPass(pw: { chromium: { launch: (o: object) => Promise<Brow
     page.on('response', (r) => {
       if (r.status() >= 400) notFound.push(`${r.status()} ${r.url()}`)
     })
-    await page.goto(`http://localhost:${port}${BASE}#/trip/seattle-2026-10/map`, { waitUntil: 'load' })
+    await page.goto(`http://localhost:${port}${BASE}#/trip/${tripId}/map`, { waitUntil: 'load' })
 
     // 条件等待而不是赌一个固定秒数：瓦片来自公网，快慢不由我们定。
     // 最多等 25 秒，两个条件都到齐就提前收工。
@@ -172,13 +200,27 @@ interface Browser {
 function findChromium(): string | null {
   const env = process.env['JJJ_CHROMIUM']
   if (env && existsSync(env)) return env
-  const cache = join(homedir(), '.cache/ms-playwright')
-  if (!existsSync(cache)) return null
-  // 取版本号最大的一份 —— 目录形如 chromium-1223
-  const dirs = readdirSync(cache).filter((d) => /^chromium-\d+$/.test(d)).sort()
-  for (const d of dirs.reverse()) {
-    const exe = join(cache, d, 'chrome-linux64/chrome')
-    if (existsSync(exe)) return exe
+  // Playwright 的缓存位置随平台不同：Linux 在 ~/.cache，macOS 在 ~/Library/Caches
+  const caches = [join(homedir(), '.cache/ms-playwright'), join(homedir(), 'Library/Caches/ms-playwright')]
+  // 同一份缓存里各平台的可执行文件路径也不同
+  const layouts = [
+    'chrome-linux64/chrome',
+    'chrome-linux/chrome',
+    'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+    'chrome-mac/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+  ]
+  for (const cache of caches) {
+    if (!existsSync(cache)) continue
+    // 取版本号最大的一份 —— 目录形如 chromium-1223
+    const dirs = readdirSync(cache)
+      .filter((d) => /^chromium-\d+$/.test(d))
+      .sort((a, b) => Number(a.slice(9)) - Number(b.slice(9)))
+    for (const d of dirs.reverse()) {
+      for (const layout of layouts) {
+        const exe = join(cache, d, layout)
+        if (existsSync(exe)) return exe
+      }
+    }
   }
   return null
 }

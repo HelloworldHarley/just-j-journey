@@ -15,11 +15,11 @@
  *      CI 每次部署都跑这里，所以推 main 之后订阅方的日历自动跟上；
  *      文件被 gitignore —— 重新生成零成本，不值得进版本库吃 DTSTAMP 抖动的 diff）
  */
-import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs'
+import { existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parse, parseSpace, formatDiagnostics, mergeGeometry, summarize, toIcs, buildManifest, type ManifestEntry } from '@jjj/tripmd'
+import { dataDir, readGeometry, readSpace, readTrip, tripDirs } from '@jjj/datadir'
+import { buildManifest, formatDiagnostics, mergeGeometry, spaceAssets, summarize, toIcs, type ManifestEntry } from '@jjj/tripmd'
 import type { Trip } from '@jjj/schema'
-import { dataDir } from './lib/paths.ts'
 import { bold, dim, green, red, yellow } from './lib/cli.ts'
 
 const DATA = dataDir()
@@ -27,10 +27,14 @@ if (process.env['JJJ_DATA_DIR']) console.log(dim(`数据目录 ${DATA}`))
 
 const only = process.argv[2]
 
-const dirs = readdirSync(DATA)
-  .filter((d) => !d.startsWith('.') && statSync(join(DATA, d)).isDirectory())
-  .filter((d) => (only ? d === only : true))
-  .sort()
+let all: string[]
+try {
+  all = tripDirs(DATA)
+} catch (e) {
+  console.error(red(e instanceof Error ? e.message : String(e)))
+  process.exit(1)
+}
+const dirs = all.filter((d) => (only ? d === only : true))
 
 if (dirs.length === 0) {
   console.error(red(only ? `找不到行程 "${only}"` : 'data 下没有任何行程目录'))
@@ -41,15 +45,13 @@ let failed = 0
 const manifest: ManifestEntry[] = []
 
 for (const dir of dirs) {
-  const mdPath = join(DATA, dir, 'plan.md')
-  if (!existsSync(mdPath)) {
+  const read = readTrip(DATA, dir)
+  if (!read) {
     console.error(red(`${dir}: 缺少 plan.md`))
     failed++
     continue
   }
-
-  const rel = `data/${dir}/plan.md`
-  const { trip, diagnostics } = parse(readFileSync(mdPath, 'utf8'))
+  const { trip, diagnostics, label } = read
   const errors = diagnostics.filter((d) => d.severity === 'error')
   const warnings = diagnostics.filter((d) => d.severity === 'warning')
 
@@ -65,7 +67,7 @@ for (const dir of dirs) {
   }
 
   if (diagnostics.length > 0) {
-    console.log(formatDiagnostics(rel, diagnostics))
+    console.log(formatDiagnostics(`data/${label}`, diagnostics))
   }
   if (!trip) {
     console.error(red(`✗ ${dir}  ${errors.length} 个错误`))
@@ -95,13 +97,9 @@ for (const dir of dirs) {
  * 这里只是告诉你有多少段没走真路、该不该重跑 enrich。
  */
 function geometryHealth(dir: string, trip: Trip): void {
-  const path = join(DATA, dir, 'geometry.json')
-  if (!existsSync(path)) return // 没跑过 enrich 的行程就是没有，不是问题
-
-  let raw: unknown
-  try {
-    raw = JSON.parse(readFileSync(path, 'utf8'))
-  } catch {
+  const raw = readGeometry(DATA, dir)
+  if (raw === undefined) return // 没跑过 enrich 的行程就是没有，不是问题
+  if (raw === null) {
     console.log(`  ${yellow('⚠')} ${dim('geometry.json 不是合法 JSON，整份忽略 —— 全部回退直线')}`)
     return
   }
@@ -122,17 +120,17 @@ function geometryHealth(dir: string, trip: Trip): void {
 }
 
 // space.md 与 plan.md 同一待遇：有就校验，写坏了 CI 拦下；没有不算错
-const spacePath = join(DATA, 'space.md')
-if (existsSync(spacePath)) {
-  const { space, diagnostics } = parseSpace(readFileSync(spacePath, 'utf8'))
+const spaceFile = readSpace(DATA)
+if (spaceFile) {
+  const { space, diagnostics } = spaceFile
   if (diagnostics.length > 0) console.log(formatDiagnostics('space.md', diagnostics))
   if (!space) {
     console.error(red('✗ space.md 解析失败'))
     failed++
   } else {
-    // 名片引用的文件（头像、打赏二维码）必须在数据目录里，否则线上是一张裂图
-    const files = [space.avatar, ...space.tips.map((t) => t.image)].filter((f): f is string => Boolean(f))
-    const missing = files.filter((f) => !existsSync(join(DATA, f)))
+    // 名片引用的本地文件（头像、打赏二维码）必须在数据目录里，否则线上是一张裂图；
+    // 绝对 URL 不在名单里 —— 远程头像是作者自己的选择，这里管不到也不该管
+    const missing = spaceAssets(space).filter((f) => !existsSync(join(DATA, f)))
     if (missing.length > 0) {
       console.error(red(`✗ space.md 引用的文件在数据目录里找不到：${missing.join(', ')}`))
       failed++

@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@jjj/datadir':
+        specifier: workspace:*
+        version: link:packages/datadir
       '@jjj/schema':
         specifier: workspace:*
         version: link:packages/schema
@@ -66,6 +69,9 @@ importers:
         specifier: ^4.0.0
         version: 4.0.1
     devDependencies:
+      '@jjj/datadir':
+        specifier: workspace:*
+        version: link:../../packages/datadir
       '@tailwindcss/vite':
         specifier: ^4.0.0
         version: 4.3.3(vite@6.4.3(@types/node@26.1.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.1)(yaml@2.9.0))
@@ -84,6 +90,12 @@ importers:
       vite:
         specifier: ^6.0.5
         version: 6.4.3(@types/node@26.1.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.1)(yaml@2.9.0)
+
+  packages/datadir:
+    dependencies:
+      '@jjj/tripmd':
+        specifier: workspace:*
+        version: link:../tripmd
 
   packages/schema:
     dependencies:

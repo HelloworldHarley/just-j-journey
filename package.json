@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter @jjj/web dev",
+    "look": "tsx tools/look.ts",
     "build": "pnpm --filter @jjj/web build",
+    "build:public": "tsx tools/publish.ts",
+    "showcase:refresh": "tsx tools/showcase.ts",
     "preview": "pnpm --filter @jjj/web preview",
     "data:check": "tsx tools/check.ts",
     "check:built": "tsx tools/check-built.ts",
@@ -14,12 +17,16 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@jjj/datadir": "workspace:*",
     "@jjj/schema": "workspace:*",
     "@jjj/tripmd": "workspace:*",
     "@types/node": "^26.1.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=24"
   },
   "packageManager": "pnpm@10.28.2",
   "pnpm": {
