@@ -1,4 +1,4 @@
-import { TRANSPORTS, type Place, type Trip, type TransportMode } from '@jjj/schema'
+import { TRANSPORTS, type Leg, type Place, type Trip, type TransportMode } from '@jjj/schema'
 
 /**
  * 真实路网几何 —— 全仓唯一的一份「路线该怎么对上行程」。
@@ -87,6 +87,42 @@ export interface MergeReport {
   orphan: number
 }
 
+function asGeometryDoc(raw: unknown): GeometryDoc | null {
+  const doc = raw as GeometryDoc | null
+  return doc && doc.version === 1 && typeof doc.routes === 'object' && doc.routes !== null ? doc : null
+}
+
+interface RouteMatch {
+  leg: Leg
+  key: string
+  rec: GeometryRecord
+  /** used = 可用；stale = 端点与当前坐标对不上；broken = poly 解不开 */
+  status: 'used' | 'stale' | 'broken'
+}
+
+/**
+ * 逐段 leg 对上文档里的记录并判定可用性 —— 合并（mergeGeometry）与过滤（filterGeometry）
+ * 共用这一份判定，两边不会各有一套「什么算对得上」。
+ */
+function* matchRoutes(trip: Trip, doc: GeometryDoc): Generator<RouteMatch> {
+  const byId = new Map(trip.places.map((p) => [p.id, p]))
+  for (const day of trip.days) {
+    for (const leg of day.legs) {
+      if (!leg.from || !leg.to) continue
+      const key = routeKey(leg.mode, leg.from, leg.to)
+      const rec = doc.routes[key]
+      if (!rec?.poly) continue
+      // 端点校验：地点坐标改过之后，旧路线连的还是旧位置 —— 让它失效
+      const status = !same(rec.from, byId.get(leg.from)?.coord) || !same(rec.to, byId.get(leg.to)?.coord)
+        ? 'stale'
+        : decodePolyline(rec.poly).length < 2
+          ? 'broken'
+          : 'used'
+      yield { leg, key, rec, status }
+    }
+  }
+}
+
 /**
  * 把 geometry.json 并进 `trip.days[].legs[].geometry`（**就地改**）。
  *
@@ -94,35 +130,33 @@ export interface MergeReport {
  * 调用方照常拿着 trip 走 —— 地图画它一直在画的直连虚线。
  */
 export function mergeGeometry(trip: Trip, raw: unknown): MergeReport | null {
-  const doc = raw as GeometryDoc | null
-  if (!doc || doc.version !== 1 || typeof doc.routes !== 'object' || doc.routes === null) return null
-
-  const byId = new Map(trip.places.map((p) => [p.id, p]))
+  const doc = asGeometryDoc(raw)
+  if (!doc) return null
   const claimed = new Set<string>()
   const report: MergeReport = { needed: routableLegs(trip).length, used: 0, stale: 0, broken: 0, orphan: 0 }
-
-  for (const day of trip.days) {
-    for (const leg of day.legs) {
-      if (!leg.from || !leg.to) continue
-      const key = routeKey(leg.mode, leg.from, leg.to)
-      const rec = doc.routes[key]
-      if (!rec?.poly) continue
-      claimed.add(key)
-      // 端点校验：地点坐标改过之后，旧路线连的还是旧位置 —— 让它失效
-      if (!same(rec.from, byId.get(leg.from)?.coord) || !same(rec.to, byId.get(leg.to)?.coord)) {
-        report.stale++
-        continue
-      }
-      if (decodePolyline(rec.poly).length < 2) {
-        report.broken++
-        continue
-      }
-      leg.geometry = rec.poly
-      report.used++
-    }
+  for (const m of matchRoutes(trip, doc)) {
+    claimed.add(m.key)
+    report[m.status]++
+    if (m.status === 'used') m.leg.geometry = m.rec.poly
   }
   report.orphan = Object.keys(doc.routes).filter((k) => !claimed.has(k)).length
   return report
+}
+
+/**
+ * 公开版要带走的那部分 geometry.json：只留这份 trip **真会用上**的记录，其余整条丢掉。
+ *
+ * 路线的键是地点 id，而地点 id 派生自英文名 —— 民宿的英文名往往就是门牌；记录里还存着算路时的
+ * 精确起终点坐标。plan.md 里抹掉、模糊掉的东西，原样拷 geometry.json 就等于从旁路又发了一遍。
+ * 拿**抹除并重新解析后**的 trip 来过滤：民宿 id 变了、坐标模糊了，那几段对不上自然被丢掉；
+ * 留下的每一条，地图本来就会画。一条都不剩时返回 null，调用方不写文件。
+ */
+export function filterGeometry(trip: Trip, raw: unknown): GeometryDoc | null {
+  const doc = asGeometryDoc(raw)
+  if (!doc) return null
+  const routes: Record<string, GeometryRecord> = {}
+  for (const m of matchRoutes(trip, doc)) if (m.status === 'used') routes[m.key] = m.rec
+  return Object.keys(routes).length > 0 ? { version: 1, routes } : null
 }
 
 /**

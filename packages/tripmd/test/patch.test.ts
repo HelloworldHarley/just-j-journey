@@ -10,7 +10,9 @@ import { parse } from '../src/parse.ts'
  * 五种 op 都要过：前两种是当前 UI 用的，后三种是增删移与 agent 的预留接口。
  */
 
-const md = readFileSync(join(__dirname, '../../../apps/web/public/data/seattle-2026-10/plan.md'), 'utf8')
+// 吃 _showcase（真行程抹除后的公开版副本）而不是真行程：迁移第 4 步真行程会搬去数据仓库，
+// 而 patch 只动事件 —— 抹除不碰事件，所以锚点（抵达航班 / 午餐）在两份里一样
+const md = readFileSync(join(__dirname, '../../../apps/web/public/data/_showcase/plan.md'), 'utf8')
 
 let trip: Trip
 beforeEach(() => {

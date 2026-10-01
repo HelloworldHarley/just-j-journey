@@ -5,6 +5,7 @@ export { summarize, dayComposition } from './summary.ts'
 export { detailIndex, missingCoords, stayOfMorning, type DetailIndex } from './resolve.ts'
 export {
   decodePolyline,
+  filterGeometry,
   mergeGeometry,
   routableLegs,
   routeKey,
@@ -24,7 +25,9 @@ export {
 export { lex, proseOf, type Token } from './lexer.ts'
 export { toIcs, type IcsOptions } from './ics.ts'
 export * from './values.ts'
-export { buildManifest, manifestIds, publicEntries, type Manifest, type ManifestEntry } from './manifest.ts'
-export { parseSpace, serializeSpace, SPACE_KEYS, type SpaceParseResult } from './space.ts'
-export { sanitize, sanitizeTransport, transportRole, blurCoord, type TransportRole } from './sanitize.ts'
-export { findLeaks, sensitiveValues, type Leak } from './leaks.ts'
+export { buildManifest, isFixtureId, isTripId, manifestIds, publicEntries, type Manifest, type ManifestEntry } from './manifest.ts'
+export { isAbsoluteUrl, parseSpace, serializeSpace, spaceAssets, SPACE_KEYS, type SpaceParseResult } from './space.ts'
+export { sanitize, sanitizeTransport, transportRole, referencedSpan, blurCoord, type TransportRole } from './sanitize.ts'
+export { publicPlan, type PublicPlan } from './public.ts'
+export { constraintValues, findLeaks, sensitiveValues, type Leak } from './leaks.ts'
+export { setFrontmatterScalar } from './frontmatter.ts'

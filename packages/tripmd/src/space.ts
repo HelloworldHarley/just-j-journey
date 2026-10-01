@@ -59,15 +59,19 @@ export function parseSpace(src: string): SpaceParseResult {
       bag.warn(fm.line, `tips「${label}」要么给 image（二维码图片）要么给 url（链接），二选一，已忽略`)
       continue
     }
-    tips.push(image !== undefined ? { label, image } : { label, url })
+    const localImage = image === undefined ? undefined : assetPath(bag, fm.line, image, `tips「${label}」的 image`)
+    if (image !== undefined && localImage === null) continue
+    tips.push(localImage ? { label, image: localImage } : { label, url })
   }
+  const avatarRaw = str(meta['avatar'])
+  const avatar = avatarRaw === undefined ? undefined : (assetPath(bag, fm.line, avatarRaw, 'avatar') ?? undefined)
 
   if (bag.hasErrors) return { space: null, diagnostics: bag.sorted() }
 
   const checked = SpaceSchema.safeParse({
     name,
     handle: str(meta['handle']),
-    avatar: str(meta['avatar']),
+    avatar,
     bio: str(meta['bio']),
     links,
     tips,
@@ -80,6 +84,37 @@ export function parseSpace(src: string): SpaceParseResult {
     return { space: null, diagnostics: bag.sorted() }
   }
   return { space: checked.data, diagnostics: bag.sorted() }
+}
+
+/**
+ * 名片里的一个资源路径 → 规范形态。http(s) 地址原样；本地路径必须相对数据目录、不许越界：
+ * `./avatar.png` 规范成 `avatar.png`（否则 dev 的白名单按字面比对不上，构建却照拷，两边不一致），
+ * 绝对路径、`..` 段、反斜杠一律拒掉并警告 —— `../me.png` 曾经过了 data:check，
+ * 暂存时被拷到数据目录外面，线上是一张裂图。返回 null 表示拒绝
+ */
+function assetPath(bag: DiagnosticBag, line: number, raw: string, what: string): string | null {
+  if (isAbsoluteUrl(raw)) return raw
+  const segs = raw.split('/').filter((s) => s !== '' && s !== '.')
+  if (raw.startsWith('/') || raw.includes('\\') || segs.includes('..') || segs.length === 0) {
+    bag.warn(line, `${what}「${raw}」必须是数据目录里的相对路径（不能以 / 开头、不能有 ..），已忽略`, '写成 `avatar.png` 或 `tips/wechat.png`')
+    return null
+  }
+  return segs.join('/')
+}
+
+/** http(s) 绝对地址：头像 / 二维码可以直接指向远程图片 —— 不在数据目录里，也不归工具检查 */
+export function isAbsoluteUrl(s: string): boolean {
+  return /^https?:\/\//i.test(s)
+}
+
+/**
+ * 名片引用的**本地**文件（头像、打赏二维码），路径相对数据目录。
+ * data:check 查它们在不在，build:public 把它们一起拷走 —— 两边同一份名单。
+ */
+export function spaceAssets(space: Space): string[] {
+  return [space.avatar, ...space.tips.map((t) => t.image)]
+    .filter((f): f is string => Boolean(f))
+    .filter((f) => !isAbsoluteUrl(f))
 }
 
 /** Space → 规范 space.md。与 serialize(trip) 同一条性质：语义幂等、二次往返字节稳定 */

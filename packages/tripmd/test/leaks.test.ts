@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { parse } from '../src/parse.ts'
 import { serialize } from '../src/serialize.ts'
 import { sanitize } from '../src/sanitize.ts'
-import { findLeaks, sensitiveValues } from '../src/leaks.ts'
+import { constraintValues, findLeaks, sensitiveValues } from '../src/leaks.ts'
 
 const md = readFileSync(join(__dirname, 'fixtures/sanitize-full.md'), 'utf8')
 const trip = () => parse(md).trip!
@@ -32,8 +32,9 @@ describe('sensitiveValues', () => {
 })
 
 describe('findLeaks', () => {
-  it('抹过的公开版一处都不该命中', () => {
+  it('抹过的公开版一处都不该命中（黑名单本身非空，断言不是空对空）', () => {
     const t = trip()
+    expect(sensitiveValues(t).length).toBeGreaterThan(10)
     expect(findLeaks(serialize(sanitize(t)), t)).toEqual([])
   })
 
@@ -42,6 +43,28 @@ describe('findLeaks', () => {
     const leaks = findLeaks(serialize(t), t)
     expect(leaks.some((l) => l.value === '$842' && l.inFence)).toBe(true)
     expect(leaks.some((l) => l.value === '777 Made Up Road' && l.inFence)).toBe(true)
+  })
+
+  it('硬约束的 label / note 单独成名单 —— 不靠别处恰好也写了同一个值', () => {
+    // 加一条只出现在硬约束里的值：值机码、门锁密码这类东西作者只会写在这里
+    const t = trip()
+    t.constraints.push({ kind: 'deadline', at: '2026-11-22 12:00', label: '退房 · 门锁密码 9Z7Q', note: '值机码 K2LM8' })
+    expect(constraintValues(t)).toEqual(expect.arrayContaining(['退房 · 门锁密码 9Z7Q', '值机码 K2LM8']))
+    expect(sensitiveValues(t)).not.toContain('值机码 K2LM8') // 不进通用黑名单：它们只在两处查，见下两条
+    // 完整版文本里它们躺在 trip-constraints 围栏里 → 结构块命中（sanitize 若没丢掉整块，就是这个形状）
+    const leaks = findLeaks(serialize(t), t)
+    expect(leaks.some((l) => l.value === '值机码 K2LM8' && l.inFence)).toBe(true)
+    // 抹过的公开版整块没了 → 零命中；正文里复述了 → 提醒
+    expect(findLeaks(serialize(sanitize(t)), t).filter((l) => l.value.includes('K2LM8'))).toEqual([])
+    const prose = findLeaks(serialize(sanitize(t)) + '\n记得带值机码 K2LM8 的截图\n', t).filter((l) => l.value === '值机码 K2LM8')
+    expect(prose.map((l) => l.inFence)).toEqual([false])
+  })
+
+  it('硬约束的 label 与地点同名：在别的结构块里出现不算泄漏 —— 自由文本撞上地点名很正常，不能把构建打挂', () => {
+    const t = trip()
+    t.constraints.push({ kind: 'deadline', at: '2026-11-22 15:00', label: '羽田机场' })
+    const leaks = findLeaks(serialize(sanitize(t)), t)
+    expect(leaks.filter((l) => l.value === '羽田机场')).toEqual([])
   })
 
   it('正文里出现票价：命中但 inFence 为 false（警告级）', () => {

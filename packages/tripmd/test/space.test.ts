@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseSpace, serializeSpace } from '../src/space.ts'
+import { isAbsoluteUrl, parseSpace, serializeSpace, spaceAssets } from '../src/space.ts'
 
 const FULL = `---
 name: 示例
@@ -66,10 +66,38 @@ describe('parseSpace', () => {
     expect(diagnostics[0]?.hint).toContain('bio')
   })
 
+  it('资源路径：./ 规范掉；绝对路径、.. 段、反斜杠拒掉并警告；http(s) 原样', () => {
+    const { space, diagnostics } = parseSpace(
+      '---\nname: A\navatar: ./img/me.png\ntips:\n  - {label: 外, image: ../outside.png}\n  - {label: 根, image: /etc/x.png}\n  - {label: 反, image: "a\\\\b.png"}\n  - {label: 好, image: tips//wx.png}\n  - {label: 远, image: https://example.com/qr.png}\n---\n',
+    )
+    expect(space?.avatar).toBe('img/me.png')
+    expect(space?.tips).toEqual([
+      { label: '好', image: 'tips/wx.png' },
+      { label: '远', image: 'https://example.com/qr.png' },
+    ])
+    expect(diagnostics.filter((d) => d.message.includes('相对路径'))).toHaveLength(3)
+    expect(parseSpace('---\nname: A\navatar: ../me.png\n---\n').space?.avatar).toBeUndefined()
+  })
+
   it('roundtrip：parse ∘ serialize ∘ parse = parse', () => {
     const once = parseSpace(FULL).space!
     const md2 = serializeSpace(once)
     expect(parseSpace(md2).space).toEqual(once)
     expect(serializeSpace(parseSpace(md2).space!)).toBe(md2)
+  })
+})
+
+describe('spaceAssets', () => {
+  it('头像 + 二维码图片，按出现顺序；链接型打赏不算；绝对 URL 不算', () => {
+    const space = parseSpace(FULL).space!
+    expect(spaceAssets(space)).toEqual(['avatar.jpg', 'tips/wechat.png'])
+    expect(spaceAssets({ ...space, avatar: 'https://example.com/a.png' })).toEqual(['tips/wechat.png'])
+    expect(spaceAssets({ ...space, avatar: undefined, tips: [] })).toEqual([])
+  })
+  it('isAbsoluteUrl：只认 http(s)，大小写不敏感；相对路径与协议相对地址都不算', () => {
+    expect(isAbsoluteUrl('https://x/a.png')).toBe(true)
+    expect(isAbsoluteUrl('HTTP://x/a.png')).toBe(true)
+    expect(isAbsoluteUrl('avatar.png')).toBe(false)
+    expect(isAbsoluteUrl('//x/a.png')).toBe(false)
   })
 })

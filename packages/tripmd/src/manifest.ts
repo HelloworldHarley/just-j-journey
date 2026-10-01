@@ -13,12 +13,22 @@ export interface Manifest {
   trips: ManifestEntry[]
 }
 
-/** `_` 前缀目录是仓库自带的示范 / 负向样本，不入册（CI 部署前也会把它们从 dist 删掉） */
+/** `_` 前缀目录是仓库自带的示范 / 负向样本（_example / _demo / _showcase / _broken）：不入册，CI 部署前从 dist 删掉，公开版也不收 */
+export function isFixtureId(id: string): boolean {
+  return id.startsWith('_')
+}
+
+/**
+ * 合法的行程 id = 目录名：字母数字下划线连字符，可以 `_` 开头（dev fixture）；
+ * 没有 `.` 和 `/`，所以拼成路径时 `..` 走不出数据目录。写路径与读路径共用这一条
+ */
+export function isTripId(id: string): boolean {
+  return /^[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(id)
+}
+
 export function buildManifest(entries: readonly ManifestEntry[]): Manifest {
   return {
-    trips: entries
-      .filter((e) => !e.id.startsWith('_'))
-      .map((e) => ({ id: e.id, visibility: e.visibility })),
+    trips: entries.filter((e) => !isFixtureId(e.id)).map((e) => ({ id: e.id, visibility: e.visibility })),
   }
 }
 

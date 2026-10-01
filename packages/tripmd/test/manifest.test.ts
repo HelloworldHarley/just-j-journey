@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildManifest, manifestIds, publicEntries } from '../src/manifest.ts'
+import { buildManifest, isFixtureId, manifestIds, publicEntries } from '../src/manifest.ts'
 
 const entries = [
   { id: 'seattle-2026-10', visibility: 'public' as const },
@@ -8,6 +8,12 @@ const entries = [
 ]
 
 describe('manifest', () => {
+  it('isFixtureId：只看 `_` 前缀', () => {
+    expect(isFixtureId('_demo')).toBe(true)
+    expect(isFixtureId('seattle-2026-10')).toBe(false)
+    expect(isFixtureId('a_b')).toBe(false)
+  })
+
   it('_ 前缀目录不入册，其余带着 visibility', () => {
     expect(buildManifest(entries)).toEqual({
       trips: [

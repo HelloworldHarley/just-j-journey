@@ -5,7 +5,7 @@ import { lex } from './lexer.ts'
  * 抹净断言 —— 拿完整版里**该被抹掉的值**当黑名单，逐个在公开版文本里找。
  *
  * 黑名单从 Trip 现算，不写死任何真值（工具仓库是公开的，真值不能进测试或代码）。
- * 只收足够特异的字段：票价 / 班次号 / 座位 / 预订金额 / 长途备注 / 民宿英文名、备注、精确坐标。
+ * 只收足够特异的字段：票价 / 班次号 / 座位 / 预订金额 / 长途备注 / 民宿英文名、备注、精确坐标 / 硬约束的 label 与 note。
  * carrier、cabin、baggage、refund 这种通用词（「达美」「1 件」）正文里合法出现太多，不进黑名单。
  *
  * 结构块（```trip-* 围栏）里的命中 = sanitize 漏了，致命；正文里的命中只警告 ——
@@ -61,13 +61,24 @@ export function sensitiveValues(trip: Trip): string[] {
   return [...out]
 }
 
+/**
+ * 硬约束的 label / note —— 作者往这里写的恰恰是确认号、值机码、门锁密码。
+ * 单独成一张名单，因为它是自由文本：「派克市场」「AC Hotel」这样的 label 与地点名撞上很正常。
+ * 所以只在两处查：`trip-constraints` 围栏里（出现就说明 sanitize 没把整块丢掉，致命）和正文里（提醒）；
+ * 别的结构块里不查，免得一个与地点同名的 label 把构建打挂
+ */
+export function constraintValues(trip: Trip): string[] {
+  return [...new Set(trip.constraints.flatMap((c) => [c.label, c.note]).map((v) => v?.trim()).filter((v): v is string => Boolean(v && v.length >= 3)))]
+}
+
 export function findLeaks(publicMd: string, source: Trip): Leak[] {
   const values = sensitiveValues(source)
+  const withConstraints = [...values, ...constraintValues(source)]
   const leaks: Leak[] = []
   // 逐行扫描：命中即记一条 Leak，line 是该行在公开版文本里的 1-based 行号
-  const scan = (lines: string[], startLine: number, inFence: boolean): void => {
+  const scan = (lines: string[], startLine: number, inFence: boolean, list = withConstraints): void => {
     lines.forEach((text, i) => {
-      for (const v of values) if (text.includes(v)) leaks.push({ value: v, line: startLine + i, inFence })
+      for (const v of list) if (text.includes(v)) leaks.push({ value: v, line: startLine + i, inFence })
     })
   }
   // 复用词法扫描器（lexer.ts）而不是自己重新数 ``` / ~~~，
@@ -77,7 +88,9 @@ export function findLeaks(publicMd: string, source: Trip): Leak[] {
     if (tok.kind === 'frontmatter') continue // frontmatter 从不装黑名单字段，跳过
     else if (tok.kind === 'line') scan([tok.text], tok.line, false)
     else if (tok.kind === 'heading') scan([`${'#'.repeat(tok.level)} ${tok.text}`], tok.line, false)
-    else if (tok.kind === 'fence' && tok.info.startsWith('trip-')) scan(tok.content.split('\n'), tok.line + 1, true)
+    else if (tok.kind === 'fence' && tok.info.startsWith('trip-')) {
+      scan(tok.content.split('\n'), tok.line + 1, true, tok.info === 'trip-constraints' ? withConstraints : values)
+    }
     else scan(tok.raw.split('\n'), tok.line, false)
   }
   return leaks

@@ -12,6 +12,15 @@ visibility: public
 
 # 抹除测试
 
+## 硬约束
+
+```trip-constraints
+- kind: depart
+  at: 2026-11-22 18:30
+  label: 起飞 · UA34
+  note: 确认号 ABC123，值机柜台 H 区
+```
+
 ## 长途
 
 ```trip-transports
@@ -90,7 +99,16 @@ time: "15:30"
 category: flight
 place: 羽田机场
 detail: 去程
+notes:
+  - 确认号 ABC123 在邮件里，过关排队 30 分钟起
+to_next: {mode: rail, minutes: 25, label: 到达层走到单轨站约 8 分钟, note: 用 Suica 刷闸机}
 ```
+
+我先落地，坐单轨去接她 —— 她的航班晚 40 分钟。
+
+#### 备选 · 她的航班晚点
+
+在到达厅的咖啡店等，别出关。
 
 ### 提车
 
@@ -100,6 +118,7 @@ category: drive
 place: 羽田机场
 detail: 日产 Note
 cost: 停车 ¥500
+booking: {status: booked, deadline: 2026-11-01, note: 取车码 R8Q4 在邮件里}
 to_next: {mode: drive, minutes: 90}
 ```
 
@@ -124,13 +143,16 @@ from_stay: {mode: drive, minutes: 30}
 time: 09:00–11:15
 category: hsr
 place: 京都站
+flags: [needs-booking, optional]
 detail: 新干线
 ```
+
+指定席选右侧，过静冈那段能看到富士山。
 
 ## Day 3 · 2026-11-22
 
 ```trip-day
-from_stay: {mode: drive, minutes: 90}
+from_stay: {mode: drive, minutes: 90, label: 下山直奔机场还车点, note: 17 点前还车，油要加满}
 ```
 
 ### 起飞
@@ -141,6 +163,8 @@ category: flight
 place: 羽田机场
 detail: 返程
 ```
+
+她经香港转机回上海，我直飞。
 
 ## 附录 · 打包清单
 
