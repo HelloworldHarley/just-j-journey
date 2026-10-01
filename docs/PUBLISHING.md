@@ -109,16 +109,37 @@ frontmatter 一行：`visibility: public` 进公开版（抹过）；`private` �
    ```
 
 4. 打开 `.github/workflows/publish.yml`，确认 `JJJ_TOOL_REF` 与第 1 步的 tag 一致。不要完整站就删掉最后那一步。
-5. 首次推送（这个仓库用**个人**账号的身份，别让全局的工作账号签进去）：
+5. 首次推送（这个仓库用**个人**账号：签名用仓库内的 `user.email`，推送走 `github-personal` 这个 SSH 别名 —— 它指向个人账号的密钥。
+   直接写 `git@github.com:` 会用默认密钥，那是工作账号，推送 403。别名的配法见下面「两个 GitHub 账号」）：
 
    ```bash
    cd ../journeys
    git init -b main
    git config user.name "Harley Tang" && git config user.email cntanghengyi@gmail.com
    git add -A && git commit -m "data: personal space and the seattle trip"
-   git remote add origin git@github.com:<user>/journeys.git
+   git remote add origin git@github-personal:HelloworldHarley/journeys.git
    git push -u origin main
    ```
+
+### 两个 GitHub 账号
+
+这台机器上默认密钥与钥匙串里的 HTTPS 凭据都是**工作**账号的；个人账号的仓库（工具仓库、数据仓库）推送要走专用密钥 + SSH 别名，一次配好：
+
+```bash
+ssh-keygen -t ed25519 -C cntanghengyi@gmail.com -f ~/.ssh/id_ed25519_personal
+cat ~/.ssh/id_ed25519_personal.pub        # 贴到 github.com/settings/keys（登录 HelloworldHarley）
+cat >> ~/.ssh/config <<'EOF2'
+
+Host github-personal
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_personal
+  IdentitiesOnly yes
+EOF2
+ssh -T git@github-personal                # 应回 Hi HelloworldHarley!
+```
+
+之后个人账号的远程一律写成 `git@github-personal:HelloworldHarley/<repo>.git`；工作账号的仓库照旧 `git@github.com:`。签名身份另算：个人仓库里要有 repo-local 的 `user.name` / `user.email`（全局是工作账号）。
 
    这一次 Actions 会在部署那一步失败（Cloudflare 的 Secrets 还没配）—— 正常，前面的校验与构建两步已经替你把数据过了一遍关。第五节配完再推一次或手动 Run workflow。
 
