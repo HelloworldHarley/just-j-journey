@@ -46,27 +46,22 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      # 公开版关口 —— 本仓库仍只发完整版；公开版由数据仓库发（templates/publish.yml），
-      # 这里只保证它构得出、抹得净：抹除后结构块里仍有敏感值会直接失败
-      - name: Public build (gate only)
-        run: pnpm build:public --base=/${{ github.event.repository.name }}/
-
       # 地图 worker 的两层历史坑要在两种产物上都重放；CI 没有 Chromium，浏览器层明确报跳过
       - name: Built-map gate, full and public
         run: pnpm check:built && pnpm check:built --public
 
+      # 这个仓库的 Pages 是工具演示站，发的是**公开版**产物：示范行程本身就是抹过的公开版，
+      # 用完整版界面画它会满屏「待填」、带着待办与日历订阅 —— 那是给作者的界面。
+      # build:public 只收 visibility: public、不带 `_` 的行程，示范目录天然不进产物。
       # 项目页挂在 https://<user>.github.io/<repo>/ 下
-      - name: Build
-        run: pnpm --filter @jjj/web build --base=/${{ github.event.repository.name }}/
-
-      - name: Strip dev-only fixtures (_demo / _example / _broken / _showcase)
-        run: find apps/web/dist/data -maxdepth 1 -type d -name '_*' -exec rm -rf {} +
+      - name: Public build
+        run: pnpm build:public --base=/${{ github.event.repository.name }}/
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/web/dist
+          path: apps/web/dist-public
 
       - id: deployment
         uses: actions/deploy-pages@v4

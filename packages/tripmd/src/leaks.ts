@@ -1,5 +1,6 @@
 import type { Trip } from '@jjj/schema'
 import { lex } from './lexer.ts'
+import { blurCoord } from './sanitize.ts'
 
 /**
  * 抹净断言 —— 拿完整版里**该被抹掉的值**当黑名单，逐个在公开版文本里找。
@@ -56,7 +57,12 @@ export function sensitiveValues(trip: Trip): string[] {
     add(p.note)
     add(p.url)
     add(p.gmapsPlaceId)
-    if (p.coord) add(`${p.coord[1]}, ${p.coord[0]}`) // 作者格式：纬度在前
+    // 黑名单的语义是「sanitize 会去掉的值」：坐标只有模糊后真的变了才算。已经只有两位小数的坐标
+    // （比如一份本来就是公开版的行程再过一遍链）模糊前后相同，留在公开版里不是泄漏
+    const blurred = p.coord ? blurCoord(p.coord) : null
+    if (p.coord && blurred && (blurred[0] !== p.coord[0] || blurred[1] !== p.coord[1])) {
+      add(`${p.coord[1]}, ${p.coord[0]}`) // 作者格式：纬度在前
+    }
   }
   return [...out]
 }

@@ -8,7 +8,7 @@
 
 | 面 | 住在哪 | 含什么 | 谁能看 |
 |---|---|---|---|
-| 工具 | 本仓库（公开，可 fork） | 代码；示范数据 `_example` / `_demo` / `_showcase`；示范 `space.md` | 所有人 |
+| 工具 | 本仓库（公开，可 fork） | 代码；示范数据 `_example` / `_demo` 与抹过的 `showcase-seattle-2026-10`；示范 `space.md` | 所有人 |
 | 私人数据 | 你的数据仓库（私有） | `trips/space.md`（+ 头像、二维码）、`trips/<id>/plan.md`（+ `geometry.json`）、一个工作流 | 只有你 |
 | 公开站 | Cloudflare Pages（项目 A，不挂 Access） | `visibility: public` 的行程，**过 sanitize** | 所有人 |
 | 完整站 | Cloudflare Pages（项目 B）+ Access | 全部行程，不抹 | Access 名单里的邮箱 |
@@ -16,16 +16,16 @@
 数据仓库不含代码：工作流每次拉工具仓库的一个 tag 来构建，升级工具 = 改一行 tag。
 两个 Pages 项目都是 wrangler **直传**，Cloudflare 只拿产物、拿不到源文件，数据仓库保持私有。
 GitHub Pages 不参与：Free 账号只能给**公开**仓库开 Pages，而数据仓库里是完整版行程 —— 不能为了 Pages 把它改公开。
-工具仓库自己的 GitHub Pages 继续发演示站（迁移第 4 步之后发的是 `_showcase`）。
+工具仓库自己的 GitHub Pages 发演示站：第 4 步之后部署的是**公开版**产物，内容是 `showcase-seattle-2026-10`。用完整版界面画一份抹过的行程会满屏「待填」，所以演示站必须是公开版。
 
 ## 二、本地怎么跑
 
 ```bash
-JJJ_DATA_DIR=../journeys/trips pnpm look --both          # 完整版 + 公开版并排开在 Chrome 里（dev，HMR；公开版那份逐请求现抹、只列 public 行程，看到的就是要发出去的）
-JJJ_DATA_DIR=../journeys/trips pnpm data:check           # 校验 plan.md / space.md，刷新 manifest.json，生成 calendar.ics
-JJJ_DATA_DIR=../journeys/trips pnpm build                # 完整版 → apps/web/dist
-JJJ_DATA_DIR=../journeys/trips pnpm build:public         # 公开版 → apps/web/dist-public；暂存目录 apps/web/.public-data 可直接翻
-JJJ_DATA_DIR=../journeys/trips pnpm check:built --public # 公开版产物的地图关口（故意用子路径 base 重放 worker 的历史坑；Cloudflare 上挂根路径，更简单）
+JJJ_DATA_DIR=../just-j-journey-personal-space/trips pnpm look --both          # 完整版 + 公开版并排开在 Chrome 里（dev，HMR；公开版那份逐请求现抹、只列 public 行程，看到的就是要发出去的）
+JJJ_DATA_DIR=../just-j-journey-personal-space/trips pnpm data:check           # 校验 plan.md / space.md，刷新 manifest.json，生成 calendar.ics
+JJJ_DATA_DIR=../just-j-journey-personal-space/trips pnpm build                # 完整版 → apps/web/dist
+JJJ_DATA_DIR=../just-j-journey-personal-space/trips pnpm build:public         # 公开版 → apps/web/dist-public；暂存目录 apps/web/.public-data 可直接翻
+JJJ_DATA_DIR=../just-j-journey-personal-space/trips pnpm check:built --public # 公开版产物的地图关口（故意用子路径 base 重放 worker 的历史坑；Cloudflare 上挂根路径，更简单）
 ```
 
 不设 `JJJ_DATA_DIR` 就用仓库自带的 `apps/web/public/data`。`pnpm enrich <dir>` 也读它。
@@ -85,7 +85,7 @@ frontmatter 一行：`visibility: public` 进公开版（抹过）；`private` �
 
 ## 四、建数据仓库（迁移第 2 步）
 
-本地已经搭好一份脚手架：`projects/journeys/`，和工具仓库并排。`trips/` 里是当前的 `space.md`、头像、seattle 行程与路网，`.github/workflows/publish.yml` 是模板的拷贝，`README.md` 写了布局与预览命令。用它跑过整条链：`JJJ_DATA_DIR=../journeys/trips` 下 `data:check` / `build` / `build:public` / `check:built --public` 全绿，首页开关改它的 plan.md 时公开版页面半秒内自己刷新。
+数据仓库是 `HelloworldHarley/just-j-journey-personal-space`（私有），本地目录 `projects/just-j-journey-personal-space/`，和工具仓库并排。`trips/` 里是当前的 `space.md`、头像、seattle 行程与路网，`.github/workflows/publish.yml` 是模板的拷贝，`README.md` 写了布局与预览命令。用它跑过整条链：`JJJ_DATA_DIR=../just-j-journey-personal-space/trips` 下 `data:check` / `build` / `build:public` / `check:built --public` 全绿，首页开关改它的 plan.md 时公开版页面半秒内自己刷新。
 
 1. **工具仓库先提交、打 tag、推上去**，数据仓库钉这个版本：
 
@@ -113,11 +113,11 @@ frontmatter 一行：`visibility: public` 进公开版（抹过）；`private` �
    直接写 `git@github.com:` 会用默认密钥，那是工作账号，推送 403。别名的配法见下面「两个 GitHub 账号」）：
 
    ```bash
-   cd ../journeys
+   cd ../just-j-journey-personal-space
    git init -b main
    git config user.name "Harley Tang" && git config user.email cntanghengyi@gmail.com
    git add -A && git commit -m "data: personal space and the seattle trip"
-   git remote add origin git@github-personal:HelloworldHarley/journeys.git
+   git remote add origin git@github-personal:HelloworldHarley/just-j-journey-personal-space.git
    git push -u origin main
    ```
 
@@ -147,8 +147,8 @@ ssh -T git@github-personal                # 应回 Hi HelloworldHarley!
 
 ```bash
 npx wrangler login
-npx wrangler pages project create <public>  --production-branch main   # 公开站，如 journeys
-npx wrangler pages project create <full>    --production-branch main   # 完整站，如 journeys-full
+npx wrangler pages project create <public>  --production-branch main   # 公开站，如 jjj-harley
+npx wrangler pages project create <full>    --production-branch main   # 完整站，如 jjj-harley-full
 ```
 
 1. 建的都是**直传**项目，不连仓库 —— Cloudflare 永远拿不到源文件，只拿产物。项目名就是地址：`https://<public>.pages.dev` 与 `https://<full>.pages.dev`。
@@ -168,10 +168,10 @@ npx wrangler pages project create <full>    --production-branch main   # 完整�
 | 1 | 工具仓库长出能力（`visibility`、`space.md`、`JJJ_DATA_DIR`、`sanitize`、`build:public`、`_showcase`、模板） | 全套关口 + `build:public` + `check:built --public` | 现有站零变化；真行程仍在工具仓库 |
 | 2 | 建数据仓库：搬 `plan.md` + `geometry.json`、写 `space.md`、放工作流（第四节） | Actions 里校验与构建两步绿（部署那步等第 3 步） | 数据有了家，还没有站；老站照旧 |
 | 3 | Cloudflare 五步（第五节） | 公开站首页是名片、行程是抹过的；完整站要登录，登录后全量 | 两个站都有了 |
-| 4 | 工具仓库删掉真行程；`_showcase` 改名成不带 `_` 的目录（frontmatter `id` 同步改），工具仓库的 Pages 变成演示站 | 老地址显示示范行程 | **对外分享从这一步之后开始** —— 之前发出去的老链接会变成演示站 |
+| 4 ✅ 2026-10-07 | 工具仓库删掉真行程（原始行程文档一并搬进数据仓库 `archive/`）；`_showcase` 改名成不带 `_` 的目录（frontmatter `id` 同步改），工具仓库的 Pages 变成演示站 | 老地址显示示范行程 | **对外分享从这一步之后开始** —— 之前发出去的老链接会变成演示站 |
 | 5 | 文档与旁路：CLAUDE.md / HANDOVER / 记忆改指向；编辑模式 spec 里程碑 ③ 的写回目标改成数据仓库 | — | 收尾 |
 
-`_showcase` 的重生成：`pnpm showcase:refresh <dir>`（`<dir>` 在 `JJJ_DATA_DIR` 里，产物永远写进工具仓库自己的 `apps/web/public/data/_showcase`）。重跑后 `git diff` 一眼看出抹没抹干净。
+示范行程 `showcase-seattle-2026-10` 的重生成：`JJJ_DATA_DIR=../just-j-journey-personal-space/trips pnpm showcase:refresh seattle-2026-10`（`<dir>` 在 `JJJ_DATA_DIR` 里，产物永远写进工具仓库自己的 `apps/web/public/data/showcase-seattle-2026-10`）。重跑后 `git diff` 一眼看出抹没抹干净。
 
 ## 七、验证清单
 

@@ -20,6 +20,13 @@ describe('publicPlan', () => {
     expect(p.prose.every((l) => !l.inFence)).toBe(true)
   })
 
+  it('对已经公开的行程幂等：公开版再走一遍链，文本不变、零致命命中 —— 示范行程就是这样被 build:public 再处理一次的', () => {
+    const once = publicPlan(trip())
+    const twice = publicPlan(once.trip!)
+    expect(twice.fatal).toEqual([])
+    expect(twice.md).toBe(once.md)
+  })
+
   it('负向对照：把完整版当公开版喂进去，结构块命中非空（抹除漏字段时就是这个形状）', () => {
     // publicPlan 自己会 sanitize，这里绕过它直接验 fatal 的口径：完整版文本对自己的黑名单必然满是命中
     const t = trip()

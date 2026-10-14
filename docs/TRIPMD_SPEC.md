@@ -589,6 +589,6 @@ parse(serialize(parse(md)))  深等于  parse(md)
 
 ## 完整示例
 
-见 [`apps/web/public/data/_example/plan.md`](../apps/web/public/data/_example/plan.md)（两天最小示例）和 [`apps/web/public/data/seattle-2026-10/plan.md`](../apps/web/public/data/seattle-2026-10/plan.md)（5 天 37 事件，压力测试）。全要素演示（四类时间、中转、租车、变体、待填槽位）见 [`_demo/plan.md`](../apps/web/public/data/_demo/plan.md) —— 仅本地开发可见。
+见 [`apps/web/public/data/_example/plan.md`](../apps/web/public/data/_example/plan.md)（两天最小示例）和 [`apps/web/public/data/showcase-seattle-2026-10/plan.md`](../apps/web/public/data/showcase-seattle-2026-10/plan.md)（5 天 43 事件，压力测试）。全要素演示（四类时间、中转、租车、变体、待填槽位）见 [`_demo/plan.md`](../apps/web/public/data/_demo/plan.md) —— 仅本地开发可见。
 
 生成新行程请用 [`AUTHORING_PROMPT.md`](./AUTHORING_PROMPT.md)。

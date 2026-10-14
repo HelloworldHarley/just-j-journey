@@ -13,7 +13,7 @@ export interface Manifest {
   trips: ManifestEntry[]
 }
 
-/** `_` 前缀目录是仓库自带的示范 / 负向样本（_example / _demo / _showcase / _broken）：不入册，CI 部署前从 dist 删掉，公开版也不收 */
+/** `_` 前缀目录是仓库自带的 dev-only 样本（_example / _demo / _broken）：不入册，CI 部署前从 dist 删掉，公开版也不收 */
 export function isFixtureId(id: string): boolean {
   return id.startsWith('_')
 }

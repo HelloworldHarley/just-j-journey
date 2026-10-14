@@ -1,7 +1,8 @@
 ---
-id: seattle-2026-10
-title: 西雅图 5 天 4 夜
-destination: Seattle, WA, USA
+id: showcase-seattle-2026-10
+title: 公开示范 · 西雅图 5 天 4 夜
+subtitle: 公开示范 · 抹除敏感信息后的真实行程
+destination: "Seattle, WA, USA"
 timezone: America/Los_Angeles
 start: 2026-10-01
 end: 2026-10-05
@@ -10,40 +11,19 @@ currency: USD
 visibility: public
 ---
 
-# 西雅图 5 天 4 夜
-
-## 硬约束
-
-```trip-constraints
-- kind: arrive
-  at: 2026-10-01 10:40
-  label: 她抵达 SEA · 国际航班
-  note: 我 10:05 先落地，坐 Link 一站去 Tukwila 提车，开回航站楼接她。她过海关取行李约 11:45–12:15 出来
-- kind: deadline
-  at: 2026-10-05 08:30
-  label: 必须还完车（Tukwila 轻轨站）
-  note: 倒推链 08:45 进航站楼 ← 08:30 Link 到机场站 ← 08:25 还完车 ← 07:40 Southcenter 超充补电 ← 07:15 出酒店。合同截止 09:00，留半小时余量
-- kind: depart
-  at: 2026-10-05 10:10
-  label: 我起飞 · DL 1001
-  note: 国内线不托运，08:45 进航站楼直接安检
-- kind: depart
-  at: 2026-10-05 11:45
-  label: 她起飞 · CX 853
-  note: 国际航班，08:45 进航站楼有 3 小时。和我一起到机场，分头安检
-```
+# 公开示范 · 西雅图 5 天 4 夜
 
 ## 长途
 
 ```trip-transports
 - what: 去程 · 汇合
   transport:
-    - {traveler: 她, mode: flight, carrier: 大韩航空, from: PVG T1, to: SEA, dep_time: "11:10", arr_time: "10:40", arr_date: 2026-10-01, duration: 14h30m, baggage: 1 件 · 直挂, refund: 出票 24 小时内可免费取消, price: "$713.33", stops: [{airport: ICN T2, arr_time: "14:20", dep_time: "16:40", leg: 2h10m, wait: 2h20m}], legs: [{number: KE 882, cabin: Economy Saver, seat: 48J}, {number: KE 41, cabin: Economy Saver, seat: 35J}]}
-    - {traveler: 我, mode: flight, carrier: 达美, number: DL 3687, from: SNA A, to: SEA, dep_time: "07:00", arr_time: "10:05", duration: 3h05m, cabin: Delta Main Basic, baggage: 0 件, price: "往返 $226.80"}
+    - {traveler: 她, mode: flight, to: SEA, arr_time: "10:40", arr_date: "2026-10-01"}
+    - {traveler: 我, mode: flight, to: SEA, arr_time: "10:05", arr_date: "2026-10-01"}
 - what: 返程 · 各自起飞
   transport:
-    - {traveler: 我, mode: flight, carrier: 达美, number: DL 1001, from: SEA, to: SNA A, dep_time: "10:10", arr_time: "13:11", duration: 3h01m, cabin: Delta Main Basic, baggage: 0 件, note: 与去程同一张往返票，票价计在去程}
-    - {traveler: 她, mode: flight, carrier: 国泰航空, from: SEA, to: PVG T2, dep_time: "11:45", arr_time: "22:10", arr_day_offset: 1, duration: 19h25m, baggage: 1 件 · 直挂, price: "$949.60", stops: [{airport: HKG T1, arr_date: 2026-10-06, arr_time: "16:45", dep_time: "19:20", leg: 14h0m, wait: 2h35m}], legs: [{number: CX 853, cabin: Economy Light}, {number: CX 362, cabin: Economy Light}], note: 与去程分开的两张单程票，改签互不影响}
+    - {traveler: 我, mode: flight, from: SEA, dep_time: "10:10"}
+    - {traveler: 她, mode: flight, from: SEA, dep_time: "11:45"}
 ```
 
 ## 住宿
@@ -53,11 +33,10 @@ visibility: public
   platform: Airbnb
   from: "2026-10-01 18:30"
   to: "2026-10-02 08:00"
-  cost: $339.42
   room: 独栋木屋 · 自助入住/退房
   parking: 含 · 门口 · 免费特斯拉充电桩
   breakfast: 不含
-  refund: 9/26 16:00 前可免费取消
+  refund: "9/26 16:00 前可免费取消"
 - what: AC Hotel
   platform: 万豪 · AC Hotels
   from: "2026-10-02 20:50"
@@ -73,10 +52,9 @@ visibility: public
   platform: Turo
   from: "2026-10-01 10:30"
   to: "2026-10-05 09:00"
-  cost: $343.60
   pickup: Tukwila 轻轨站
   dropoff: Tukwila 轻轨站
-  mileage: 2000 英里
+  mileage: "2000 英里"
   refund: 不可退
 ```
 
@@ -92,81 +70,79 @@ visibility: public
   en: Tukwila International Boulevard Station
   coord: 47.4639, -122.2878
   category: transit
-  note: 3651 Southcenter Blvd。Turo 交/还车点，机场 Link 北行一站
+  note: "3651 Southcenter Blvd。Turo 交/还车点，机场 Link 北行一站"
 - name: Southcenter 超充
   en: Tesla Supercharger Southcenter Tukwila
   coord: 47.4553, -122.2566
   category: logistics
-  note: 333 Strander Blvd，16 桩 250 kW。离交车点 5 分钟、离大华 3 分钟、离 Kent 烤肉 10 分钟
+  note: "333 Strander Blvd，16 桩 250 kW。离交车点 5 分钟、离大华 3 分钟、离 Kent 烤肉 10 分钟"
 - name: Sharps RoastHouse
   en: Sharps RoastHouse SeaTac WA
-  coord: 47.4360, -122.2966
+  coord: 47.436, -122.2966
   category: food
-  note: 18427 International Blvd，机场跑道边。坐标约，订位前核对
-- name: 99 Ranch 大华
-  en: 99 Ranch Market Kent WA
+  note: "18427 International Blvd，机场跑道边。坐标约，订位前核对"
+- name: "99 Ranch 大华"
+  en: "99 Ranch Market Kent WA"
   coord: 47.4415, -122.2242
   category: logistics
   note: Great Wall Mall（18230 E Valley Hwy），坐标约
 - name: Tehaleh Rainier View Point
   en: Tehaleh Rainier View Point Bonney Lake WA
-  coord: 47.1290, -122.1758
+  coord: 47.129, -122.1758
   category: viewpoint
   note: 坐标待现场核对，Nominatim 查不到
 - name: Longmire
   en: Longmire Mount Rainier National Park
-  coord: 46.7502, -121.8120
+  coord: 46.7502, -121.812
   category: outdoor
 - name: Mt. Rainier Getaway
-  en: 31222 555th Street East Ashford WA 98304
-  coord: 46.7550, -122.0200
+  coord: 46.76, -122.02
   category: homestay
-  note: 坐标按门牌地址精确定位（OSM）。Ashford 镇东侧私人社区，距 Nisqually 园门约 10 分钟车程
 - name: Paradise
   en: Paradise Jackson Visitor Center Mount Rainier
-  coord: 46.7860, -121.7355
+  coord: 46.786, -121.7355
   category: outdoor
 - name: Narada Falls
   en: Narada Falls Mount Rainier
-  coord: 46.7750, -121.7459
+  coord: 46.775, -121.7459
   category: viewpoint
 - name: 倒影湖
   en: Reflection Lakes Mount Rainier
-  coord: 46.7690, -121.7290
+  coord: 46.769, -121.729
   category: outdoor
 - name: Stevens Canyon Road
   en: Stevens Canyon Road Mount Rainier
-  coord: 46.7580, -121.6400
+  coord: 46.758, -121.64
   category: viewpoint
 - name: Tipsoo Lake
   en: Tipsoo Lake Mount Rainier
-  coord: 46.8690, -121.5170
+  coord: 46.869, -121.517
   category: outdoor
 - name: Asadero Sinaloa
   en: Asadero Prime Kent WA
-  coord: 47.3831, -122.2470
+  coord: 47.3831, -122.247
   category: food
-  note: 实际店名 Asadero Prime，310 Washington Ave N, Kent
+  note: "实际店名 Asadero Prime，310 Washington Ave N, Kent"
 - name: AC Hotel
   en: AC Hotel by Marriott Seattle Downtown
   coord: 47.6191, -122.3308
   category: hotel
-  note: 117 Yale Ave N，South Lake Union / Denny Triangle —— 坐标按门牌地址精确定位（OSM）。步行 8 分钟到 Kenmore Air 码头、10 分钟到玻璃球
+  note: "117 Yale Ave N，South Lake Union / Denny Triangle —— 坐标按门牌地址精确定位（OSM）。步行 8 分钟到 Kenmore Air 码头、10 分钟到玻璃球"
 - name: 派克市场
   en: Pike Place Market
   coord: 47.6097, -122.3422
   category: food
 - name: 亚马逊玻璃球
   en: Amazon Spheres Seattle
-  coord: 47.6155, -122.3390
+  coord: 47.6155, -122.339
   category: sight
 - name: Kenmore Air 联合湖码头
   en: Kenmore Air Lake Union Seaplane Terminal
-  coord: 47.6280, -122.3395
+  coord: 47.628, -122.3395
   category: experience
 - name: Seattle Center
   en: Seattle Center
-  coord: 47.6221, -122.3540
+  coord: 47.6221, -122.354
   category: sight
 - name: 单轨 Seattle Center 站
   en: Seattle Center Monorail Station
@@ -186,23 +162,23 @@ visibility: public
   category: transit
 - name: Bainbridge 渡轮码头
   en: Bainbridge Island Ferry Terminal
-  coord: 47.6222, -122.5100
+  coord: 47.6222, -122.51
   category: transit
 - name: Sequim 超充
   en: Tesla Supercharger Sequim WA
   coord: 48.0708, -123.0738
   category: logistics
-  note: 1441 E Washington St（Holiday Inn Express 停车场），8 桩 150 kW
+  note: "1441 E Washington St（Holiday Inn Express 停车场），8 桩 150 kW"
 - name: Olympic Game Farm
   en: Olympic Game Farm Sequim WA
   coord: 48.1335, -123.1478
   category: experience
-  note: 1423 Ward Rd。秋季 09:00–16:00，闭园前 45 分钟停止入场
+  note: "1423 Ward Rd。秋季 09:00–16:00，闭园前 45 分钟停止入场"
 - name: Lake Crescent Lodge
   en: Lake Crescent Lodge Olympic National Park
-  coord: 48.0571, -123.8000
+  coord: 48.0571, -123.8
   category: food
-  note: 416 Lake Crescent Rd，湖边老木屋旅馆，餐厅 Singer's Table 供午餐
+  note: "416 Lake Crescent Rd，湖边老木屋旅馆，餐厅 Singer's Table 供午餐"
 - name: Marymere Falls 步道口
   en: Storm King Ranger Station Marymere Falls Trailhead
   coord: 48.0579, -123.7886
@@ -212,12 +188,12 @@ visibility: public
   en: Hurricane Ridge Visitor Center Olympic National Park
   coord: 47.9692, -123.4865
   category: viewpoint
-  note: 坐标取 Hurricane Ridge Road 终点停车场（OSM 路网）。海拔 5,242 英尺，游客中心 2023 年烧毁，山顶服务有限、厕所是移动式
+  note: "坐标取 Hurricane Ridge Road 终点停车场（OSM 路网）。海拔 5,242 英尺，游客中心 2023 年烧毁，山顶服务有限、厕所是移动式"
 - name: Next Door Gastropub
   en: Next Door Gastropub Port Angeles WA
   coord: 48.1194, -123.4341
   category: food
-  note: 113 W Front St，Port Angeles 市中心
+  note: "113 W Front St，Port Angeles 市中心"
 ```
 
 ## Day 1 · 2026-10-01
@@ -237,24 +213,19 @@ time: "10:05"
 category: flight
 place: SEA 机场
 detail: 去程 · 汇合
-to_next: {mode: rail, minutes: 15, label: 到达层走到 Link 站约 10 分钟，北行一站 3 分钟到 Tukwila International Blvd, note: ORCA 或手机刷闸机，$3 左右}
+to_next: {mode: rail, minutes: 15}
 ```
-
-我 10:05 落地，国内线不托运，10:20 前就能出来 —— **不等她，直接坐 Link 去提车**。
-
-她 10:40 落地，开始过海关取行李，正好是我提车的窗口。
 
 ### 提车 · Tesla Model Y
 
 ```trip-event
-time: 10:40–11:00
+time: "10:40–11:00"
 category: drive
 place: Tukwila 轻轨站
-detail: Tesla Model Y
-booking: {status: booked}
 notes:
   - 拍全车视频存证 / 看一眼电量和轮胎 / 问清还车电量要求
   - 有 FSD 辅助驾驶 —— 先在 I-5 上熟悉一段再上山路，别在盘山路第一次开
+detail: Tesla Model Y
 to_next: {mode: drive, minutes: 10, label: 开回航站楼，国际到达层外接客道等她}
 ```
 
@@ -263,7 +234,7 @@ Turo 车主在轻轨站交车，一个人办手续最快。提完车开回航站
 ### 接她 · 汇合
 
 ```trip-event
-time: 11:45–12:15
+time: "11:45–12:15"
 category: logistics
 place: SEA 机场
 flags: [warning]
@@ -275,7 +246,7 @@ to_next: {mode: drive, minutes: 10, label: 出机场上 WA-518 转南下}
 ### 午餐 · 机场边的烟熏烤肉
 
 ```trip-event
-time: 12:25–13:30
+time: "12:25–13:30"
 category: food
 place: Sharps RoastHouse
 cost: 约 $30/人
@@ -289,14 +260,14 @@ to_next: {mode: drive, minutes: 15, label: 去 Kent 的大华}
 ### 补货 · 99 Ranch 大华
 
 ```trip-event
-time: 13:45–14:30
+time: "13:45–14:30"
 category: logistics
-place: 99 Ranch 大华
+place: "99 Ranch 大华"
 flags: [warning]
 notes:
   - 别跳过这一站：Ashford 晚上没有可靠补给，明天雷尼尔全线更是没有任何吃饭的地方
   - 买：水、零食、明早的咖啡面包、今晚的晚餐食材（木屋有灶台）
-  - "自热锅是明天中午背上山的午饭 —— 按人头买够，再配点干粮"
+  - 自热锅是明天中午背上山的午饭 —— 按人头买够，再配点干粮
   - "提车时电量低于 60% 就顺手去 3 分钟外的 Southcenter 超充补 15 分钟 —— 到木屋之前没有别的桩"
 to_next: {mode: drive, minutes: 40, label: WA-167 经 Puyallup 转 410 往 Bonney Lake 方向}
 ```
@@ -306,7 +277,7 @@ Great Wall Mall 里的大华超市，自热锅、亚洲零食一站配齐。
 ### Tehaleh 雪山合影
 
 ```trip-event
-time: 15:15–15:40
+time: "15:15–15:40"
 category: viewpoint
 place: Tehaleh Rainier View Point
 flags: [optional]
@@ -320,7 +291,7 @@ Bonney Lake 南边的观景台，零遮挡，巨大的雷尼尔怼在眼前 —�
 ### Longmire 历史区
 
 ```trip-event
-time: 17:30–18:05
+time: "17:30–18:05"
 category: outdoor
 place: Longmire
 flags: [optional]
@@ -339,14 +310,13 @@ to_next: {mode: drive, minutes: 25, label: 出园回木屋}
 time: "18:30"
 category: homestay
 place: Mt. Rainier Getaway
-detail: Mt. Rainier Getaway
-booking: {status: booked}
 notes:
   - 自助入住/退房，她航班晚点也进得去 —— 门锁密码提前离线存好
-  - "到了先插充电桩（房源免费）—— 明天 220 英里山路，出发要满电"
+  - 到了先插充电桩（房源免费）—— 明天 220 英里山路，出发要满电
   - 山区夜里 4–7°C，厚外套 + 拖鞋
   - 睡前查一次 NPS 步道状况，Paradise 结冰就把冰爪备在包顶
-  - 时差克星是早睡 —— 明早 08:00 出门
+  - "时差克星是早睡 —— 明早 08:00 出门"
+detail: Mt. Rainier Getaway
 ```
 
 晚餐两条路：**木屋有灶台**，用大华买的食材简单做点；或者干脆路上解决 —— **Copper Creek Inn**（园门方向 7 分钟，黑莓派是招牌）约 20:00 打烊，来得及。
@@ -385,14 +355,14 @@ to_next: {mode: drive, minutes: 60, km: 26, label: 木屋 → Nisqually 门约 1
 ### Paradise · Glacier Vista + Myrtle Falls
 
 ```trip-event
-time: 09:00–12:00
+time: "09:00–12:00"
 category: outdoor
 place: Paradise
 flags: [warning]
 cost: 雷尼尔门票 $30/车（7 天有效）
 notes:
   - 昨天进过 Longmire 的话门票已买，直接刷
-  - "全天山里没有任何吃饭的地方 —— 自热锅 + 干粮背上山，午饭在 Glacier Vista 解决"
+  - 全天山里没有任何吃饭的地方 —— 自热锅 + 干粮背上山，午饭在 Glacier Vista 解决
   - 清晨步道结霜，轻便冰爪（microspikes）+ 登山杖带上 —— 早上停车场有步道状况告示板，结冰就穿
 to_next: {mode: drive, minutes: 10, label: 出 Paradise 下行}
 ```
@@ -408,7 +378,7 @@ to_next: {mode: drive, minutes: 10, label: 出 Paradise 下行}
 ### Narada Falls
 
 ```trip-event
-time: 12:15–12:35
+time: "12:15–12:35"
 category: viewpoint
 place: Narada Falls
 notes:
@@ -421,7 +391,7 @@ to_next: {mode: drive, minutes: 5, label: 转上 Stevens Canyon Road}
 ### 倒影湖
 
 ```trip-event
-time: 12:45–13:05
+time: "12:45–13:05"
 category: outdoor
 place: 倒影湖
 to_next: {mode: drive, minutes: 5}
@@ -432,7 +402,7 @@ to_next: {mode: drive, minutes: 5}
 ### Stevens Canyon Road 跑山
 
 ```trip-event
-time: 13:10–14:20
+time: "13:10–14:20"
 category: viewpoint
 place: Stevens Canyon Road
 notes:
@@ -445,10 +415,10 @@ to_next: {mode: drive, label: 继续沿 123 号 / 410 公路北上}
 ### Tipsoo Lake 湖边小环线
 
 ```trip-event
-time: 14:25–14:55
+time: "14:25–14:55"
 category: outdoor
 place: Tipsoo Lake
-to_next: {mode: drive, minutes: 100, km: 105, label: 410 出山向西北，经 Enumclaw 到 Kent}
+to_next: {mode: drive, minutes: 100, km: 105, label: "410 出山向西北，经 Enumclaw 到 Kent"}
 ```
 
 东侧 Chinook Pass。**只走湖边约 0.5 英里，10 分钟拿到 90% 的景。**
@@ -458,14 +428,12 @@ to_next: {mode: drive, minutes: 100, km: 105, label: 410 出山向西北，经 E
 ### 收官 · Kent 和牛烤肉
 
 ```trip-event
-time: 16:45–18:00
+time: "16:45–18:00"
 category: food
 place: Asadero Sinaloa
-flags: [needs-booking]
-booking: {status: required}
 cost: 约 $90/人
 notes:
-  - 周五生意火，按 16:45 订位（周五营业 11:00–22:00 已核实）
+  - "周五生意火，按 16:45 订位（周五营业 11:00–22:00 已核实）"
   - 时间偏早不算亏 —— 早饭 7 点多吃的、午饭是 11 点多的自热锅，到这正好饿；吃完还有日落场
 to_next: {mode: drive, minutes: 35, label: WA-167 转 410 到 Tehaleh, note: 天阴就跳过日落场，直接去 Southcenter 充电回城}
 ```
@@ -477,7 +445,7 @@ to_next: {mode: drive, minutes: 35, label: WA-167 转 410 到 Tehaleh, note: 天
 ### Tehaleh 雪山日落
 
 ```trip-event
-time: 18:35–19:05
+time: "18:35–19:05"
 category: viewpoint
 place: Tehaleh Rainier View Point
 flags: [optional]
@@ -491,7 +459,7 @@ to_next: {mode: drive, minutes: 50, label: 走 167 北上到 Southcenter}
 ### Southcenter 超充
 
 ```trip-event
-time: 19:55–20:20
+time: "19:55–20:20"
 category: logistics
 place: Southcenter 超充
 cost: 约 $25
@@ -508,12 +476,11 @@ to_next: {mode: drive, minutes: 25, label: I-5 北上市中心，停 SpotHero �
 time: "20:50"
 category: hotel
 place: AC Hotel
-detail: AC Hotel
-booking: {status: booked}
 cost: SpotHero 地库过夜 $15–30/晚 × 3
 notes:
   - 行李全部搬进房间，车里不留任何东西 —— 西雅图车内盗窃率很高
   - 车停 SpotHero 封闭安保地库，有 L2 充电位的优先 —— 明早还要开去派克市场
+detail: AC Hotel
 ```
 
 **接下来三晚不挪窝** —— 两个住宿点跑完全程，晚上回来永远是同一张床。
@@ -534,7 +501,7 @@ from_stay: {mode: drive, minutes: 8, label: 地库取车去派克市场, note: �
 ### 派克市场 · 泡一个上午
 
 ```trip-event
-time: 10:15–13:10
+time: "10:15–13:10"
 category: food
 place: 派克市场
 cost: 市场地库停车约 $15–20
@@ -552,14 +519,13 @@ to_next: {mode: drive, minutes: 6, label: 出地库停进玻璃球访客车库�
 ### 亚马逊玻璃球
 
 ```trip-event
-time: 13:30–14:45
+time: "13:30–14:45"
 category: sight
 place: 亚马逊玻璃球
-booking: {status: booked}
 cost: 访客车库 2021 7th Ave 约 $15
 notes:
   - "已预约 13:30 场，免费，凭预约进入"
-to_next: {mode: drive, minutes: 10, label: 北上联合湖码头, note: 码头有收费停车场；16:00 起飞前有一个多小时富余}
+to_next: {mode: drive, minutes: 10, label: 北上联合湖码头, note: "码头有收费停车场；16:00 起飞前有一个多小时富余"}
 ```
 
 **这趟唯一的开放日**（每月仅第一、三个周六对公众开放），凭预约进入。玻璃穹顶内的热带雨林，1 小时够。
@@ -567,15 +533,14 @@ to_next: {mode: drive, minutes: 10, label: 北上联合湖码头, note: 码头�
 ### 水上飞机天际线之旅
 
 ```trip-event
-time: 16:00–16:30
+time: "16:00–16:30"
 category: experience
 place: Kenmore Air 联合湖码头
-booking: {status: booked}
 cost: $159 × 2 = $318
 notes:
   - "已订 16:00–16:30 场"
   - 下午热对流比上午明显，会颠一点 —— 非嗜睡型晕车药 + 姜糖，起飞前 30 分钟吃
-  - "被取消没有当天备份 —— 唯一的补救是和 Day 4 整体互换（见上）"
+  - 被取消没有当天备份 —— 唯一的补救是和 Day 4 整体互换（见上）
   - 市中心上空有空域限制，不会绕着太空针塔盘旋，是从侧上方远观
 to_next: {mode: drive, minutes: 8, label: 去 Seattle Center 停车场, note: 不去 Seattle Center 就直接开去 Kerry Park，早到占位}
 ```
@@ -585,7 +550,7 @@ to_next: {mode: drive, minutes: 8, label: 去 Seattle Center 停车场, note: �
 ### Seattle Center
 
 ```trip-event
-time: 16:40–17:05
+time: "16:40–17:05"
 category: sight
 place: Seattle Center
 flags: [optional]
@@ -600,7 +565,7 @@ to_next: {mode: walk, minutes: 3, label: 走到单轨站}
 ### 单轨穿 MoPOP · 往返
 
 ```trip-event
-time: 17:10–17:35
+time: "17:10–17:35"
 category: viewpoint
 place: 单轨 Seattle Center 站
 flags: [optional]
@@ -613,7 +578,7 @@ to_next: {mode: drive, minutes: 6, label: 取车去 Kerry Park, note: 山上路�
 ### 凯里公园日落
 
 ```trip-event
-time: 17:50–19:05
+time: "17:50–19:05"
 category: viewpoint
 place: 凯里公园
 to_next: {mode: drive, minutes: 5}
@@ -626,11 +591,9 @@ to_next: {mode: drive, minutes: 5}
 ### 晚餐 · Queen Anne
 
 ```trip-event
-time: 19:20–21:00
+time: "19:20–21:00"
 category: food
 place: How to Cook a Wolf
-flags: [needs-booking]
-booking: {status: required}
 cost: 约 $80/人
 notes:
   - 周六晚必须订位
@@ -647,10 +610,10 @@ to_next: {mode: drive, minutes: 12, label: 开回 AC Hotel 停地库}
 time: "21:15"
 category: hotel
 place: AC Hotel
-detail: AC Hotel
 notes:
-  - 明早 06:45 出发赶 07:55 的渡轮 —— 今晚把明天的水、零食、外套放到车里
-  - 电量低于 80% 的话，地库有 L2 就插上过夜；没有就明早在 Sequim 超充多充 10 分钟
+  - "明早 06:45 出发赶 07:55 的渡轮 —— 今晚把明天的水、零食、外套放到车里"
+  - "电量低于 80% 的话，地库有 L2 就插上过夜；没有就明早在 Sequim 超充多充 10 分钟"
+detail: AC Hotel
 ```
 
 ## Day 4 · 2026-10-04
@@ -669,14 +632,14 @@ from_stay: {mode: drive, minutes: 8, label: 市中心下到 Colman Dock 车道�
 ### 渡轮 · Colman Dock 排队上船
 
 ```trip-event
-time: 07:20–07:55
+time: "07:20–07:55"
 category: ferry
 place: Colman Dock 渡轮码头
 cost: 车 + 司机 $19.20 × 2（往返各收）+ 乘客 $11.35（西向收一次）
 notes:
   - "07:55 班（周日夏季时刻表；秋季表 9/20 起生效，出发前在 WSDOT 核一眼）—— 车道排队要提前 30 分钟到，没赶上 08:55 还有一班"
   - Seattle–Bainbridge 航线不接受预订，先到先上；周日早上西向车流稀
-  - 刷卡有 3% 附加费，带张现金卡也行
+  - "刷卡有 3% 附加费，带张现金卡也行"
 to_next: {mode: ferry, minutes: 35, label: 车开上船，人上甲板看西雅图天际线缩小}
 ```
 
@@ -685,7 +648,7 @@ to_next: {mode: ferry, minutes: 35, label: 车开上船，人上甲板看西雅�
 ### 下船 · Bainbridge
 
 ```trip-event
-time: 08:30–08:35
+time: "08:30–08:35"
 category: logistics
 place: Bainbridge 渡轮码头
 to_next: {mode: drive, minutes: 90, label: WA-305 → WA-3 → Hood Canal 浮桥 → US-101 到 Sequim，54 英里}
@@ -696,7 +659,7 @@ to_next: {mode: drive, minutes: 90, label: WA-305 → WA-3 → Hood Canal 浮桥
 ### Sequim 超充 · 早餐
 
 ```trip-event
-time: 10:05–10:30
+time: "10:05–10:30"
 category: logistics
 place: Sequim 超充
 cost: 约 $20
@@ -710,13 +673,13 @@ Holiday Inn Express 停车场里的 8 桩 150 kW，隔壁买咖啡当早餐。
 ### Olympic Game Farm · 车窗喂动物
 
 ```trip-event
-time: 10:40–11:40
+time: "10:40–11:40"
 category: experience
 place: Olympic Game Farm
 flags: [optional]
 cost: $25/人 + 面包 $5/条
 notes:
-  - 秋季 09:00–16:00，全封闭车辆才能进 —— 只能开侧窗，人全程不下车
+  - "秋季 09:00–16:00，全封闭车辆才能进 —— 只能开侧窗，人全程不下车"
   - 面包在售票处买，别自带；牦牛和野牛会把整个头伸进车窗，特斯拉的窗别开太大
 to_next: {mode: drive, minutes: 70, label: 回 101 西行，穿过 Port Angeles 到新月湖，37 英里}
 ```
@@ -726,12 +689,12 @@ to_next: {mode: drive, minutes: 70, label: 回 101 西行，穿过 Port Angeles 
 ### 新月湖 · Lake Crescent Lodge 午餐
 
 ```trip-event
-time: 12:50–13:45
+time: "12:50–13:45"
 category: food
 place: Lake Crescent Lodge
 cost: 约 $25/人
 notes:
-  - 餐厅 Singer's Table 供午餐（旅馆开到 12 月），坐落地窗那侧看湖
+  - "餐厅 Singer's Table 供午餐（旅馆开到 12 月），坐落地窗那侧看湖"
 to_next: {mode: drive, minutes: 3, label: 湖边路开到 Storm King 停车场}
 ```
 
@@ -740,14 +703,14 @@ to_next: {mode: drive, minutes: 3, label: 湖边路开到 Storm King 停车场}
 ### Marymere Falls · 温带雨林步道
 
 ```trip-event
-time: 13:50–15:00
+time: "13:50–15:00"
 category: outdoor
 place: Marymere Falls 步道口
 cost: 奥林匹克门票 $30/车（7 天有效）
 notes:
   - 往返 1.8 英里、爬升约 300 英尺，平缓好走 —— 最后到瀑布观景台有一段木台阶
   - Storm King 护林站季节性关闭，步道照常；停车场就在 101 边上
-to_next: {mode: drive, minutes: 70, label: 101 东行 30 分钟回 Port Angeles，再上 Hurricane Ridge Road 18 英里盘山约 40 分钟, note: 这段 ORS 路网没有，地图上画虚线是正常的}
+to_next: {mode: drive, minutes: 70, label: "101 东行 30 分钟回 Port Angeles，再上 Hurricane Ridge Road 18 英里盘山约 40 分钟", note: 这段 ORS 路网没有，地图上画虚线是正常的}
 ```
 
 穿过 101 下面的隧道进林子：**几百年的道格拉斯冷杉、西部红雪松、挂满苔藓的枫树**，脚下是蕨类和倒木 —— 温带雨林的教科书剖面，雨天反而更好看。90 英尺的 Marymere Falls 落在尽头。
@@ -757,7 +720,7 @@ to_next: {mode: drive, minutes: 70, label: 101 东行 30 分钟回 Port Angeles�
 ### 飓风岭
 
 ```trip-event
-time: 16:10–17:30
+time: "16:10–17:30"
 category: viewpoint
 place: 飓风岭
 flags: [warning]
@@ -779,14 +742,14 @@ to_next: {mode: drive, minutes: 35, label: 下山回 Port Angeles 市中心}
 ### 晚餐 · Port Angeles
 
 ```trip-event
-time: 18:05–19:00
+time: "18:05–19:00"
 category: food
 place: Next Door Gastropub
 cost: 约 $35/人
 notes:
-  - 周日晚不用订位，Port Angeles 的店 21:00 前后打烊，别拖到太晚
+  - "周日晚不用订位，Port Angeles 的店 21:00 前后打烊，别拖到太晚"
   - "19:00 出发是为了赶 21:45 的渡轮 —— 想吃慢点就跳过 Sequim 补电（电量 > 40% 就够回城），能多坐 20 分钟"
-to_next: {mode: drive, minutes: 35, label: 101 东行回 Sequim，19 英里}
+to_next: {mode: drive, minutes: 35, label: "101 东行回 Sequim，19 英里"}
 ```
 
 **Next Door Gastropub** —— 本地精酿 + 汉堡和海鲜，Port Angeles 市中心评价最稳的一家。
@@ -796,20 +759,20 @@ to_next: {mode: drive, minutes: 35, label: 101 东行回 Sequim，19 英里}
 ### Sequim 超充 · 回程补电
 
 ```trip-event
-time: 19:35–19:55
+time: "19:35–19:55"
 category: logistics
 place: Sequim 超充
 flags: [optional]
 cost: 约 $15
 notes:
   - "到 PA 时电量 > 40% 就不用停 —— 回城 54 英里 + 明早 Southcenter 补电前 20 英里足够；低于 40% 才补 15 分钟"
-to_next: {mode: drive, minutes: 92, label: 101 → Hood Canal 浮桥 → WA-3 → WA-305 到 Bainbridge 码头，54 英里}
+to_next: {mode: drive, minutes: 92, label: "101 → Hood Canal 浮桥 → WA-3 → WA-305 到 Bainbridge 码头，54 英里"}
 ```
 
 ### 渡轮 · Bainbridge 排队上船
 
 ```trip-event
-time: 21:30–21:45
+time: "21:30–21:45"
 category: ferry
 place: Bainbridge 渡轮码头
 notes:
@@ -822,7 +785,7 @@ to_next: {mode: ferry, minutes: 35, label: 甲板上看西雅图夜景整体放�
 ### 下船 · Colman Dock
 
 ```trip-event
-time: 22:20–22:25
+time: "22:20–22:25"
 category: logistics
 place: Colman Dock 渡轮码头
 to_next: {mode: drive, minutes: 8, label: 开回 AC Hotel 停地库}
@@ -838,7 +801,7 @@ flags: [warning]
 notes:
   - 两个人的登机牌都在线办掉（DL 和 CX）
   - 行李今晚收完，明早不留任何决策
-  - 闹钟 06:30，07:15 出发
+  - "闹钟 06:30，07:15 出发"
 ```
 
 倒推链从现在开始：**明早 07:15 出酒店 → 07:40 Southcenter 补电 → 08:25 前还完车 → 08:45 进航站楼。**
@@ -856,7 +819,7 @@ sunset: "18:44"
 ### 退房出发
 
 ```trip-event
-time: 07:00–07:15
+time: "07:00–07:15"
 category: logistics
 place: AC Hotel
 to_next: {mode: drive, minutes: 25, label: 清晨 I-5 空旷直奔 Southcenter}
@@ -867,7 +830,7 @@ to_next: {mode: drive, minutes: 25, label: 清晨 I-5 空旷直奔 Southcenter}
 ### Southcenter 超充 · 交车前补电
 
 ```trip-event
-time: 07:40–08:00
+time: "07:40–08:00"
 category: logistics
 place: Southcenter 超充
 cost: 约 $15
@@ -879,14 +842,14 @@ to_next: {mode: drive, minutes: 5, label: Strander Blvd 开到 Tukwila 轻轨站
 ### 还车 · Tukwila 轻轨站
 
 ```trip-event
-time: 08:05–08:25
+time: "08:05–08:25"
 category: drive
 place: Tukwila 轻轨站
-detail: Tesla Model Y
 flags: [warning]
 notes:
   - "08:25 前还完 —— 合同 09:00 截止，但再晚压缩的是她的国际航班缓冲"
   - 拍全车视频 / 清空车内 / 截图交车时的电量和里程
+detail: Tesla Model Y
 to_next: {mode: rail, minutes: 15, label: Link 南行一站 3 分钟到机场站，走天桥到航站楼约 10 分钟}
 ```
 
@@ -895,7 +858,7 @@ to_next: {mode: rail, minutes: 15, label: Link 南行一站 3 分钟到机场站
 ### 进航站楼
 
 ```trip-event
-time: 08:45–09:00
+time: "08:45–09:00"
 category: logistics
 place: SEA 机场
 ```
@@ -910,8 +873,6 @@ category: flight
 place: SEA 机场
 detail: 返程 · 各自起飞
 ```
-
-我 10:10 先飞，13:11 落 SNA；她 11:45 起飞，经香港 **10/6 晚 22:10 落浦东**。
 
 ## 附录 · 出发前必办清单
 

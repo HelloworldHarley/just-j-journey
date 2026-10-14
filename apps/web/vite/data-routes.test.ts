@@ -83,7 +83,7 @@ describe('dataRoute（分派）', () => {
 })
 
 describe('manifestRoute', () => {
-  it('完整版 dev：真行程全列，示范只列 _demo（_showcase 和来源真行程是同一趟，首页不要两张）；公开版：只列 public 且不含示范', () => {
+  it('完整版 dev：真行程全列，示范只列 _demo；公开版：只列 public 且不含示范', () => {
     const full = JSON.parse(body(manifestRoute(root, false))) as { trips: { id: string }[] }
     expect(full.trips.map((t) => t.id).sort()).toEqual(['_demo', 'priv', 'pub'])
     const pub = JSON.parse(body(manifestRoute(root, true))) as { trips: { id: string }[] }

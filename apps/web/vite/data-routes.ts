@@ -81,9 +81,9 @@ export function isVisibilityCall(s: DataServer, path: string): boolean {
  * 完整版 dev 首页上**要看**的示范目录。示范目录各有各的用处，不是都该上首页：
  *   _demo      全要素演示 —— 改界面时拿它看效果，上首页
  *   _example   TripMD 最小示例，给文档用
- *   _showcase  真行程抹除后的副本，给测试和将来的演示站用 —— 和来源那份真行程是同一趟旅行，
- *              首页同时列两张西雅图是 Harley 明确不要的（2026-09-29），改成了卡片上的公开 / 私有开关
  *   _broken    故意写坏的负向样本，解析必失败
+ * 示范行程 showcase-seattle-2026-10 不带 `_`，是入册的正式行程，走上面 isFixtureId 之外的那条路。
+ * （它曾叫 _showcase 且和真行程并存；首页同时列两张西雅图是 Harley 明确不要的，所以当时不上首页）
  * 公开版不列任何示范（buildManifest 的 `_` 规则），这张表只管完整版 dev。
  */
 const DEV_HOME_FIXTURES: readonly string[] = ['_demo']
@@ -91,7 +91,7 @@ const DEV_HOME_FIXTURES: readonly string[] = ['_demo']
 /**
  * dev 首页读的清单 —— 扫目录现算，不读可能过期的 manifest.json（首页开关改的是 plan.md）。
  * 完整版：入册的真行程 + 上面那张表里的示范；公开版：只列 public 且不含示范。
- * 没列的示范目录直链照样能开（#/trip/_showcase），只是不上首页
+ * 没列的示范目录直链照样能开（#/trip/_example），只是不上首页
  */
 export function manifestRoute(root: string, publicMode: boolean): Reply {
   const entries: ManifestEntry[] = tripDirs(root).flatMap((id) => {
