@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSyn
 import { tmpdir } from 'node:os'
 import { join, sep } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { DEFAULT_DATA_DIR, insideDir, planFile, readGeometry, readManifestIds, readSpace, readTrip, tripDirs } from '../src/index.ts'
+import { DEFAULT_DATA_DIR, TOOL_ROOT, dataDir, insideDir, planFile, readGeometry, readManifestIds, readSpace, readTrip, tripDirs } from '../src/index.ts'
 
 /** 一个合成的数据目录：两份行程、一个隐藏目录、一个散文件、一份示范目录，加几种恶意形态 */
 let root: string
@@ -96,5 +96,27 @@ describe('insideDir', () => {
   it('不存在的路径按字面判（交给调用方 404），悬空链接同理', () => {
     expect(insideDir(root, 'a-trip/nothing.md')).toBe(join(root, 'a-trip', 'nothing.md'))
     expect(insideDir(root, 'ghost')).toBe(join(root, 'ghost'))
+  })
+})
+
+describe('dataDir', () => {
+  it('JJJ_DATA_DIR 的相对路径按工具仓库根解析，不管在哪个目录读 —— vite 在 apps/web 里跑，CLI 在根目录跑，两边必须指向同一处', () => {
+    const before = { cwd: process.cwd(), env: process.env['JJJ_DATA_DIR'] }
+    try {
+      process.env['JJJ_DATA_DIR'] = '../just-j-journey-personal-space/trips'
+      const want = join(TOOL_ROOT, '../just-j-journey-personal-space/trips')
+      process.chdir(TOOL_ROOT)
+      expect(dataDir()).toBe(want)
+      process.chdir(join(TOOL_ROOT, 'apps/web'))
+      expect(dataDir()).toBe(want)
+      process.env['JJJ_DATA_DIR'] = '/abs/elsewhere'
+      expect(dataDir()).toBe('/abs/elsewhere')
+      delete process.env['JJJ_DATA_DIR']
+      expect(dataDir()).toBe(DEFAULT_DATA_DIR)
+    } finally {
+      process.chdir(before.cwd)
+      if (before.env === undefined) delete process.env['JJJ_DATA_DIR']
+      else process.env['JJJ_DATA_DIR'] = before.env
+    }
   })
 })

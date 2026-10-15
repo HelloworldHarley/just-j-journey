@@ -147,8 +147,8 @@ ssh -T git@github-personal                # 应回 Hi HelloworldHarley!
 
 ```bash
 npx wrangler login
-npx wrangler pages project create <public>  --production-branch main   # 公开站，如 jjj-harley
-npx wrangler pages project create <full>    --production-branch main   # 完整站，如 jjj-harley-full
+npx wrangler pages project create <public>  --production-branch main   # 公开站，Harley 的是 just-j-journey-public
+npx wrangler pages project create <full>    --production-branch main   # 完整站，Harley 的是 just-j-journey-harley
 ```
 
 1. 建的都是**直传**项目，不连仓库 —— Cloudflare 永远拿不到源文件，只拿产物。项目名就是地址：`https://<public>.pages.dev` 与 `https://<full>.pages.dev`。

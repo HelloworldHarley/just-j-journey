@@ -19,16 +19,25 @@ import { manifestIds, parse, parseSpace, type ParseResult, type SpaceParseResult
  */
 
 /**
- * 缺省数据目录：工具仓库自带的 apps/web/public/data（示范数据 + 开发期的行程）。
- * 从本文件位置往上数三层 —— 依赖 pnpm 的 workspace 链接是**符号链接**、Node 解析到真实路径这一事实；
- * 换成 hoisted / npm 那种拷贝式布局，这里会指到 node_modules 里面去。仓库钉了 pnpm，不会发生
+ * 工具仓库根目录。从本文件位置往上数三层 —— 依赖 pnpm 的 workspace 链接是**符号链接**、
+ * Node 解析到真实路径这一事实；换成 hoisted / npm 那种拷贝式布局，这里会指到 node_modules 里面去。
+ * 仓库钉了 pnpm，不会发生
  */
-export const DEFAULT_DATA_DIR = fileURLToPath(new URL('../../../apps/web/public/data', import.meta.url))
+export const TOOL_ROOT = fileURLToPath(new URL('../../../', import.meta.url))
 
-/** 当前数据目录：JJJ_DATA_DIR 指到别处（数据仓库的 trips/），否则缺省 */
+/** 缺省数据目录：工具仓库自带的 apps/web/public/data（示范数据） */
+export const DEFAULT_DATA_DIR = resolve(TOOL_ROOT, 'apps/web/public/data')
+
+/**
+ * 当前数据目录：JJJ_DATA_DIR 指到别处（数据仓库的 trips/），否则缺省。
+ * **相对路径按工具仓库根目录解析，不按当前目录**：同一个变量会被好几个进程读到 ——
+ * CLI 在仓库根跑，而 `pnpm build` / `dev` / `look` 起的 vite 在 apps/web 里跑。按当前目录解析时，
+ * 文档里的 `JJJ_DATA_DIR=../just-j-journey-personal-space/trips` 对 CLI 是对的，对 vite 却指到
+ * apps/ 下一个不存在的目录：构建报错、dev 默默显示示范数据。绝对路径（CI 里用的）不受影响
+ */
 export function dataDir(): string {
   const env = process.env['JJJ_DATA_DIR']
-  return env ? resolve(env) : DEFAULT_DATA_DIR
+  return env ? resolve(TOOL_ROOT, env) : DEFAULT_DATA_DIR
 }
 
 /**

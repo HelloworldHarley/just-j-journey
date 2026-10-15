@@ -1,0 +1,33 @@
+<!doctype html>
+<!--
+  找不到的文件一律回这一页，状态码 404。
+
+  它存在的意义不在页面本身，而在「有这个文件」：Cloudflare Pages 看到根目录没有 404.html，
+  就把整个站当单页应用，任何找不到的路径都回 index.html + 200。浏览器 fetch 一份不存在的
+  plan.md 会拿到首页 HTML，当 TripMD 去解析，屏幕上是「缺少 frontmatter」而不是「找不到行程」；
+  地图 worker 丢了也会悄悄拿到 HTML 而不是报错。路由走 `#`，从来不需要那种回退。
+  GitHub Pages 本来就回 404，也认这个文件 —— 两家行为一致，check:built 的无回退假设在线上成立。
+-->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 · Just J Journey</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 0 16px;
+        font: 15px/1.6 system-ui, sans-serif;
+        background: light-dark(#f9f2df, #121418); color: light-dark(#2a2722, #e8e6e1);
+      }
+      p { margin: 0; text-align: center; }
+      .hint { margin-top: 6px; font-size: 13px; opacity: 0.6; }
+    </style>
+  </head>
+  <body>
+    <div>
+      <p>这里什么也没有</p>
+      <p class="hint">404 · 地址可能写错了，或者这份行程没有公开</p>
+    </div>
+  </body>
+</html>

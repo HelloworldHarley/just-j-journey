@@ -87,6 +87,11 @@ if (worker) {
   else bad('没有任何 chunk 引用 worker 文件名 —— setWorkerUrl 的接线断了，maplibre 会退回运行时拼地址')
 }
 
+// 404.html 必须在产物根目录：Cloudflare Pages 看不到它就把站当单页应用，找不到的文件回 index.html + 200 ——
+// 这个脚本模拟的「缺文件就 404」在线上就不成立了，行程不存在也会显示成解析错误
+if (existsSync(join(OUT, '404.html'))) ok('产物根目录有 404.html（Cloudflare 不会把缺失文件回退成首页）')
+else bad('产物根目录没有 404.html —— Cloudflare Pages 会把任何缺失的文件回成 index.html + 200')
+
 // 订阅日历是作者自己用的，公开版不生成也不该被带进产物
 if (isPublic) {
   const hasIcs = readdirSync(join(OUT, 'data'), { recursive: true }).some((f) => String(f).endsWith('.ics'))

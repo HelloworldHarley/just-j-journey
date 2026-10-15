@@ -28,7 +28,7 @@ concurrency:
 
 env:
   # 升级工具 = 改这一行（用工具仓库的 tag；钉死版本，工具仓库推了新代码不会悄悄改变你的站）
-  JJJ_TOOL_REF: v0.2.0
+  JJJ_TOOL_REF: v0.2.1
   JJJ_DATA_DIR: ${{ github.workspace }}/trips
 
 jobs:
