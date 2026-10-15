@@ -31,6 +31,12 @@ export function useTrip(id: string | undefined): UseQueryResult<Trip> {
   })
 }
 
+/** 一份行程的日历订阅路径（相对站点根）—— 完整站上是带密钥的那条 */
+export function useCalendarFeed(tripId: string): UseQueryResult<string> {
+  const repo = useRepository()
+  return useQuery({ queryKey: ['calendar-feed', tripId], queryFn: () => repo.calendarFeed(tripId) })
+}
+
 export function useSpace(): UseQueryResult<Space | null> {
   const repo = useRepository()
   return useQuery({ queryKey: ['space'], queryFn: () => repo.getSpace() })

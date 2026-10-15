@@ -159,6 +159,17 @@ npx wrangler pages project create <full>    --production-branch main   # 完整�
 
 `*.pages.dev` 的预览域每次部署都会多一个 `<hash>.<project>.pages.dev`；公开站无所谓，完整站靠第 2 步那条通配规则一并挡住。
 
+### 完整站的日历订阅（可选）
+
+完整站挡在 Access 后面，日历 App 轮询订阅地址时带不了登录态，只会拿到登录页。做法和 Google 日历的「私密 iCal 地址」一样：订阅文件另放一份到带密钥的路径 `cal/<密钥>/<行程>.ics`，Access 只对 `cal/` 放行。地址里的密钥猜不到，**链接本身就是钥匙**：拿到链接的人不用登录就能看到完整日历（含硬约束的备注），只发给自己和同行的人。
+
+1. 生成密钥：`openssl rand -hex 24`（48 位，至少要 24 位，只能有字母数字 `_` `-`）。
+2. 数据仓库 Secrets 加 `JJJ_CALENDAR_TOKEN` = 这串密钥。工作流只把它交给完整版构建那一步；公开版构建里出现它会直接报错。
+3. Zero Trust → Access → Applications → 再加一个应用，public hostname 填完整站的正式网址，**Path 填 `cal`**；Policy 的 Action 选 **Bypass**，Include 选 **Everyone**。路径更具体的应用优先，于是只有 `cal/` 不用登录，其余照旧要登录。
+4. 再跑一次工作流。登录完整站 → 资料页 →「订阅日历」，按钮指向的就是带密钥的地址，下面有一行红字提醒别外传。
+
+换密钥 = 改这个 Secret 再发布一次，旧的订阅链接立刻失效，需要重新订阅。没配密钥时一切照旧，只是完整站上的订阅按钮点了会进登录页。
+
 ## 六、迁移顺序与回退点
 
 每一步之后现有站点都能用，随时可以停在中间。

@@ -2,6 +2,8 @@ import type { Space, Trip, TripSummary, Visibility } from '@jjj/schema'
 import { formatDiagnostics, isAbsoluteUrl, manifestIds, mergeGeometry, parse, parseSpace, summarize } from '@jjj/tripmd'
 import { TripNotFoundError, type TripRepository } from './TripRepository.ts'
 import { VISIBILITY_ENDPOINT, type VisibilityRequest } from './visibility-api.ts'
+import { CALENDAR_INDEX, type CalendarIndex } from './calendar-api.ts'
+import { defaultFeedPath } from '../lib/calendar-link.ts'
 
 /**
  * 单工件数据源：浏览器直接 fetch plan.md，现场解析。
@@ -13,6 +15,8 @@ import { VISIBILITY_ENDPOINT, type VisibilityRequest } from './visibility-api.ts
  */
 export class MarkdownTripRepository implements TripRepository {
   private readonly parsed = new Map<string, Trip>()
+  /** 订阅索引只取一次；没有（404、坏 JSON、网络断）就是 null，订阅地址退回缺省路径 */
+  private calendarIndex: Promise<CalendarIndex | null> | undefined
 
   constructor(private readonly base = `${import.meta.env.BASE_URL}data`) {}
 
@@ -80,6 +84,14 @@ export class MarkdownTripRepository implements TripRepository {
   /** 绝对 URL 原样放行 —— 想直接指 GitHub 头像也行，但公开站上每个访客都会去请求那个地址；本地文件更稳 */
   assetUrl(rel: string): string {
     return isAbsoluteUrl(rel) ? rel : `${this.base}/${rel}`
+  }
+
+  async calendarFeed(tripId: string): Promise<string> {
+    this.calendarIndex ??= fetch(`${this.base}/${CALENDAR_INDEX}`)
+      .then((res) => (res.ok ? (res.json() as Promise<CalendarIndex>) : null))
+      .catch(() => null)
+    const feed = (await this.calendarIndex)?.feeds?.[tripId]
+    return typeof feed === 'string' ? feed : defaultFeedPath(tripId)
   }
 
   async getSpace(): Promise<Space | null> {

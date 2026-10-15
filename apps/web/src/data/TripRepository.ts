@@ -19,6 +19,11 @@ export interface TripRepository {
    */
   assetUrl(rel: string): string
   /**
+   * 一份行程的日历订阅文件路径，相对站点根（BASE_URL）。订阅文件放在哪是数据源的事：
+   * 完整站挡在登录后面，日历 App 进不去，所以它那里是一条带密钥的路径（src/data/calendar-api.ts）
+   */
+  calendarFeed(tripId: string): Promise<string>
+  /**
    * 首页开关：改一份行程的 visibility —— 只动 plan.md 的 frontmatter 一行，
    * 浏览器到数据源的第一条写路径，也是最窄的一条。没有写路径的实现（线上静态托管）
    * 不提供这个方法，视图据此决定画开关还是静态角标。

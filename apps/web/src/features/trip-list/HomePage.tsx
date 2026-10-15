@@ -22,8 +22,8 @@ export function HomePage() {
 
   // 两份数据都到齐再画，否则头部先画默认再闪成名片
   if (isPending || space.isPending) return <Loading />
-  if (error) return <Problem title="行程列表加载失败" detail={String(error)} />
-  if (space.error) return <Problem title="space.md 解析失败" detail={String(space.error)} />
+  if (error) return <Problem title="行程列表加载失败" detail={error.message} />
+  if (space.error) return <Problem title="space.md 解析失败" detail={space.error.message} />
 
   // 「过没过」按各自目的地的今天判 —— 与行程内视图同一口径。
   // 统一用 'UTC' 会在跨日界的那几小时把还在进行的行程归进「已完成」。

@@ -31,7 +31,7 @@ export function TripPage() {
   const { title } = useTripTitle(id ?? '', trip?.title ?? '')
 
   if (isPending) return <Loading />
-  if (error) return <Problem title="行程加载失败" detail={String(error)} />
+  if (error) return <Problem title="行程加载失败" detail={error.message} />
 
   return (
     <>

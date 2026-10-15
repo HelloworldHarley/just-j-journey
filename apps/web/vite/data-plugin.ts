@@ -4,6 +4,7 @@ import { resolve, sep } from 'node:path'
 import type { Plugin, ViteDevServer } from 'vite'
 import { DEFAULT_DATA_DIR, dataDir } from '@jjj/datadir'
 import { dataRoute, isVisibilityCall, normalizeUrlPath, shipsToDist, visibilityRoute, type DataServer, type Reply } from './data-routes.ts'
+import { calendarToken, writeCalendarFeeds } from './calendar-feeds.ts'
 
 /**
  * 数据目录接进 vite —— 浏览器只认 `{base}data/…` 这一组相对路径（TripRepository 接缝不动），
@@ -28,6 +29,7 @@ export function dataPlugin(): Plugin {
   let base = '/'
   let command: 'build' | 'serve' = 'serve'
   let outDir = ''
+  let calToken: string | null = null
 
   return {
     name: 'jjj:data',
@@ -35,6 +37,8 @@ export function dataPlugin(): Plugin {
       base = cfg.base
       command = cfg.command
       outDir = resolve(cfg.root, cfg.build.outDir)
+      // 只在构建时看密钥：带着它跑公开版构建会在这里直接失败，而不是等产物发出去
+      if (command === 'build') calToken = calendarToken(process.env['JJJ_CALENDAR_TOKEN'], publicMode)
     },
     configureServer(server) {
       if (external) watchExternal(server, root)
@@ -72,11 +76,18 @@ export function dataPlugin(): Plugin {
       })
     },
     closeBundle() {
-      if (!external || command !== 'build') return
-      if (!statSync(root, { throwIfNoEntry: false })?.isDirectory()) throw new Error(`数据目录不存在：${root}（JJJ_DATA_DIR 指错了？）`)
-      const out = `${outDir}${sep}data`
-      rmSync(out, { recursive: true, force: true })
-      cpSync(root, out, { recursive: true, dereference: true, filter: (from) => shipsToDist(root, from) })
+      if (command !== 'build') return
+      if (external) {
+        if (!statSync(root, { throwIfNoEntry: false })?.isDirectory()) throw new Error(`数据目录不存在：${root}（JJJ_DATA_DIR 指错了？）`)
+        const out = `${outDir}${sep}data`
+        rmSync(out, { recursive: true, force: true })
+        cpSync(root, out, { recursive: true, dereference: true, filter: (from) => shipsToDist(root, from) })
+      }
+      // 完整站的日历订阅：带密钥的路径，Access 只对 cal/ 放行（src/data/calendar-api.ts）
+      if (calToken) {
+        const ids = writeCalendarFeeds(root, outDir, calToken)
+        console.log(`[jjj] 日历订阅：${ids.length} 份行程写到 cal/<密钥>/ 下（${ids.join(', ') || '无'}）`)
+      }
     },
   }
 }
