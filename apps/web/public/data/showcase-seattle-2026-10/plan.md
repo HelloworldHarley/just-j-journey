@@ -299,7 +299,7 @@ cost: 雷尼尔门票 $30/车（7 天有效）
 notes:
   - 来得及且精力允许才进 —— Nisqually 门再开 10 分钟就到；跳过 Tehaleh 的话能提早一小时到这
   - 今天买的门票 7 天有效，明天进山直接用
-to_next: {mode: drive, minutes: 25, label: 出园回木屋}
+to_next: {mode: drive}
 ```
 
 古木、苔藓、1899 年的老屋群，**Trail of the Shadows** 0.7 英里平地环线正好舒展一下飞了一天的腿。
@@ -345,7 +345,7 @@ sunset: "18:50"
 time: "08:00"
 category: logistics
 place: Mt. Rainier Getaway
-to_next: {mode: drive, minutes: 60, km: 26, label: 木屋 → Nisqually 门约 10 分钟 → Paradise 约 50 分钟（18 英里盘山）}
+to_next: {mode: drive}
 ```
 
 不用摸黑起，8 点出门 **9 点到 Paradise，周五这个点停车还稳**（周末 10 点后就满了）。

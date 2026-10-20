@@ -41,8 +41,8 @@ currency: JPY
 - what: 去程航班
   cost: $842 + 她的票待定
   transport:
-    - {traveler: 我, mode: flight, carrier: 达美 Delta, from: LAX T2, to: HND T3, dep_date: "2026-11-19", dep_time: "08:05", arr_time: "15:30", arr_day_offset: 1, duration: 14h25m, cabin: 经济舱, baggage: 2 件 · 直挂, refund: 改签 $200 起, price: "$842", stops: [{airport: SEA, arr_time: "10:55", dep_time: "13:35", leg: 2h50m, wait: 2h40m}], legs: [{number: DL7, seat: 36C}, {number: DL167, seat: 22A}]}
-    - {traveler: 她, mode: flight, from: PVG, to: HND, note: 票未定，全部槽位等着填}
+    - {traveler: 我, mode: flight, carrier: 达美 Delta, from: LAX T2, to: HND T3, hide: from, dep_date: "2026-11-19", dep_time: "08:05", arr_time: "15:30", arr_day_offset: 1, duration: 14h25m, cabin: 经济舱, baggage: 2 件 · 直挂, refund: 改签 $200 起, price: "$842", stops: [{airport: SEA, arr_time: "10:55", dep_time: "13:35", leg: 2h50m, wait: 2h40m}], legs: [{number: DL7, seat: 36C}, {number: DL167, seat: 22A}]}
+    - {traveler: 她, mode: flight, from: PVG, to: HND, hide: from, note: 票未定，全部槽位等着填}
 - what: 新干线 · 小田原→京都
   cost: "¥11,220 × 2 = ¥22,440"
   transport: {mode: hsr, carrier: JR 东海, number: ひかり 635 → のぞみ 219, from: 小田原, to: 京都, dep_time: "09:12", arr_time: "11:14", duration: 2h02m, cabin: 指定席, baggage: 特大行李需预约行李位, price: "¥11,220/人", stops: [{station: 名古屋, arr_time: "10:19", dep_time: "10:31", leg: 1h07m, wait: 12m}]}
@@ -55,8 +55,8 @@ currency: JPY
 - what: 返程 · 各自起飞
   cost: $715 + 她的票待定
   transport:
-    - {traveler: 她, mode: flight, from: KIX, to: PVG, dep_time: "19:05", note: 票未定}
-    - {traveler: 我, mode: flight, carrier: 联合 United, number: UA34, from: KIX T1, to: SFO, dep_time: "18:30", arr_time: "11:10", arr_date: 2026-11-23, duration: 9h40m, cabin: 经济舱, baggage: 2 件 23kg, refund: 不可退，改签 $150 起, price: "$715", note: 东行跨日期变更线，同日上午落地 —— 必须显式写 arr_date，钟点回卷推不出来}
+    - {traveler: 她, mode: flight, from: KIX, to: PVG, hide: to, dep_time: "19:05", note: 票未定}
+    - {traveler: 我, mode: flight, carrier: 联合 United, number: UA34, from: KIX T1, to: SFO, hide: to, dep_time: "18:30", arr_time: "11:10", arr_date: 2026-11-23, duration: 9h40m, cabin: 经济舱, baggage: 2 件 23kg, refund: 不可退，改签 $150 起, price: "$715", note: 东行跨日期变更线，同日上午落地 —— 必须显式写 arr_date，钟点回卷推不出来}
 ```
 
 ## 住宿

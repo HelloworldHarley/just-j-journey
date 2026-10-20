@@ -61,7 +61,7 @@ currency: JPY
 
 ```trip-transports
 - what: 去程航班
-  transport: {mode: flight, carrier: 全日空 ANA, number: NH971 · NH1715, from: PVG T2, to: KIX T1, dep_time: "08:15", arr_time: "09:20", arr_day_offset: 1, duration: 24h05m, baggage: 2 件 23kg, stops: [{airport: HND, wait: 14h30m}]}
+  transport: {mode: flight, carrier: 全日空 ANA, number: NH971 · NH1715, from: PVG T2, to: KIX T1, hide: from, dep_time: "08:15", arr_time: "09:20", arr_day_offset: 1, duration: 24h05m, baggage: 2 件 23kg, stops: [{airport: HND, wait: 14h30m}]}
 ```
 
 ## 住宿
