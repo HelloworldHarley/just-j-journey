@@ -52,7 +52,7 @@ visibility: private                # 可选 · public 才进公开分享的版�
 ```trip-transports
 - what: 去程航班
   cost: 约 ¥120,000 × 2
-  transport: {mode: flight, carrier: 全日空 ANA, number: NH971, from: PVG T2, to: KIX T1, arr_time: "09:20"}
+  transport: {mode: flight, carrier: 全日空 ANA, number: NH971, from: PVG T2, to: KIX T1, hide: from, arr_time: "09:20"}
 ```
 
 ## 住宿
@@ -148,8 +148,8 @@ icon: 💰
 - what: 去程 · 汇合              # 事件按这个名字引用，全文唯一
   cost: $842 + 她的票待定         # 总预算，进预算统计
   transport:
-    - {traveler: 她, mode: flight, from: PVG, to: SEA, arr_time: "13:11"}
-    - {traveler: 我, mode: flight, from: SNA, to: SEA, note: 票未定}
+    - {traveler: 她, mode: flight, from: PVG, to: SEA, hide: from, arr_time: "13:11"}
+    - {traveler: 我, mode: flight, from: SNA, to: SEA, hide: from, note: 票未定}
 ```
 
 事件里只写 `detail: 去程 · 汇合`。**明细一律不写在事件上** ——
@@ -260,6 +260,7 @@ time: 16:15–17:30          # ← 16:15 到达。16:03 + 12 = 16:15 ✓
 
 - **首段是摘要。** 正文第一段（第一个空行前）常显在卡片上，其余折叠。第一段一句话说清最关键的事。
 - **抵达和离开要作为第一天第一个、最后一天最后一个事件写出来**，`detail:` 引用 `trip-transports` 里的记录（飞机/火车/自驾/轮渡都用它）。多目的地行程中间的长途移动同理。
+- **家门口那端写 `hide`**：去程的每条交通写 `hide: from`，返程写 `hide: to`。公开版只认这个字段，不写就两端都公开；行程中间的长途移动不写。
 - **多人从不同地方汇合**：`trip-transports` 记录里的 `transport` 写成列表，每条带 `traveler` 标签，例如她从 PVG 直飞、我从 SNA 飞；事件仍只有一个（`detail:` 引用它）。
 - **正文写「为什么」，不只是「是什么」。** 不是"去 Kerry Park 看日落"，而是"18:15–18:50 金光转粉紫，18:50–19:15 蓝调时刻更出片；山上路边位极少，早到 15 分钟绕圈"。
 - **变体（`#### 变体 · 条件`）是这个格式最重要的特性。** 凡是"如果 X 就改成 Y"的判断——天气、排队、季节性关闭、班次取消——都写成变体。这是一份计划最值钱的部分。
@@ -289,7 +290,7 @@ time: 16:15–17:30          # ← 16:15 到达。16:03 + 12 = 16:15 ✓
 - [ ] 只给确信的地标写了坐标？西经和南纬带负号？
 - [ ] 当天最后一个事件没有 `to_next`？
 - [ ] 至少写了 2–3 个变体？
-- [ ] 抵达/离开（及多目的地间的长途移动）都写成事件且 `detail:` 引用了 trip-transports 记录？多人汇合一人一条？
+- [ ] 抵达/离开（及多目的地间的长途移动）都写成事件且 `detail:` 引用了 trip-transports 记录？多人汇合一人一条？去程 / 返程写了 `hide`？
 - [ ] 每个 `cost` 都写清了 `/人` 还是总额？
 - [ ] `## Day N · YYYY-MM-DD` 的日期都在 `start`~`end` 区间内？
 
