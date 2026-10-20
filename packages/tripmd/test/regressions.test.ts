@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CHECK_OUT, dayColor } from '@jjj/schema'
 import { parse } from '../src/parse.ts'
@@ -577,5 +579,34 @@ describe('未知字段警告覆盖所有块（不只前置三块）', () => {
     const ds = diag(md)
     expect(ds.some((d) => d.message.includes('不再写在事件上'))).toBe(true)
     expect(ds.some((d) => d.message.includes('`transport` 无法识别'))).toBe(false)
+  })
+})
+
+describe('_broken 示范：每种写错都被报出', () => {
+  // data:check 只要求它「至少报一个错」—— 某一类诊断退化成静默，那条检查照样绿。
+  // 这里逐条锁住：顺序、级别、行号、能认出是哪一条的关键词，以及给得出的修复建议。
+  const md = readFileSync(join(import.meta.dirname, '../../../apps/web/public/data/_broken/plan.md'), 'utf8')
+  const expected: [severity: string, line: number, inMessage: string, inHint: string | null][] = [
+    ['error', 14, 'Kerry Park', '-122.3599'],
+    ['error', 35, '`category`', 'sight /'],
+    ['error', 44, 'sightseing', '`sight`'],
+    ['error', 54, '下午三点半', '18:25'],
+    ['warning', 64, '`flgs`', '`flags`'],
+    ['warning', 75, 'Kery Park', 'Kerry Park'],
+    ['error', 85, '2026-10-09', null],
+    ['error', 91, 'teleport', 'walk /'],
+    ['warning', 91, '没有去处', 'to_next'],
+  ]
+
+  it('9 条诊断一条不少、一条不多，行程整体判失败', () => {
+    const { trip, diagnostics } = parse(md)
+    expect(trip).toBeNull()
+    expect(diagnostics.map((d) => [d.severity, d.line])).toEqual(expected.map(([s, l]) => [s, l]))
+    diagnostics.forEach((d, i) => {
+      const [, , inMessage, inHint] = expected[i]!
+      expect(d.message).toContain(inMessage)
+      if (inHint === null) expect(d.hint).toBeUndefined()
+      else expect(d.hint).toContain(inHint)
+    })
   })
 })
