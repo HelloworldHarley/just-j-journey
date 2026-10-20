@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { ChevronDown, MoveRight, Sunrise as SunriseIcon, Sunset as SunsetIcon } from 'lucide-react'
 import { CATEGORIES, type Day, type Trip } from '@jjj/schema'
-import { DayTimeline, type CardModules } from './DayTimeline.tsx'
+import { resolveDetails } from '@jjj/tripmd'
+import { DayTimeline } from './DayTimeline.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
 import { formatMinutes, shortDate } from '../../lib/format.ts'
 import { daySpan } from '../../lib/layout.ts'
-import { detailModules } from '../../lib/derive.ts'
 import { todayIso } from '../../lib/time.ts'
 import { useFavorites } from '../../data/useFavorites.ts'
 import { DayRail } from './DayRail.tsx'
@@ -32,10 +32,8 @@ export default function ListView({ trip }: { trip: Trip }) {
 
   // 信息模块的归属：`detail:` 首次引用的卡片长出模块。
   // dup = 之后的简单提及（回酒店、还车），住/行视图里藏起来
-  const { modules, dup } = useMemo(() => {
-    const { stay, rental, dup } = detailModules(trip)
-    return { modules: { stay, rental } satisfies CardModules, dup }
-  }, [trip])
+  const details = useMemo(() => resolveDetails(trip), [trip])
+  const { dup } = details
 
   // 筛选是「过滤事件」而不是「过滤天」：玩/吃保留天的骨架，只隐藏不匹配的卡片。
   // 住/行额外去重 —— 同一家酒店 / 同一辆租车只留最开始那张卡。
@@ -113,7 +111,7 @@ export default function ListView({ trip }: { trip: Trip }) {
                 connectors={filter === 'all'}
                 showTime={!bookingView}
                 detail={detail}
-                modules={modules}
+                details={details}
               />
               {!bookingView && filter !== 'all' && visible.length === 0 && (
                 <p className="py-3 text-[12.5px] text-graphite">这天没有匹配的安排。</p>

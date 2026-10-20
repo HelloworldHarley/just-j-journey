@@ -26,12 +26,12 @@ visibility: public
 ```trip-transports
 - what: 去程
   cost: "$900"
-  transport: {traveler: 我, mode: flight, carrier: 达美, number: DL7, from: LAX T2, to: HND T3, dep_date: "2026-11-19", dep_time: "08:05", arr_time: "15:30", arr_day_offset: 1, duration: 14h25m, cabin: 经济舱, seat: 36C, baggage: 2 件 · 直挂, refund: 改签 $200 起, price: "$842", stops: [{airport: SEA, arr_time: "10:55", dep_time: "13:35", leg: 2h50m, wait: 2h40m}], legs: [{number: DL7, seat: 36C}, {number: DL167, seat: 22A}], note: 确认号 ABC123}
+  transport: {traveler: 我, mode: flight, carrier: 达美, number: DL7, from: LAX T2, to: HND T3, hide: from, dep_date: "2026-11-19", dep_time: "08:05", arr_time: "15:30", arr_day_offset: 1, duration: 14h25m, cabin: 经济舱, seat: 36C, baggage: 2 件 · 直挂, refund: 改签 $200 起, price: "$842", stops: [{airport: SEA, arr_time: "10:55", dep_time: "13:35", leg: 2h50m, wait: 2h40m}], legs: [{number: DL7, seat: 36C}, {number: DL167, seat: 22A}], note: 确认号 ABC123}
 - what: 新干线
   cost: "¥11220"
   transport: {mode: hsr, carrier: JR 东海, number: のぞみ 1, from: 东京, to: 京都, dep_time: "09:00", arr_time: "11:15", duration: 2h15m, cabin: 指定席, seat: 5A, price: "¥11,220"}
 - what: 返程
-  transport: {mode: flight, carrier: 联合, number: UA34, from: HND T3, to: SFO, dep_time: "18:30", arr_time: "11:10", arr_date: 2026-11-22, duration: 9h40m, price: "$715", seat: 40K}
+  transport: {mode: flight, carrier: 联合, number: UA34, from: HND T3, to: SFO, hide: to, dep_time: "18:30", arr_time: "11:10", arr_date: 2026-11-22, duration: 9h40m, price: "$715", seat: 40K}
 - what: 备用巴士
   transport: {mode: bus, carrier: 某巴士公司, number: X99, from: 东京站, to: 成田机场, dep_time: "07:00", arr_time: "08:30", price: "¥3200"}
 ```
@@ -82,6 +82,9 @@ visibility: public
 - name: 京都站
   coord: 34.9858, 135.7588
   category: transit
+- name: 清水寺
+  coord: 34.9949, 135.785
+  category: sight
 ```
 
 ## Day 1 · 2026-11-20
@@ -145,9 +148,18 @@ category: hsr
 place: 京都站
 flags: [needs-booking, optional]
 detail: 新干线
+to_next: {mode: bus, minutes: 20, label: 206 路到五条坂}
 ```
 
 指定席选右侧，过静冈那段能看到富士山。
+
+### 清水寺
+
+```trip-event
+time: 12:00–14:00
+category: sight
+place: 清水寺
+```
 
 ## Day 3 · 2026-11-22
 

@@ -1,7 +1,8 @@
 import type { Place, Trip } from '@jjj/schema'
 import { DiagnosticBag } from './diagnostics.ts'
 import type { DayFlow } from './days.ts'
-import { placeKey } from './values.ts'
+import { legsOf } from './resolve.ts'
+import { formatLatLng, placeKey } from './values.ts'
 
 /**
  * 语义 lint —— 在**已建好的结构**上跑的检查，不参与产出 Trip。
@@ -46,14 +47,12 @@ export function lintDayFlow(bag: DiagnosticBag, flows: DayFlow[]): void {
 
     // 余量检查：两个事件之间的空档，装不装得下中间那段路？
     // 这正是原始 MD 逼着人在脑子里算的东西 —— 算错了整天崩盘，而且自己极难看出来。
-    for (const leg of legs) {
-      if (leg.durationMin === null) continue
-      // 开场段（住处 → 第一站）没有「上一个事件的结束时刻」可减，余量无从算起
-      if (leg.afterEventId === null) continue
-      const fromIdx = events.findIndex((e) => e.id === leg.afterEventId)
-      const from = events[fromIdx]
+    // 开场段（住处 → 第一站）没有「上一个事件的结束时刻」可减，余量无从算起，只看事件出发的那些
+    const { after } = legsOf({ legs })
+    for (const [fromIdx, from] of events.entries()) {
+      const leg = after.get(from.id)
       const to = events[fromIdx + 1]
-      if (!from || !to) continue
+      if (!leg || leg.durationMin === null || !to) continue
       if (from.timeKind === 'period' || to.timeKind === 'period') continue
       const slack = to.startMin - from.endMin - leg.durationMin
       if (slack < 0) {
@@ -151,6 +150,6 @@ export function checkCoordOutliers(
       hint = `纬度和经度写反了 —— 应为 \`coord: ${lng}, ${lat}\`（纬度在前）`
     }
 
-    bag.error(line, `地点 "${p.name}" 的坐标 ${lat}, ${lng} 离其余地点太远`, hint)
+    bag.error(line, `地点 "${p.name}" 的坐标 ${formatLatLng(p.coord)} 离其余地点太远`, hint)
   }
 }

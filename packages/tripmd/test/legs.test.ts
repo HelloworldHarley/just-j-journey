@@ -41,13 +41,13 @@ describe('transport.legs 分段信息', () => {
   it('逐段解析班次/客舱/座位，顶层 seat 不再折进 cabin', () => {
     const r = parse(wrap(`{mode: flight, number: X9, cabin: Y, seat: 9F, from: A, to: B}`))
     expect(r.diagnostics).toEqual([])
-    const t = r.trip!.days[0]!.events[0]!.transports[0]!
+    const t = r.trip!.journeys[0]!.transports[0]!
     expect(t.cabin).toBe('Y')
     expect(t.seat).toBe('9F')
 
     const r2 = parse(wrap(LEGGED))
     expect(r2.diagnostics).toEqual([])
-    const t2 = r2.trip!.days[0]!.events[0]!.transports[0]!
+    const t2 = r2.trip!.journeys[0]!.transports[0]!
     expect(t2.legs).toEqual([
       { number: 'X1', cabin: 'Y', seat: '1A' },
       { number: 'X2', cabin: undefined, seat: '2B' },
@@ -80,5 +80,32 @@ describe('transport.legs 分段信息', () => {
     const once = parse(wrap(LEGGED)).trip!
     const twice = parse(serialize(once)).trip!
     expect(twice).toEqual(once)
+  })
+})
+
+describe('transport.hide 公开版藏哪一端', () => {
+  const hideOf = (flow: string) => parse(wrap(`{mode: flight, from: A, to: B, ${flow}}`))
+
+  it('单值、列表、逗号分隔、大小写都认，按 from、to 的顺序收好；没写就是空', () => {
+    expect(hideOf('hide: from').trip!.journeys[0]!.transports[0]!.hide).toEqual(['from'])
+    expect(hideOf('hide: TO').trip!.journeys[0]!.transports[0]!.hide).toEqual(['to'])
+    expect(hideOf('hide: [to, from]').trip!.journeys[0]!.transports[0]!.hide).toEqual(['from', 'to'])
+    expect(hideOf('hide: "from, to"').trip!.journeys[0]!.transports[0]!.hide).toEqual(['from', 'to'])
+    expect(hideOf('note: x').trip!.journeys[0]!.transports[0]!.hide).toEqual([])
+  })
+
+  it('写错是错误不是警告：认不出的值若当没写，这一端就进了公开版', () => {
+    const r = hideOf('hide: form')
+    expect(r.trip).toBeNull()
+    expect(r.diagnostics).toMatchObject([{ severity: 'error', message: expect.stringContaining('form'), hint: expect.stringContaining('`from`') }])
+  })
+
+  it('写回紧跟在 to 后面，往返不变', () => {
+    for (const [flow, written] of [['hide: to', 'to: B, hide: to}'], ['hide: [from, to]', 'to: B, hide: [from, to]}']] as const) {
+      const trip = hideOf(flow).trip!
+      const md = serialize(trip)
+      expect(md).toContain(written)
+      expect(parse(md).trip).toEqual(trip)
+    }
   })
 })

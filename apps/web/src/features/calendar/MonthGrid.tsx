@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { TRANSPORTS, type Day, type Rental, type Stay, type Trip } from '@jjj/schema'
-import { dayComposition } from '@jjj/tripmd'
+import { TRANSPORTS, type Day, type Rental, type Stay, type TransportMode, type Trip } from '@jjj/schema'
+import { dayComposition, resolveDetails } from '@jjj/tripmd'
 import {
   MONTH_CELL,
   assignLanes,
@@ -46,6 +46,17 @@ export function MonthGrid({
     const budget = buildBudget(trip)
     const dayByDate = new Map(trip.days.map((d) => [d.date, d]))
     const budgetByDate = new Map(budget.byDay.map((b) => [b.date, b.total]))
+    // 长途换乘点：当天第一张带票面的卡（首次引用、长途里有交通）。取 / 还车没有票面，天然不在其中
+    const { journeyOf } = resolveDetails(trip)
+    const transferByDate = new Map(
+      trip.days.flatMap((d) => {
+        for (const e of d.events) {
+          const first = journeyOf.get(e.id)?.transports[0]
+          if (first) return [[d.date, { title: e.title, mode: first.mode }] as const]
+        }
+        return []
+      }),
+    )
 
     // 住和行各占一个外层槽位；槽位内部再按重叠分道
     // （住由构造保证不重叠；租车可能重叠 —— 两人各租一辆）
@@ -68,9 +79,9 @@ export function MonthGrid({
     ].flatMap(({ res, lane, accent }) =>
       clipSpanToGrid(grid, reservationToTimed(res)).map((seg) => ({ seg, res, lane, accent })),
     )
-    return { grid, dayByDate, budgetByDate, currency: budget.currency, bars, metrics: cellMetrics(stayDepth, rentalDepth) }
+    return { grid, dayByDate, budgetByDate, transferByDate, currency: budget.currency, bars, metrics: cellMetrics(stayDepth, rentalDepth) }
   }, [trip])
-  const { grid, dayByDate, budgetByDate, currency, bars, metrics } = model
+  const { grid, dayByDate, budgetByDate, transferByDate, currency, bars, metrics } = model
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-4">
@@ -94,6 +105,7 @@ export function MonthGrid({
                 key={date}
                 date={date}
                 day={dayByDate.get(date)}
+                transfer={transferByDate.get(date)}
                 compact={week.outside}
                 isToday={date === todayDate}
                 metrics={metrics}
@@ -161,6 +173,7 @@ function Bar({
 function Cell({
   date,
   day,
+  transfer,
   compact,
   isToday,
   metrics,
@@ -170,6 +183,8 @@ function Cell({
 }: {
   date: string
   day?: Day
+  /** 当天的长途换乘卡：标题与交通方式 */
+  transfer?: { title: string; mode: TransportMode }
   compact: boolean
   isToday: boolean
   metrics: CellMetrics
@@ -180,12 +195,10 @@ function Cell({
   const dayNum = Number(date.slice(8, 10))
   const comp = day ? dayComposition(day) : null
   const total = comp ? comp.play + comp.food + comp.other : 0
-  // 长途换乘点：带票面时间轴的那种事件。取/还车没有 transport 块，天然不在其中
-  const transfer = day?.events.find((e) => e.transports.length > 0)
   // 全局唯一表示「你得做点什么」的数字，和首页卡片上那个是同一个口径
   // 待订数是作者的待办；公开版的数据里没有 needs-booking（sanitize 去掉了），自然是 0
   const todo = day?.events.filter((e) => e.flags.includes('needs-booking')).length ?? 0
-  const TransferIcon = iconFor(TRANSPORTS[transfer?.transports[0]?.mode ?? 'flight'].icon)
+  const TransferIcon = iconFor(TRANSPORTS[transfer?.mode ?? 'flight'].icon)
 
   return (
     <button

@@ -1,18 +1,4 @@
-import type { Reference, Rental, Stay, Trip } from '@jjj/schema'
-import { detailIndex } from '@jjj/tripmd'
-
-/**
- * `detail:` 引用的归属 —— 哪张卡片长出信息模块、哪些卡片是「简单提及」。
- *
- * 「首次引用」的扫描本身在 `@jjj/tripmd` 的 resolve.ts ——
- * 解析器灌长途明细、预算记账日用的是同一份，口径不可能漂。
- * 这里只做 web 侧的对号入座：首次引用的事件挂上住宿/租车记录，
- * 之后的引用是简单提及（回酒店、还车），住/行筛选视图里去重隐藏 ——
- * 同一家酒店、同一辆车的信息说一遍就够了。
- *
- * 这里没有任何按地点/名字猜归属的启发式 —— 那套东西曾经因为
- * 名字大小写漂移把连住区间拆断过（F3），显式引用之后整类问题不存在了。
- */
+import type { Reference } from '@jjj/schema'
 
 /**
  * 预算类附录归预算页 —— 作者写的点数策略、砍价顺序、风险变量
@@ -20,30 +6,4 @@ import { detailIndex } from '@jjj/tripmd'
  */
 export function isBudgetRef(ref: Reference): boolean {
   return ref.id === 'budget' || /预算|budget/i.test(ref.title)
-}
-
-export interface DetailModules {
-  /** eventId → 住宿记录（只含首次引用） */
-  stay: Map<string, Stay>
-  /** eventId → 租赁记录（只含首次引用） */
-  rental: Map<string, Rental>
-  /** 非首次引用的事件 —— 住/行筛选视图里隐藏 */
-  dup: Set<string>
-}
-
-export function detailModules(trip: Trip): DetailModules {
-  const { firstRef, dup } = detailIndex(trip.days)
-
-  const stay = new Map<string, Stay>()
-  const rental = new Map<string, Rental>()
-  for (const s of trip.stays) {
-    const evId = firstRef.get(s.what)
-    if (evId !== undefined) stay.set(evId, s)
-  }
-  for (const r of trip.rentals) {
-    const evId = firstRef.get(r.what)
-    if (evId !== undefined) rental.set(evId, r)
-  }
-  // 长途的「模块」是票面时间轴，解析器已把明细灌进首次引用的事件
-  return { stay, rental, dup }
 }

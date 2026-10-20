@@ -1,4 +1,4 @@
-import type { Day, Place, Stay, Trip } from '@jjj/schema'
+import type { Day, Journey, Leg, Place, Rental, Stay, Trip } from '@jjj/schema'
 
 /**
  * 这一天你在哪儿醒来 —— 覆盖当天清晨的那条住宿区间。
@@ -19,7 +19,65 @@ export function stayOfMorning(stays: readonly Stay[], date: string): Stay | null
 }
 
 /**
- * 被行程引用（事件 / 住宿 / 租车取还）但没有坐标的地点。
+ * 一天里的路：开场通勤（昨晚住处 → 第一站，`from_stay`）与每个事件出发的那段（`to_next`）。
+ *
+ * 路按 `afterEventId` 挂在出发的事件上，开场段的 afterEventId 是 null。全仓按事件找路只走这里 ——
+ * 曾经序列化、日历导出、余量检查、公开版、列表、地图各写一遍「先滤掉 null 再建表」，漏滤一处就把开场段挂错。
+ */
+export interface DayLegs {
+  /** 开场通勤；这天不从住处出发时没有 */
+  opening: Leg | undefined
+  /** eventId → 从这个事件出发的那段路 */
+  after: ReadonlyMap<string, Leg>
+}
+
+export function legsOf(day: { readonly legs: readonly Leg[] }): DayLegs {
+  let opening: Leg | undefined
+  const after = new Map<string, Leg>()
+  for (const leg of day.legs) {
+    if (leg.afterEventId === null) opening ??= leg
+    else after.set(leg.afterEventId, leg)
+  }
+  return { opening, after }
+}
+
+/** 第 i 个事件的进出两段路：进来的是前一个事件的 to_next（当天第一个事件则是开场通勤），出去的是它自己的 to_next */
+export function adjacentLegs(
+  day: { readonly events: readonly { id: string }[]; readonly legs: readonly Leg[] },
+  i: number,
+): { incoming: Leg | undefined; outgoing: Leg | undefined } {
+  const { opening, after } = legsOf(day)
+  const prev = day.events[i - 1]
+  const self = day.events[i]
+  return {
+    incoming: i === 0 ? opening : prev && after.get(prev.id),
+    outgoing: self && after.get(self.id),
+  }
+}
+
+/** 被行程引用的地点 id：事件、通勤两端、住宿、租车取还。没人引用的地点不上地图、不上列表，也不进公开版 */
+export function referencedPlaceIds(trip: Pick<Trip, 'days' | 'stays' | 'rentals'>): Set<string> {
+  const ids = new Set<string>()
+  const add = (id: string | null | undefined): void => {
+    if (id) ids.add(id)
+  }
+  for (const day of trip.days) {
+    for (const ev of day.events) add(ev.placeId)
+    for (const leg of day.legs) {
+      add(leg.from)
+      add(leg.to)
+    }
+  }
+  for (const s of trip.stays) add(s.placeId)
+  for (const r of trip.rentals) {
+    add(r.pickupPlaceId)
+    add(r.dropoffPlaceId)
+  }
+  return ids
+}
+
+/**
+ * 被行程引用（referencedPlaceIds）但没有坐标的地点。
  *
  * 一份答案，两处消费：地图右下角那枚「N 个地点缺坐标」的 chip，
  * 和 `tools/enrich.ts` 要去地理编码的工作清单。两边口径必须一致 ——
@@ -28,15 +86,7 @@ export function stayOfMorning(stays: readonly Stay[], date: string): Stay | null
  * 未被引用的无坐标地点不算：它们本来就不上地图，也不值得去查。
  */
 export function missingCoords(trip: Trip): Place[] {
-  const referenced = new Set<string>()
-  for (const day of trip.days) {
-    for (const ev of day.events) if (ev.placeId) referenced.add(ev.placeId)
-  }
-  for (const s of trip.stays) if (s.placeId) referenced.add(s.placeId)
-  for (const r of trip.rentals) {
-    if (r.pickupPlaceId) referenced.add(r.pickupPlaceId)
-    if (r.dropoffPlaceId) referenced.add(r.dropoffPlaceId)
-  }
+  const referenced = referencedPlaceIds(trip)
   return trip.places.filter((p) => p.coord === null && referenced.has(p.id))
 }
 
@@ -45,10 +95,9 @@ export function missingCoords(trip: Trip): Place[] {
  *
  * 首次引用按**日期序**判定，不是书写序：若 Day 2 写在 Day 1 前面，
  * 往返一次后首卡不能换人 —— 语义幂等踩在这条规则上。
- * 它同时决定三件事，三处消费必须同一口径：
+ * 它同时决定两件事，消费方必须同一口径：
  *
- * - 解析器把长途明细灌进哪个事件（票面时间轴长在哪张卡上）
- * - 前端把住宿/租车的信息模块挂到哪张卡、哪些卡是该去重的简单提及
+ * - 票面 / 住宿 / 租车模块挂到哪张卡、哪些卡是该去重的简单提及（`resolveDetails`）
  * - 预算把长途的钱记到哪一天
  *
  * 曾经是三份各自的扫描（parse / derive / budget），漂移一处就是
@@ -81,4 +130,32 @@ export function detailIndex(days: readonly Day[]): DetailIndex {
     }
   }
   return { firstRef, firstRefDate, dup }
+}
+
+/**
+ * `detail:` 的对号入座 —— 首次引用的事件挂上它指向的那条前置记录（长途票面、住宿区间、租车区间），
+ * 之后的引用是简单提及（回酒店、还车），住 / 行筛选视图里去重。
+ *
+ * 三种记录一个口径，全仓只在这里查：列表的信息模块、月历的换乘图标、公开版找端点卡都读它。
+ * 事件上不存副本 —— 曾经长途明细被复制进首次引用的事件，序列化不写那份，改了就静默丢。
+ */
+export interface ResolvedDetails {
+  /** eventId → 长途（只含首次引用：票面时间轴长在这张卡上） */
+  journeyOf: Map<string, Journey>
+  /** eventId → 住宿（只含首次引用：入住卡） */
+  stayOf: Map<string, Stay>
+  /** eventId → 租车（只含首次引用：取车卡） */
+  rentalOf: Map<string, Rental>
+  /** 非首次引用的 eventId */
+  dup: Set<string>
+}
+
+export function resolveDetails(trip: Pick<Trip, 'days' | 'journeys' | 'stays' | 'rentals'>): ResolvedDetails {
+  const { firstRef, dup } = detailIndex(trip.days)
+  const byEvent = <T extends { what: string }>(records: readonly T[]): Map<string, T> =>
+    new Map(records.flatMap((r) => {
+      const evId = firstRef.get(r.what)
+      return evId === undefined ? [] : [[evId, r] as const]
+    }))
+  return { journeyOf: byEvent(trip.journeys), stayOf: byEvent(trip.stays), rentalOf: byEvent(trip.rentals), dup }
 }

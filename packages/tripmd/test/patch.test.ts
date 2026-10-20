@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { Trip } from '@jjj/schema'
 import { applyPatch } from '../src/patch.ts'
 import { parse } from '../src/parse.ts'
+import { resolveDetails } from '../src/resolve.ts'
+import { makeTransport } from './support/index.ts'
 
 /**
  * TripPatch 阀门测试。
@@ -30,37 +32,25 @@ describe('set_transports', () => {
         op: 'set_transports',
         eventId: arrival().id,
         transports: [
-          {
+          makeTransport({
             traveler: '她',
-            mode: 'flight',
             carrier: '达美',
             number: 'DL281',
             from: 'PVG T1',
             to: 'SEA',
             depTime: '10:15',
             arrTime: '13:11',
-            arrDayOffset: 0,
             durationMin: 715,
             baggage: '2 件 23kg',
             stops: [{ airport: 'ICN', legMin: null, waitMin: 130 }],
-            legs: [],
-            note: undefined,
-          },
-          {
-            traveler: '我',
-            mode: 'flight',
-            from: 'SNA',
-            to: 'SEA',
-            arrDayOffset: 0,
-            durationMin: null,
-            stops: [],
-            legs: [],
-          },
+          }),
+          makeTransport({ traveler: '我', from: 'SNA', to: 'SEA' }),
         ],
       },
     ])
     expect(r.ok).toBe(true)
-    const ts = r.trip.days[0]!.events.find((e) => e.category === 'flight')!.transports
+    const flight = r.trip.days[0]!.events.find((e) => e.category === 'flight')!
+    const ts = resolveDetails(r.trip).journeyOf.get(flight.id)!.transports
     expect(ts).toHaveLength(2)
     expect(ts[0]!.number).toBe('DL281')
     expect(ts[0]!.durationMin).toBe(715)
@@ -78,7 +68,7 @@ describe('set_transports', () => {
         op: 'set_transports',
         eventId: meal().id,
         transports: [
-          { mode: 'rail', carrier: 'Amtrak', number: 'Cascades 504', arrDayOffset: 0, durationMin: null, stops: [], legs: [] },
+          makeTransport({ mode: 'rail', carrier: 'Amtrak', number: 'Cascades 504' }),
         ],
       },
     ])

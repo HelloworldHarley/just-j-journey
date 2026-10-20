@@ -3,7 +3,6 @@ import { extname, posix, relative, sep } from 'node:path'
 import { VISIBILITIES } from '@jjj/schema'
 import { DATA_MIME, insideDir, planFile, readGeometry, readSpace, readTrip, tripDirs } from '@jjj/datadir'
 import {
-  filterGeometry,
   formatDiagnostics,
   isFixtureId,
   isTripId,
@@ -126,15 +125,10 @@ function publicTripFile(root: string, id: string, file: 'plan.md' | 'geometry.js
   if (!read.trip) return text(500, formatDiagnostics(read.label, read.diagnostics))
   if (read.trip.visibility !== 'public') return text(404, `${id} 不是 visibility: public，公开版里没有它`)
 
-  const plan = publicPlan(read.trip)
-  if (!plan.trip) return text(500, `${id} 抹除后解析不过：\n${formatDiagnostics(read.label, plan.diagnostics)}`)
-  if (plan.fatal.length > 0) {
-    return text(500, `${id} 公开版结构块里仍有敏感值：${plan.fatal.map((l) => `第 ${l.line} 行「${l.value}」`).join('，')} —— build:public 会在这里失败`)
-  }
+  const plan = publicPlan(read.trip, { geometry: file === 'geometry.json' ? readGeometry(root, id) : undefined, label: id })
+  if (plan.problem) return text(500, `${plan.problem}\n—— build:public 会在这里失败`)
   if (file === 'plan.md') return { status: 200, type: DATA_MIME['.md']!, body: plan.md }
-  const raw = readGeometry(root, id)
-  const geometry = raw === undefined ? null : filterGeometry(plan.trip, raw)
-  return geometry ? json(geometry) : text(404, `${id} 没有可随公开版走的路网`)
+  return plan.geometry ? json(plan.geometry) : text(404, `${id} 没有可随公开版走的路网`)
 }
 
 /** 仓库外的数据目录：静态直出；目录之外、不存在、是目录 → 404 */

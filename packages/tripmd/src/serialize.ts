@@ -1,5 +1,6 @@
 import type { Day, Leg, Place, Transport, Trip, TripEvent } from '@jjj/schema'
-import { formatDurationCompact } from './values.ts'
+import { legsOf } from './resolve.ts'
+import { formatDurationCompact, formatLatLng } from './values.ts'
 
 /**
  * Trip → 规范 TripMD。parse() 的逆操作。
@@ -152,7 +153,7 @@ function placesBlock(trip: Trip): string | null {
   for (const p of trip.places) {
     L.push(`- name: ${scalar(p.name)}`)
     if (p.nameEn) L.push(`  en: ${scalar(p.nameEn)}`)
-    if (p.coord) L.push(`  coord: ${p.coord[1]}, ${p.coord[0]}`) // 作者格式：纬度在前
+    if (p.coord) L.push(`  coord: ${formatLatLng(p.coord)}`)
     L.push(`  category: ${p.category}`)
     if (p.tentative) L.push(`  tentative: true`)
     if (p.gmapsPlaceId) L.push(`  gmaps_place_id: ${scalar(p.gmapsPlaceId)}`)
@@ -217,6 +218,7 @@ function transportValue(t: Transport): string {
     ['number', t.number],
     ['from', t.from],
     ['to', t.to],
+    ['hide', t.hide.length === 0 ? undefined : t.hide.length === 1 ? t.hide[0] : { raw: `[${t.hide.join(', ')}]` }],
     ['dep_date', t.depDate],
     ['dep_time', t.depTime],
     ['arr_time', t.arrTime],
@@ -291,18 +293,15 @@ export function serialize(trip: Trip): string {
   chunks.push(placesBlock(trip))
 
   for (const day of trip.days) {
-    // 开场段（afterEventId === null）不挂在任何事件上，它回写进 trip-day 块
-    const opening = day.legs.find((l) => l.afterEventId === null)
+    // 开场段不挂在任何事件上，它回写进 trip-day 块；其余的写进出发那个事件的 to_next
+    const { opening, after } = legsOf(day)
     const parts: (string | null)[] = [`## Day ${day.index} · ${day.date}`]
     parts.push(dayBlock(day, opening))
     if (day.intro) parts.push(day.intro)
 
-    const legByEvent = new Map(
-      day.legs.flatMap((l) => (l.afterEventId === null ? [] : [[l.afterEventId, l] as const])),
-    )
     for (const ev of day.events) {
       parts.push(`### ${ev.title}`)
-      parts.push(eventBlock(ev, placeById, legByEvent.get(ev.id)))
+      parts.push(eventBlock(ev, placeById, after.get(ev.id)))
       const body = [ev.summary, ev.detail].filter(Boolean).join('\n\n')
       if (body) parts.push(body)
       for (const v of ev.variants) {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { detailIndex, missingCoords, stayOfMorning } from '../src/resolve.ts'
+import { adjacentLegs, detailIndex, legsOf, missingCoords, resolveDetails, stayOfMorning } from '../src/resolve.ts'
 import { parse } from '../src/parse.ts'
 import { serialize } from '../src/serialize.ts'
 import type { Day, Place, Stay, Trip, TripEvent } from '@jjj/schema'
-import { makeDay, makeEvent, makePlace, makeTrip } from './support/index.ts'
+import { makeDay, makeEvent, makeLeg, makePlace, makeTransport, makeTrip } from './support/index.ts'
 
 /** 造一个只有 detail 引用相关字段有意义的事件 */
 function ev(id: string, detailRef?: string, placeId: string | null = null): TripEvent {
@@ -93,16 +93,17 @@ detail: 去程航班
 \`\`\`
 `
 
-  it('书写序倒置时，明细灌进日期更早的事件', () => {
+  it('书写序倒置时，票面挂在日期更早的事件上', () => {
     const { trip, diagnostics } = parse(md)
     expect(diagnostics.filter((d) => d.severity === 'error')).toEqual([])
     expect(trip).not.toBeNull()
 
     const d1 = trip!.days.find((d) => d.index === 1)!
     const d2 = trip!.days.find((d) => d.index === 2)!
-    // 解析器灌明细的那张卡
-    expect(d1.events[0]!.transports).toHaveLength(1)
-    expect(d2.events[0]!.transports).toHaveLength(0)
+    // 长出票面的那张卡
+    const { journeyOf } = resolveDetails(trip!)
+    expect(journeyOf.get(d1.events[0]!.id)?.what).toBe('去程航班')
+    expect(journeyOf.has(d2.events[0]!.id)).toBe(false)
     // detailIndex 对同一份 Trip 给出同一个答案
     const idx = detailIndex(trip!.days)
     expect(idx.firstRef.get('去程航班')).toBe(d1.events[0]!.id)
@@ -210,5 +211,51 @@ describe('missingCoords', () => {
         .map((p) => p.id)
         .sort(),
     ).toEqual(['h', 'lot'])
+  })
+})
+
+describe('resolveDetails', () => {
+  it('长途、住宿、租车同一口径：首次引用（按日期序）的卡挂上记录，之后的引用进 dup', () => {
+    const at = (date: string, minute: number) => ({ raw: '', date, minute })
+    const ev = (id: string, detailRef: string) => makeEvent({ id, detailRef })
+    const t = makeTrip({
+      journeys: [{ what: '去程', transports: [makeTransport({ from: 'A', to: 'B' })] }],
+      stays: [{ what: '酒店', placeId: null, from: at('2026-10-01', 960), to: at('2026-10-03', 600) }],
+      rentals: [{ what: '车', pickupPlaceId: null, dropoffPlaceId: null, from: at('2026-10-01', 600), to: at('2026-10-03', 600) }],
+      // Day 2 写在前面：归属按日期序，不按书写序
+      days: [
+        makeDay({ index: 2, date: '2026-10-02', events: [ev('d', '酒店'), ev('e', '车')] }),
+        makeDay({ index: 1, date: '2026-10-01', events: [ev('a', '去程'), ev('b', '酒店'), ev('c', '车')] }),
+      ].sort((x, y) => x.date.localeCompare(y.date)),
+    })
+    const r = resolveDetails(t)
+    expect([...r.journeyOf].map(([id, j]) => [id, j.what])).toEqual([['a', '去程']])
+    expect([...r.stayOf].map(([id, s]) => [id, s.what])).toEqual([['b', '酒店']])
+    expect([...r.rentalOf].map(([id, x]) => [id, x.what])).toEqual([['c', '车']])
+    expect(r.dup).toEqual(new Set(['d', 'e']))
+  })
+})
+
+describe('legsOf / adjacentLegs', () => {
+  // 三个事件：开场通勤进 a；a → b 有路；b → c 没写路
+  const d = makeDay({
+    events: [makeEvent({ id: 'a' }), makeEvent({ id: 'b' }), makeEvent({ id: 'c' })],
+    legs: [makeLeg({ id: 'open', afterEventId: null }), makeLeg({ id: 'ab', afterEventId: 'a' })],
+  })
+
+  it('开场通勤单独拿出来，其余按出发的事件建表', () => {
+    const { opening, after } = legsOf(d)
+    expect(opening?.id).toBe('open')
+    expect([...after.keys()]).toEqual(['a'])
+  })
+
+  it('进来的是前一个事件的 to_next，当天第一个事件进来的是开场通勤', () => {
+    const ids = (i: number) => {
+      const { incoming, outgoing } = adjacentLegs(d, i)
+      return [incoming?.id, outgoing?.id]
+    }
+    expect(ids(0)).toEqual(['open', 'ab'])
+    expect(ids(1)).toEqual(['ab', undefined])
+    expect(ids(2)).toEqual([undefined, undefined])
   })
 })

@@ -37,6 +37,38 @@ const LOCKS: Lock[] = [
     scope: ALL_CODE,
     home: ['packages/tripmd/src/resolve.ts'],
   },
+  {
+    rule: 'detail 引用对号入座（哪张卡挂哪条前置记录）只有一处',
+    pattern: /firstRef\.get\(/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/resolve.ts'],
+  },
+  {
+    // patch.ts 也在名单里：它的 op.afterEventId 是另一回事（插入事件的锚点）；
+    // 它按事件找路的那一处有 bug（审查 #13），按计划在 P4 改用 adjacentLegs
+    rule: '按事件找它前后的路只有一处',
+    pattern: /\.afterEventId\b/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/resolve.ts', 'packages/tripmd/src/patch.ts'],
+  },
+  {
+    rule: '坐标的作者格式（纬度在前）只在一处拼',
+    pattern: /coord\[1\]\}\s*[,;]\s*\$\{[^}]*coord\[0\]|\$\{coord\[1\]\}/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/values.ts'],
+  },
+  {
+    rule: '民宿算不算私密只判一处',
+    pattern: /category\s*[!=]==\s*'homestay'/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/sanitize.ts'],
+  },
+  {
+    rule: '公开版的整条链只在 publicPlan 里组装（sanitize 只在那里被调用）',
+    pattern: /\bsanitize\(/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/sanitize.ts', 'packages/tripmd/src/public.ts'],
+  },
 ]
 
 describe('规则只写在一处', () => {

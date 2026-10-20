@@ -79,7 +79,7 @@ export function buildBudget(trip: Trip) {
     if (r.cost) push(`rental-${i}`, r.from.date, r.what, 'drive', r.cost)
   }
   // 长途本身没有日期 —— 记到首次引用它的事件那天；没人引用就记到行程首日。
-  // 「首次引用」与解析器灌明细、列表挂模块是同一份扫描（resolve.ts），口径不可能漂
+  // 「首次引用」与列表挂模块、月历换乘图标是同一份扫描（resolve.ts），口径不可能漂
   const { firstRefDate } = detailIndex(trip.days)
   for (const [i, j] of trip.journeys.entries()) {
     if (!j.cost) continue

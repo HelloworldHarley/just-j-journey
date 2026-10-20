@@ -25,12 +25,12 @@ describe('buildTimeline', () => {
 
   it('开场段不算余量 —— 前面没有事件的结束时刻可减', () => {
     const rows = buildTimeline(day([ev('a', 600, 660)], [leg(null, 20)]))
-    expect(rows[0]).toMatchObject({ kind: 'leg', slackMin: null, gapMin: 0 })
+    expect(rows[0]).toMatchObject({ kind: 'leg', opening: true, slackMin: null, gapMin: 0 })
   })
 
   it('有通勤段走 leg 行并算余量：空档 60 − 路上 45 = 15', () => {
     const rows = buildTimeline(day([ev('a', 600, 660), ev('b', 720, 780)], [leg('a', 45)]))
-    expect(rows[1]).toMatchObject({ kind: 'leg', slackMin: 15, gapMin: 60 })
+    expect(rows[1]).toMatchObject({ kind: 'leg', opening: false, slackMin: 15, gapMin: 60 })
   })
 
   it('路上耗时未填 → 余量 null，不误报冲突', () => {

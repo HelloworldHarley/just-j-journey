@@ -3,14 +3,16 @@ import {
   DEFAULT_CHECK_IN,
   DEFAULT_CHECK_OUT,
   TRANSPORT_ALIASES,
+  TRANSPORT_ENDS,
   TRANSPORT_MODES,
   resolveTransport,
   type CategoryKey,
   type Constraint,
   type ConstraintKind,
   type Place,
+  type Transport,
+  type TransportEnd,
   type Trip,
-  type TripEvent,
 } from '@jjj/schema'
 import { DiagnosticBag, suggest, suggestEnum } from './diagnostics.ts'
 import {
@@ -191,9 +193,34 @@ export function readConstraints(bag: DiagnosticBag, constraintFences: Fence[]): 
   return constraints
 }
 
+/**
+ * `hide:` —— 公开版里藏起哪一端。接受 `from` / `to` / `[from, to]`（或逗号分隔），按 from、to 的顺序收好。
+ * 写错是**错误**不是警告：认不出的值若当没写，这一端就按「两端公开」发出去了 —— 正是作者想藏的那端。
+ */
+function readHide(bag: DiagnosticBag, line: number, raw: unknown): TransportEnd[] {
+  const items = Array.isArray(raw) ? raw : typeof raw === 'string' ? raw.split(/[,，]/) : raw == null ? [] : [raw]
+  const seen = new Set<TransportEnd>()
+  for (const item of items) {
+    const s = str(item)
+    if (!s) continue
+    const end = TRANSPORT_ENDS.find((e) => e === s.toLowerCase())
+    if (end) {
+      seen.add(end)
+      continue
+    }
+    const guess = suggest(s, TRANSPORT_ENDS)
+    bag.error(
+      line,
+      `transport 的 hide "${s}" 无效 —— 认不出的值不能当没写，否则这一端会进公开版`,
+      guess ? `是否想写 \`${guess}\`？` : '可选值：from / to，两端都藏写 [from, to]',
+    )
+  }
+  return TRANSPORT_ENDS.filter((e) => seen.has(e))
+}
+
 // 长途换乘段的字段读取 —— 顶层 trip-transports 共用这一份。
 // 所有字段都可空：票常常晚于行程定下来，UI 会为缺的字段留「待填」空位。
-function readTransport(bag: DiagnosticBag, line: number, frec: Rec): TripEvent['transports'][number] | null {
+function readTransport(bag: DiagnosticBag, line: number, frec: Rec): Transport | null {
   checkKeys(bag, frec, TRANSPORT_KEYS, line, 'transport')
   const modeRaw = str(frec['mode'])
   let mode = modeRaw ? resolveTransport(modeRaw) : null
@@ -235,6 +262,7 @@ function readTransport(bag: DiagnosticBag, line: number, frec: Rec): TripEvent['
     number: str(frec['number']) ?? str(frec['flight_no']) ?? str(frec['flightNo']) ?? str(frec['no']),
     from: str(frec['from']),
     to: str(frec['to']),
+    hide: readHide(bag, line, frec['hide']),
     depDate: str(frec['dep_date']) ?? str(frec['depDate']),
     depTime: str(frec['dep_time']) ?? str(frec['depTime']) ?? str(frec['dep']),
     arrTime: str(frec['arr_time']) ?? str(frec['arrTime']) ?? str(frec['arr']),
@@ -278,8 +306,8 @@ function readTransportList(
   line: number,
   raw: unknown,
   owner: string,
-): TripEvent['transports'] {
-  const out: TripEvent['transports'] = []
+): Transport[] {
+  const out: Transport[] = []
   for (const item of Array.isArray(raw) ? raw : raw ? [raw] : []) {
     const rec = asRecord(item)
     if (!rec) {

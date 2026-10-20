@@ -5,6 +5,7 @@ import {
   PERIOD_ZH,
   TRANSPORTS,
   type Day,
+  type Journey,
   type Place,
   type Rental,
   type Stay,
@@ -12,7 +13,7 @@ import {
   type TripEvent,
 } from '@jjj/schema'
 import { buildTimeline, isConflict, type LegRow } from '../../lib/layout.ts'
-import { resolvePeriod } from '@jjj/tripmd'
+import { resolvePeriod, type ResolvedDetails } from '@jjj/tripmd'
 import type { Favorites } from '../../data/useFavorites.ts'
 import { iconFor } from '../../lib/icons.tsx'
 import { CategoryChip, kindVars } from '../../components/CategoryChip.tsx'
@@ -24,17 +25,10 @@ import { Markdown } from '../../components/Markdown.tsx'
 import { PUBLIC_BUILD } from '../../lib/public.ts'
 
 /** flight 事件没写 transport 块时的空骨架 —— 所有槽位都显示「待填」（公开版不画：整张都是给作者的提醒） */
-const EMPTY_TRANSPORT: Transport = { mode: 'flight', arrDayOffset: 0, durationMin: null, stops: [], legs: [] }
+const EMPTY_TRANSPORT: Transport = { mode: 'flight', hide: [], arrDayOffset: 0, durationMin: null, stops: [], legs: [] }
 
 /** 时间列宽度。卡片内外共用，保证通勤条的竖线对得上卡片里的时间列。 */
 const TIME_COL = '3.5rem'
-
-export interface CardModules {
-  /** 住宿区间模块的归属（首晚入住事件 → 区间），见 lib/derive.ts */
-  stay?: Map<string, Stay>
-  /** 租车区间模块的归属（取车事件 → 租赁） */
-  rental?: Map<string, Rental>
-}
 
 export function DayTimeline({
   day,
@@ -43,7 +37,7 @@ export function DayTimeline({
   connectors = true,
   showTime = true,
   detail = false,
-  modules,
+  details,
 }: {
   day: Day
   places: Map<string, Place>
@@ -54,7 +48,8 @@ export function DayTimeline({
   showTime?: boolean
   /** 全局详略：详 = 简介/注意/如果全部展开；简 = 折叠，卡上留「详情」按钮 */
   detail?: boolean
-  modules?: CardModules
+  /** 票面 / 住宿 / 租车模块挂在哪张卡上（首次引用），见 tripmd 的 resolveDetails */
+  details: ResolvedDetails
 }) {
   const rows = buildTimeline(day)
   const card = (event: TripEvent) => (
@@ -66,8 +61,9 @@ export function DayTimeline({
       favorites={favorites}
       showTime={showTime}
       detail={detail}
-      stay={modules?.stay?.get(event.id)}
-      rental={modules?.rental?.get(event.id)}
+      journey={details.journeyOf.get(event.id)}
+      stay={details.stayOf.get(event.id)}
+      rental={details.rentalOf.get(event.id)}
     />
   )
   if (!connectors) {
@@ -114,6 +110,7 @@ function EventCard({
   favorites,
   showTime,
   detail,
+  journey,
   stay,
   rental,
 }: {
@@ -124,6 +121,7 @@ function EventCard({
   favorites: Favorites
   showTime: boolean
   detail: boolean
+  journey?: Journey
   stay?: Stay
   rental?: Rental
 }) {
@@ -236,8 +234,8 @@ function EventCard({
 
         {/* 信息模块：换乘时间轴（有 transport 块就画；flight 没写块画待填骨架，公开版不画骨架）、
             住宿区间（只在区间首晚的入住卡上）、租车区间（取车卡上）、预订 */}
-        {event.transports.length > 0 ? (
-          <TransportTimeline transports={event.transports} date={date} />
+        {journey && journey.transports.length > 0 ? (
+          <TransportTimeline transports={journey.transports} date={date} />
         ) : event.category === 'flight' && !PUBLIC_BUILD ? (
           <TransportTimeline transports={[EMPTY_TRANSPORT]} date={date} />
         ) : null}
@@ -346,11 +344,11 @@ function VariantList({ variants }: { variants: TripEvent['variants'] }) {
 /**
  * 两张卡片之间的通勤条：一段虚线 + 交通方式 + 时长 + 导航。
  *
- * 当天的开场段（`afterEventId === null`，昨晚住处 → 第一站）也走这里，
+ * 当天的开场段（昨晚住处 → 第一站）也走这里，
  * 只是多说一句起点是谁 —— 它前面没有卡片，不说就不知道人是从哪儿出门的。
  */
 function LegConnector({ row, places }: { row: LegRow; places: Map<string, Place> }) {
-  const { leg, slackMin } = row
+  const { leg, opening, slackMin } = row
   const t = TRANSPORTS[leg.mode]
   const Icon = iconFor(t.icon)
   const to = leg.to ? places.get(leg.to) : undefined
@@ -363,7 +361,7 @@ function LegConnector({ row, places }: { row: LegRow; places: Map<string, Place>
         <span aria-hidden className="w-px border-l border-dashed border-[var(--fog)]" />
       </div>
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 py-2.5 pl-1 text-[12px] text-graphite">
-        {leg.afterEventId === null && from && (
+        {opening && from && (
           <span className="min-w-0 truncate text-soft">{from.name} 出发</span>
         )}
         <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap">

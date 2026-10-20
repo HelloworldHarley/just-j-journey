@@ -1,4 +1,5 @@
 import { TRANSPORTS, type Place, type TransportMode } from '@jjj/schema'
+import { formatLatLng } from '@jjj/tripmd'
 
 /**
  * 地图深链。
@@ -54,7 +55,7 @@ export function placeUrl(place: Place, provider: MapProvider): string {
   if (provider === 'apple') {
     // Apple 支持 q（地名）+ ll（坐标）并存：显示地名，定位到坐标
     const p = new URLSearchParams({ q })
-    if (place.coord) p.set('ll', `${place.coord[1]},${place.coord[0]}`)
+    if (place.coord) p.set('ll', formatLatLng(place.coord, ','))
     return `https://maps.apple.com/?${p.toString()}`
   }
 
@@ -70,7 +71,7 @@ export function placeUrl(place: Place, provider: MapProvider): string {
   if (place.coord) {
     return (
       `https://www.google.com/maps/search/${encodeURIComponent(q)}` +
-      `/@${place.coord[1]},${place.coord[0]},16z`
+      `/@${formatLatLng(place.coord, ',')},16z`
     )
   }
 
@@ -86,7 +87,7 @@ export function directionsUrl(
   const t = TRANSPORTS[mode]
   if (provider === 'apple') {
     const p = new URLSearchParams({ daddr: queryOf(to), dirflg: t.apple })
-    if (to.coord) p.set('ll', `${to.coord[1]},${to.coord[0]}`)
+    if (to.coord) p.set('ll', formatLatLng(to.coord, ','))
     if (from) p.set('saddr', queryOf(from))
     return `https://maps.apple.com/?${p.toString()}`
   }

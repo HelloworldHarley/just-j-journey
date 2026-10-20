@@ -209,6 +209,14 @@ export function parseLatLng(v: unknown): [number, number] | null {
   return [lat, lng]
 }
 
+/**
+ * 存储的坐标（[lng, lat]，GeoJSON 顺序）→ 作者格式「纬度, 经度」。
+ * 写回 plan.md、黑名单比对、日历 GEO、地图深链都按这个顺序；只有分隔符随用途变（URL 里不带空格，iCalendar 用分号）
+ */
+export function formatLatLng(coord: readonly [number, number], sep = ', '): string {
+  return `${coord[1]}${sep}${coord[0]}`
+}
+
 // ── 日期 ────────────────────────────────────────────────────────
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'] as const

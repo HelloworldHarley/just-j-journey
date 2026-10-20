@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Transport } from '@jjj/schema'
+import { makeTransport } from '@jjj/tripmd/test-support'
 import { segFlyDurations } from './segment-durations.ts'
 
-const t = (over: Partial<Transport>): Transport => ({
-  mode: 'flight',
-  arrDayOffset: 0,
-  durationMin: null,
-  stops: [],
-  legs: [],
-  ...over,
-})
+const t = (over: Partial<Transport>): Transport => makeTransport(over)
 
 const stop = (over: Partial<Transport['stops'][number]>): Transport['stops'][number] => ({
   legMin: null,

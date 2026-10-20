@@ -6,6 +6,7 @@ import { parse } from '../src/parse.ts'
 import { summarize } from '../src/summary.ts'
 import { serialize } from '../src/serialize.ts'
 import { applyPatch } from '../src/patch.ts'
+import { resolveDetails } from '../src/resolve.ts'
 import { parseLatLng } from '../src/values.ts'
 
 /**
@@ -84,7 +85,6 @@ describe('transport.stops 的宽容度', () => {
       journeyMd('transport: {mode: flight, from: A, to: B, stops: {airport: SEA, wait: 2h}}'),
     ).trip!
     expect(trip.journeys[0]!.transports[0]!.stops).toMatchObject([{ airport: 'SEA', waitMin: 120 }])
-    expect(trip.days[0]!.events[0]!.transports[0]!.stops).toHaveLength(1)
   })
 })
 
@@ -429,11 +429,12 @@ describe('前置声明与 detail 引用', () => {
     )
   const GOOD = '- what: 去程\n  cost: $842\n  transport: {mode: flight, from: PVG, to: SEA, arr_time: "13:11"}'
 
-  it('detail 引用把长途明细灌进首个引用事件，detailRef 记住名字', () => {
+  it('detail 引用让首个引用事件长出票面，detailRef 记住名字', () => {
     const trip = parse(journeys(GOOD, '去程')).trip!
     const ev = trip.days[0]!.events[0]!
-    expect(ev.transports).toHaveLength(1)
-    expect(ev.transports[0]!.from).toBe('PVG')
+    const ticket = resolveDetails(trip).journeyOf.get(ev.id)!.transports
+    expect(ticket).toHaveLength(1)
+    expect(ticket[0]!.from).toBe('PVG')
     expect(ev.detailRef).toBe('去程')
     expect(trip.journeys[0]!.cost?.amount).toBe(842)
   })
@@ -447,7 +448,7 @@ describe('前置声明与 detail 引用', () => {
     expect(parse(md2).trip).toEqual(once)
   })
 
-  it('明细只灌给首次引用（按日期序）—— 之后的引用是简单提及', () => {
+  it('票面只长在首次引用上（按日期序）—— 之后的引用是简单提及', () => {
     // Day 2 故意写在 Day 1 前面：首次引用按日期而非书写顺序判定，
     // 否则乱序书写的文件往返一次后首卡会换人，破坏语义幂等
     const md = wrap(
@@ -457,8 +458,9 @@ describe('前置声明与 detail 引用', () => {
     )
     const once = parse(md).trip!
     const [d1, d2] = once.days
-    expect(d1!.events[0]!.transports).toHaveLength(1)
-    expect(d2!.events[0]!.transports).toHaveLength(0)
+    const { journeyOf } = resolveDetails(once)
+    expect(journeyOf.has(d1!.events[0]!.id)).toBe(true)
+    expect(journeyOf.has(d2!.events[0]!.id)).toBe(false)
     expect(parse(serialize(once)).trip).toEqual(once)
   })
 

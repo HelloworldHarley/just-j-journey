@@ -1,5 +1,5 @@
 import type { Leg, Trip } from '@jjj/schema'
-import { decodePolyline } from '@jjj/tripmd'
+import { decodePolyline, legsOf } from '@jjj/tripmd'
 
 /**
  * 地图视图的场景模型 —— 纯函数，零依赖 maplibre，组件只画。
@@ -43,7 +43,7 @@ export interface DayPath {
 /**
  * 每天按事件顺序取有坐标的地点，串成当天动线。
  *
- * - **开场站**：`afterEventId === null` 的那条 leg（昨晚住处 → 第一站）
+ * - **开场站**：当天的开场通勤（昨晚住处 → 第一站，见 tripmd 的 legsOf）
  *   把住处顶成当天第 1 站，其余序号顺延。它没有事件 —— 从酒店出门不是一项安排；
  * - 无坐标的地点跳过，**不断链**（前后两站直接相连）；
  * - 同一地点**连续**出现（酒店放行李 → 酒店晚餐）合并为一站，eventIds 追加 ——
@@ -56,9 +56,7 @@ export interface DayPath {
 export function dayPaths(trip: Trip): DayPath[] {
   const places = new Map(trip.places.map((p) => [p.id, p]))
   return trip.days.map((day) => {
-    const legByAfter = new Map(
-      day.legs.flatMap((l) => (l.afterEventId === null ? [] : [[l.afterEventId, l] as const])),
-    )
+    const { opening, after } = legsOf(day)
     const nodes: { stop: DayStop; depart: Leg | undefined }[] = []
     const push = (
       place: { id: string; name: string; nameEn?: string; coord: [number, number] },
@@ -80,7 +78,6 @@ export function dayPaths(trip: Trip): DayPath[] {
       })
     }
 
-    const opening = day.legs.find((l) => l.afterEventId === null)
     const from = opening?.from ? places.get(opening.from) : undefined
     if (opening && from?.coord) push({ ...from, coord: from.coord }, 'stay', [], opening)
 
@@ -91,10 +88,10 @@ export function dayPaths(trip: Trip): DayPath[] {
       if (last && last.stop.placeId === place.id) {
         last.stop.eventIds.push(ev.id)
         // 合并站的出发段以**最后**一个事件为准：离开这一站走的是它的 to_next
-        last.depart = legByAfter.get(ev.id)
+        last.depart = after.get(ev.id)
         continue
       }
-      push({ ...place, coord: place.coord }, 'event', [ev.id], legByAfter.get(ev.id))
+      push({ ...place, coord: place.coord }, 'event', [ev.id], after.get(ev.id))
     }
 
     const segments: DaySegment[] = []

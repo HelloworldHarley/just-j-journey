@@ -92,7 +92,7 @@ export function makeConstraint(over: Partial<Constraint> & Pick<Constraint, 'kin
   return ConstraintSchema.parse({ at: `${over.date} ${formatMinutes(over.minute)}`, ...over })
 }
 
-/** 行程：缺省 2026-10-01 ~ 10-05、UTC、私有 */
+/** 行程：缺省 2026-10-01 ~ 10-05、UTC、私有、没有天 */
 export function makeTrip(over: Partial<Trip> = {}): Trip {
   return TripSchema.parse({
     id: 't',
@@ -100,6 +100,7 @@ export function makeTrip(over: Partial<Trip> = {}): Trip {
     destination: 'X',
     timezone: 'UTC',
     dates: { start: '2026-10-01', end: '2026-10-05' },
+    days: [],
     ...over,
   })
 }

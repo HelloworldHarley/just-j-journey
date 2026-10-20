@@ -7,7 +7,8 @@ import {
   type Trip,
   type TripEvent,
 } from '@jjj/schema'
-import { addDays, formatMinutes } from './values.ts'
+import { legsOf } from './resolve.ts'
+import { addDays, formatLatLng, formatMinutes } from './values.ts'
 
 /**
  * RFC 5545 日历导出。
@@ -155,7 +156,7 @@ function eventBlock(
   const loc = locationOf(place)
   if (loc) {
     push(L, 'LOCATION', esc(loc))
-    if (place?.coord) push(L, 'GEO', `${place.coord[1]};${place.coord[0]}`)
+    if (place?.coord) push(L, 'GEO', formatLatLng(place.coord, ';'))
   }
 
   const desc = describeEvent(trip, day, ev, places)
@@ -213,7 +214,7 @@ function describeEvent(
     parts.push(`【如果${v.when}】${stripMd(v.body)}`)
   }
 
-  const leg = day.legs.find((l) => l.afterEventId === ev.id)
+  const leg = legsOf(day).after.get(ev.id)
   if (leg) {
     const t = TRANSPORTS[leg.mode]
     const to = leg.to ? places.get(leg.to) : undefined

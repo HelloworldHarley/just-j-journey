@@ -112,6 +112,10 @@ export const TransportLegSchema = z.object({
  * **所有字段可空** —— 行程常常先排好、票后买。缺的字段渲染「待填」空位，
  * 之后人工补进 TripMD 或由 Agent 填入。
  */
+/** 一段交通的两端：出发端（地点、时刻、日期）与到达端 */
+export const TRANSPORT_ENDS = ['from', 'to'] as const
+export type TransportEnd = (typeof TRANSPORT_ENDS)[number]
+
 export const TransportSchema = z.object({
   /** 谁的行程（多人汇合时区分），如 "她" / "我"。单人可省 */
   traveler: z.string().optional(),
@@ -125,6 +129,11 @@ export const TransportSchema = z.object({
   from: z.string().optional(),
   /** 到达点 */
   to: z.string().optional(),
+  /**
+   * 公开版里藏起哪一端（地点、时刻、日期一起藏）。家门口那端由作者写明：去程藏 from、返程藏 to。
+   * 空 = 两端都公开 —— 工具不猜：旅伴晚一天到、单程、往返写成一条，猜错的都是家门口的机场
+   */
+  hide: z.array(z.enum(TRANSPORT_ENDS)).default([]),
   /**
    * 出发日期 "YYYY-MM-DD"。缺省按事件当天推算 ——
    * 抵达型事件的航班其实前一天起飞时（西行跨日期变更线）才需要显式写
@@ -181,14 +190,9 @@ export const EventSchema = z.object({
   cost: CostSchema.optional(),
   booking: BookingSchema.optional(),
   /**
-   * 长途换乘段（0..n 条，多人汇合时一人一条）。
-   * 只在**首次引用**某段长途的事件上非空 —— 解析器按日期序把 trip-transports
-   * 的明细灌进第一个 `detail:` 引用它的事件，后续引用是「简单提及」，不重复。
-   */
-  transports: z.array(TransportSchema).default([]),
-  /**
    * `detail:` 引用的前置记录名（trip-transports / trip-stays / trip-rentals 的 what）。
-   * 事件专注行程本身，大段事务的细节全部住在前置块里，这里只留一根指针。
+   * 事件专注行程本身，大段事务的细节全部住在前置块里，这里只留一根指针；
+   * 哪张卡长出票面 / 住宿 / 租车模块由 tripmd 的 `resolveDetails` 现查，事件上不存副本。
    * 序列化写回 `detail: 名字`。
    */
   detailRef: z.string().optional(),
@@ -339,7 +343,7 @@ export const DEFAULT_CHECK_OUT = 10 * 60
  *
  * 和住宿/租车一样是**前置声明**：细节（承运方、时刻、票价、行李、退改）
  * 全部写在顶层块里，每日行程中的事件用 `detail: 名字` 一句话引用。
- * 解析时明细灌进首次引用的事件的 transports，票面时间轴/日历/导出零改动。
+ * 首次引用它的事件长出票面时间轴（tripmd 的 resolveDetails），事件上不存副本。
  *
  * 多人从不同地方出发汇合 = 一段长途里的多条 transport，各带 traveler。
  */

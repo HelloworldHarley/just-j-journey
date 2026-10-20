@@ -241,7 +241,6 @@ export function buildDays(ctx: ParseCtx, rawDays: RawDay[], front: DayContext): 
         flags: readFlags(bag, re.line, m['flags']),
         cost: costRaw ? parseCost(costRaw, ctx.travelers, ctx.currency) : undefined,
         booking,
-        transports: [],
         detailRef,
         summary,
         detail,

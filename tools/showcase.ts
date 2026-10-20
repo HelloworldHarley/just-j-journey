@@ -12,9 +12,8 @@
 import { mkdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DEFAULT_DATA_DIR, dataDir, readGeometry, readTrip } from '@jjj/datadir'
-import { formatDiagnostics } from '@jjj/tripmd'
+import { formatDiagnostics, publicNotices, publicPlan } from '@jjj/tripmd'
 import { bold, die, dim, green, yellow } from './lib/cli.ts'
-import { proseWarnings, publicArtifacts } from './lib/stage-public.ts'
 
 /** 示范行程的 id / 目录名。改它要同步改 roundtrip / patch 测试里的路径 */
 const SHOWCASE_ID = 'showcase-seattle-2026-10'
@@ -43,17 +42,14 @@ const source = {
   subtitle: '公开示范 · 抹除敏感信息后的真实行程',
   visibility: 'public' as const,
 }
-let artifacts
-try {
-  artifacts = publicArtifacts(source, readGeometry(src, id), SHOWCASE_ID)
-} catch (e) {
-  die(e instanceof Error ? e.message : String(e))
-}
+const artifacts = publicPlan(source, { geometry: readGeometry(src, id), label: SHOWCASE_ID })
+if (artifacts.problem) die(artifacts.problem)
 
 mkdirSync(out, { recursive: true })
 writeFileSync(join(out, 'plan.md'), artifacts.md)
 // 路网只带对得上的那部分（民宿那几段自然掉了）；一条都不剩就连旧文件一起删
 if (artifacts.geometry) writeFileSync(join(out, 'geometry.json'), JSON.stringify(artifacts.geometry))
 else rmSync(join(out, 'geometry.json'), { force: true })
-for (const w of proseWarnings(SHOWCASE_ID, artifacts.prose)) console.log(`  ${yellow('⚠')} ${w}`)
-console.log(`${green('✓')} ${bold(SHOWCASE_ID)} ${dim(`← ${id}，${artifacts.prose.length} 处正文命中需过目`)}`)
+const notices = publicNotices(SHOWCASE_ID, artifacts)
+for (const w of notices) console.log(`  ${yellow('⚠')} ${w}`)
+console.log(`${green('✓')} ${bold(SHOWCASE_ID)} ${dim(`← ${id}，${notices.length} 条提醒需过目`)}`)

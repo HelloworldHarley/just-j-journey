@@ -16,7 +16,7 @@ import { execSync } from 'node:child_process'
 import { dataDir } from '@jjj/datadir'
 import { bold, die, dim, green, yellow } from './lib/cli.ts'
 import { ROOT } from './lib/paths.ts'
-import { STAGE_DIR, proseWarnings, stagePublic, type StageResult } from './lib/stage-public.ts'
+import { STAGE_DIR, stagePublic, type StageResult } from './lib/stage-public.ts'
 
 const args = process.argv.slice(2)
 const stageOnly = args.includes('--stage-only')
@@ -35,7 +35,7 @@ try {
 for (const t of result.staged) {
   const routes = t.routes.total > 0 ? ` · 路网 ${t.routes.kept}/${t.routes.total} 条随行` : ''
   console.log(`${green('✓')} ${bold(t.id)} ${dim(`已抹除${routes}`)}`)
-  for (const w of proseWarnings(t.id, t.prose)) console.log(`  ${yellow('⚠')} ${w}`)
+  for (const w of t.notices) console.log(`  ${yellow('⚠')} ${w}`)
 }
 if (result.skipped.length > 0) console.log(dim(`跳过 ${result.skipped.length} 份非公开行程：${result.skipped.join(', ')}`))
 if (result.staged.length === 0) {

@@ -2,7 +2,18 @@ export { parse, type ParseResult } from './parse.ts'
 export { serialize } from './serialize.ts'
 export { applyPatch, type PatchResult } from './patch.ts'
 export { summarize, dayComposition } from './summary.ts'
-export { detailIndex, missingCoords, stayOfMorning, type DetailIndex } from './resolve.ts'
+export {
+  adjacentLegs,
+  detailIndex,
+  legsOf,
+  missingCoords,
+  referencedPlaceIds,
+  resolveDetails,
+  stayOfMorning,
+  type DayLegs,
+  type DetailIndex,
+  type ResolvedDetails,
+} from './resolve.ts'
 export {
   decodePolyline,
   filterGeometry,
@@ -27,7 +38,7 @@ export { toIcs, type IcsOptions } from './ics.ts'
 export * from './values.ts'
 export { buildManifest, isFixtureId, isTripId, manifestIds, publicEntries, type Manifest, type ManifestEntry } from './manifest.ts'
 export { isAbsoluteUrl, parseSpace, serializeSpace, spaceAssets, SPACE_KEYS, type SpaceParseResult } from './space.ts'
-export { sanitize, sanitizeTransport, transportRole, referencedSpan, blurCoord, type TransportRole } from './sanitize.ts'
-export { publicPlan, type PublicPlan } from './public.ts'
-export { constraintValues, findLeaks, sensitiveValues, type Leak } from './leaks.ts'
+export { blurCoord, hideReminders, isPrivatePlace, sanitize, type Sanitized, type Secret } from './sanitize.ts'
+export { publicNotices, publicPlan, type PublicPlan } from './public.ts'
+export { findLeaks, PROSE_FIELDS, scanForm, type Leak } from './leaks.ts'
 export { setFrontmatterScalar } from './frontmatter.ts'

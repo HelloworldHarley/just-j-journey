@@ -92,16 +92,8 @@ export function parse(src: string): ParseResult {
   })
   days.sort((a, b) => a.date.localeCompare(b.date))
 
-  // 「首次引用」按日期序判定，所以必须排完序再算 —— 若按书写序，
-  // Day 2 写在 Day 1 前面的文件往返一次后首卡会换人，破坏语义幂等。
-  // 扫描本身在 resolve.ts —— 前端挂信息模块、预算记账日用的是同一份。
+  // 没人引用的前置记录要警告；引用扫描在 resolve.ts，与前端挂模块、预算记账日是同一份
   const refIndex = detailIndex(days)
-  const eventById = new Map(days.flatMap((d) => d.events).map((e) => [e.id, e]))
-  for (const journey of journeys) {
-    const evId = refIndex.firstRef.get(journey.what)
-    const ev = evId === undefined ? undefined : eventById.get(evId)
-    if (ev) ev.transports = journey.transports
-  }
 
   // ── 语义 lint ──
   lintDayFlow(bag, flows)

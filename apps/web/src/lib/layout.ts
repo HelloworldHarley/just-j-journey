@@ -1,4 +1,5 @@
 import type { Day, Leg, TripEvent } from '@jjj/schema'
+import { legsOf } from '@jjj/tripmd'
 
 /**
  * 列表视图的行编排。
@@ -24,6 +25,8 @@ export interface LegRow {
   kind: 'leg'
   key: string
   leg: Leg
+  /** 当天的开场通勤（昨晚住处 → 第一站）：前面没有卡片，通勤条要说出起点 */
+  opening: boolean
   /** 空档减去路上耗时。负数 = 时间冲突 */
   slackMin: number | null
   gapMin: number
@@ -42,9 +45,7 @@ export interface IdleRow {
 export type TimelineRow = EventRow | LegRow | IdleRow
 
 export function buildTimeline(day: Day): TimelineRow[] {
-  const legByEvent = new Map<string, Leg>()
-  for (const leg of day.legs) if (leg.afterEventId !== null) legByEvent.set(leg.afterEventId, leg)
-
+  const { opening, after } = legsOf(day)
   const rows: TimelineRow[] = []
   const events = day.events
 
@@ -54,8 +55,7 @@ export function buildTimeline(day: Day): TimelineRow[] {
     每一天就都会以一张什么都没说的卡开头。
     余量留空：前面没有事件的结束时刻可减，编一个只会误报冲突。
   */
-  const opening = day.legs.find((l) => l.afterEventId === null)
-  if (opening) rows.push({ kind: 'leg', key: opening.id, leg: opening, slackMin: null, gapMin: 0 })
+  if (opening) rows.push({ kind: 'leg', key: opening.id, leg: opening, opening: true, slackMin: null, gapMin: 0 })
 
   events.forEach((ev, i) => {
     const prev = i > 0 ? events[i - 1] : undefined
@@ -64,7 +64,7 @@ export function buildTimeline(day: Day): TimelineRow[] {
       // 原始差值可能为负 —— 那是两个事件真的撞在一起，不能钳成 0 一了百了
       const rawGap = ev.startMin - prev.endMin
       const gapMin = Math.max(0, rawGap)
-      const leg = legByEvent.get(prev.id)
+      const leg = after.get(prev.id)
       // 模糊时段（上午/下午/全天）的起止是名义窗口，不是排定时刻 ——
       // 拿它算余量会误报冲突，也不能拿它编出「N 小时空档」。
       // 解析器的同名检查也是这么跳过的。
@@ -79,6 +79,7 @@ export function buildTimeline(day: Day): TimelineRow[] {
           kind: 'leg',
           key: leg.id,
           leg,
+          opening: false,
           slackMin: leg.durationMin === null || fuzzy ? null : gapMin - leg.durationMin,
           gapMin,
         })
