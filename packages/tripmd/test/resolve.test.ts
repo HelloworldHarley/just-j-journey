@@ -3,59 +3,23 @@ import { detailIndex, missingCoords, stayOfMorning } from '../src/resolve.ts'
 import { parse } from '../src/parse.ts'
 import { serialize } from '../src/serialize.ts'
 import type { Day, Place, Stay, Trip, TripEvent } from '@jjj/schema'
+import { makeDay, makeEvent, makePlace, makeTrip } from './support/index.ts'
 
 /** 造一个只有 detail 引用相关字段有意义的事件 */
 function ev(id: string, detailRef?: string, placeId: string | null = null): TripEvent {
-  return {
-    id,
-    title: id,
-    category: 'sight',
-    startMin: 600,
-    endMin: 660,
-    timeKind: 'range',
-    timeRaw: '10:00–11:00',
-    placeId,
-    flags: [],
-    transports: [],
-    detailRef,
-    summary: '',
-    detail: '',
-    notes: [],
-    variants: [],
-  }
+  return makeEvent({ id, timeRaw: '10:00–11:00', placeId, detailRef })
 }
 
 function day(index: number, date: string, events: TripEvent[]): Day {
-  return { index, date, weekday: '周四', color: '#000', intro: '', events, legs: [] }
+  return makeDay({ index, date, events })
 }
 
 function place(id: string, coord: [number, number] | null): Place {
-  return {
-    id,
-    name: id,
-    coord,
-    category: 'sight',
-    tentative: false,
-    geo: { source: coord ? 'authored' : 'none', confidence: coord ? 'high' : 'unknown' },
-  }
+  return makePlace({ id, coord })
 }
 
 function trip(days: Day[], places: Place[], over: Partial<Trip> = {}): Trip {
-  return {
-    id: 't',
-    title: 'T',
-    destination: 'X',
-    timezone: 'UTC',
-    dates: { start: '2026-10-01', end: '2026-10-05' },
-    constraints: [],
-    journeys: [],
-    stays: [],
-    rentals: [],
-    places,
-    days,
-    reference: [],
-    ...over,
-  }
+  return makeTrip({ days, places, ...over })
 }
 
 describe('detailIndex', () => {

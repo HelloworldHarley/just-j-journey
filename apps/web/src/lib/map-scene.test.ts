@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Day, Leg, Place, Trip, TripEvent } from '@jjj/schema'
 import { decodePolyline } from '@jjj/tripmd'
+import { makeDay, makeEvent, makeLeg, makePlace, makeTrip } from '@jjj/tripmd/test-support'
 import {
   cardFocusOffset,
   dashCasing,
@@ -15,74 +16,22 @@ import {
   straightSegments,
 } from './map-scene.ts'
 
-const place = (id: string, coord: [number, number] | null): Place => ({
-  id,
-  name: id,
-  coord,
-  category: 'sight',
-  tentative: false,
-  geo: { source: coord ? 'authored' : 'none', confidence: coord ? 'high' : 'unknown' },
-})
+const place = (id: string, coord: [number, number] | null): Place => makePlace({ id, coord })
 
-const ev = (id: string, placeId: string | null): TripEvent => ({
-  id,
-  title: id,
-  category: 'sight',
-  startMin: 600,
-  endMin: 660,
-  timeKind: 'exact',
-  timeRaw: '',
-  placeId,
-  flags: [],
-  transports: [],
-  summary: '',
-  detail: '',
-  notes: [],
-  variants: [],
-})
+const ev = (id: string, placeId: string | null): TripEvent => makeEvent({ id, placeId })
 
-const day = (index: number, events: TripEvent[], legs: Leg[] = []): Day => ({
-  index,
-  date: `2026-10-0${index}`,
-  weekday: '周四',
-  color: `#c${index}`,
-  intro: '',
-  events,
-  legs,
-})
+const day = (index: number, events: TripEvent[], legs: Leg[] = []): Day =>
+  makeDay({ index, date: `2026-10-0${index}`, color: `#c${index}`, events, legs })
 
-const trip = (days: Day[], places: Place[], over: Partial<Trip> = {}): Trip => ({
-  id: 't',
-  title: 'T',
-  destination: 'X',
-  timezone: 'UTC',
-  dates: { start: '2026-10-01', end: '2026-10-05' },
-  visibility: 'private',
-  constraints: [],
-  journeys: [],
-  stays: [],
-  rentals: [],
-  places,
-  days,
-  reference: [],
-  ...over,
-})
+const trip = (days: Day[], places: Place[], over: Partial<Trip> = {}): Trip => makeTrip({ days, places, ...over })
 
 /** 把一天的 segments 摊成坐标数组，方便断言 */
 const segCoords = (p: { segments: { coords: [number, number][] }[] }) => p.segments.map((s) => s.coords)
 /** 同上但只看 real 标记 */
 const segReal = (p: { segments: { real: boolean }[] }) => p.segments.map((s) => s.real)
 
-const leg = (afterEventId: string | null, from: string, to: string, geometry: string | null): Leg => ({
-  id: `l-${afterEventId}`,
-  afterEventId,
-  from,
-  to,
-  mode: 'drive',
-  durationMin: null,
-  distanceKm: null,
-  geometry,
-})
+const leg = (afterEventId: string | null, from: string, to: string, geometry: string | null): Leg =>
+  makeLeg({ id: `l-${afterEventId}`, afterEventId, from, to, mode: 'drive', geometry })
 
 const SEA: [number, number] = [-122.33, 47.6]
 const UW: [number, number] = [-122.3, 47.65]

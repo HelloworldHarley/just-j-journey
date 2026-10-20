@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parse } from '@jjj/tripmd'
+import { edit } from '@jjj/tripmd/test-support'
 import { buildBudget } from './budget.ts'
 
 /**
@@ -80,7 +81,7 @@ describe('buildBudget 前置块统计', () => {
   })
 
   it('入住日在行程区间外时不进 byDay，但总额不丢', () => {
-    const early = MD.replace('from: "2026-10-01 16:00"', 'from: "2026-09-30 16:00"')
+    const early = edit(MD, 'from: "2026-10-01 16:00"', 'from: "2026-09-30 16:00"')
     const m2 = buildBudget(parse(early).trip!)
     expect(m2.total).toBe(870)
     expect(m2.byDay.reduce((n, d) => n + d.total, 0)).toBe(870 - 340)

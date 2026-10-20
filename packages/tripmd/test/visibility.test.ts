@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from '../src/parse.ts'
 import { serialize } from '../src/serialize.ts'
+import { edit } from './support/index.ts'
 
 /**
  * visibility：public 进公开版（抹过），private 只进完整版，缺省 private。
@@ -10,7 +11,7 @@ import { serialize } from '../src/serialize.ts'
  */
 const md = readFileSync(join(__dirname, '../../../apps/web/public/data/_example/plan.md'), 'utf8')
 /** 在 frontmatter 末尾追加一行 */
-const withFm = (extra: string) => md.replace('currency: JPY\n', `currency: JPY\n${extra}\n`)
+const withFm = (extra: string) => edit(md, 'currency: JPY\n', `currency: JPY\n${extra}\n`)
 
 describe('visibility', () => {
   it('缺省 private，摘要里也带着', () => {

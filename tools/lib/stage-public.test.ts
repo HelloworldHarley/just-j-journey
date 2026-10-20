@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { removeTrees, tempTree } from '@jjj/datadir/test-support'
 import { parse, publicPlan, routableLegs, setFrontmatterScalar } from '@jjj/tripmd'
 import { stagePublic } from './stage-public.ts'
 
@@ -16,8 +16,6 @@ let src: string
 let stage: string
 
 beforeAll(() => {
-  src = realpathSync(mkdtempSync(join(tmpdir(), 'jjj-stage-src-')))
-  stage = join(realpathSync(mkdtempSync(join(tmpdir(), 'jjj-stage-out-'))), 'public')
   const full = parse(FIXTURE).trip!
   const pub = publicPlan(full).trip!
   const kept = routableLegs(pub)[0]!
@@ -30,24 +28,20 @@ beforeAll(() => {
       'drive|p-nobody|p-nowhere': { poly: GEOM, from: [0, 0], to: [1, 1] },
     },
   }
-  mkdirSync(join(src, 'pub'))
-  writeFileSync(join(src, 'pub', 'plan.md'), FIXTURE) // fixture 自带 visibility: public
-  writeFileSync(join(src, 'pub', 'geometry.json'), JSON.stringify(doc))
-  writeFileSync(join(src, 'pub', 'calendar.ics'), 'BEGIN:VCALENDAR')
-  mkdirSync(join(src, 'priv'))
-  writeFileSync(join(src, 'priv', 'plan.md'), setFrontmatterScalar(FIXTURE, 'visibility', null))
-  mkdirSync(join(src, '_demo'))
-  writeFileSync(join(src, '_demo', 'plan.md'), FIXTURE)
-  writeFileSync(join(src, 'space.md'), '---\nname: 测试\navatar: avatar.png\ntips:\n  - {label: 微信, image: tips/wx.png}\n---\n')
-  writeFileSync(join(src, 'avatar.png'), 'png')
-  mkdirSync(join(src, 'tips'))
-  writeFileSync(join(src, 'tips', 'wx.png'), 'png')
-  writeFileSync(join(src, 'stray.txt'), 'not yours')
+  src = tempTree('stage-src', {
+    'pub/plan.md': FIXTURE, // fixture 自带 visibility: public
+    'pub/geometry.json': JSON.stringify(doc),
+    'pub/calendar.ics': 'BEGIN:VCALENDAR',
+    'priv/plan.md': setFrontmatterScalar(FIXTURE, 'visibility', null),
+    '_demo/plan.md': FIXTURE,
+    'space.md': '---\nname: 测试\navatar: avatar.png\ntips:\n  - {label: 微信, image: tips/wx.png}\n---\n',
+    'avatar.png': 'png',
+    'tips/wx.png': 'png',
+    'stray.txt': 'not yours',
+  })
+  stage = join(tempTree('stage-out'), 'public')
 })
-afterAll(() => {
-  rmSync(src, { recursive: true, force: true })
-  rmSync(join(stage, '..'), { recursive: true, force: true })
-})
+afterAll(() => removeTrees(src, dirname(stage)))
 
 describe('stagePublic', () => {
   it('只收 public 且非示范的行程；manifest 只有它；名片与引用的文件随行；ics 与杂物不带', () => {

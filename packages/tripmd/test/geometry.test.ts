@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Day, Leg, Place, Trip } from '@jjj/schema'
+import { makeDay, makeLeg, makePlace, makeTrip } from './support/index.ts'
 import { decodePolyline, mergeGeometry, routableLegs, routeKey } from '../src/geometry.ts'
 
 /** Google 官方文档的样例：(38.5,-120.2) (40.7,-120.95) (43.252,-126.453) */
@@ -42,50 +43,11 @@ describe('decodePolyline', () => {
 const A: [number, number] = [-122.33, 47.6]
 const B: [number, number] = [-122.3, 47.65]
 
-const place = (id: string, coord: [number, number] | null): Place => ({
-  id,
-  name: id,
-  coord,
-  category: 'sight',
-  tentative: false,
-  geo: { source: coord ? 'authored' : 'none', confidence: coord ? 'high' : 'unknown' },
-})
-
-const leg = (from: string | null, to: string | null, mode: Leg['mode'] = 'drive'): Leg => ({
-  id: `l-${from}-${to}`,
-  afterEventId: `e-${from}`,
-  from,
-  to,
-  mode,
-  durationMin: null,
-  distanceKm: null,
-  geometry: null,
-})
-
-const day = (legs: Leg[]): Day => ({
-  index: 1,
-  date: '2026-10-01',
-  weekday: '周四',
-  color: '#000',
-  intro: '',
-  events: [],
-  legs,
-})
-
-const trip = (days: Day[], places: Place[]): Trip => ({
-  id: 't',
-  title: 'T',
-  destination: 'X',
-  timezone: 'UTC',
-  dates: { start: '2026-10-01', end: '2026-10-05' },
-  constraints: [],
-  journeys: [],
-  stays: [],
-  rentals: [],
-  places,
-  days,
-  reference: [],
-})
+const place = (id: string, coord: [number, number] | null): Place => makePlace({ id, coord })
+const leg = (from: string | null, to: string | null, mode: Leg['mode'] = 'drive'): Leg =>
+  makeLeg({ id: `l-${from}-${to}`, afterEventId: `e-${from}`, from, to, mode })
+const day = (legs: Leg[]): Day => makeDay({ legs })
+const trip = (days: Day[], places: Place[]): Trip => makeTrip({ days, places })
 
 const doc = (routes: Record<string, { poly: string; from: [number, number]; to: [number, number] }>) => ({
   version: 1,

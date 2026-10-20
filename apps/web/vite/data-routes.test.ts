@@ -1,8 +1,8 @@
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { DEFAULT_DATA_DIR } from '@jjj/datadir'
+import { removeTrees, tempTree } from '@jjj/datadir/test-support'
 import { setFrontmatterScalar } from '@jjj/tripmd'
 import { dataRoute, fileRoute, isVisibilityCall, manifestRoute, normalizeUrlPath, publicRoute, shipsToDist, visibilityRoute, type DataServer } from './data-routes.ts'
 
@@ -18,25 +18,21 @@ const asPublic = setFrontmatterScalar(example, 'visibility', 'public')
 const body = (r: { body: string | Buffer }): string => r.body.toString()
 
 beforeAll(() => {
-  root = realpathSync(mkdtempSync(join(tmpdir(), 'jjj-routes-')))
-  for (const [id, md] of [['pub', asPublic], ['priv', example], ['_fix', asPublic], ['_demo', example]] as const) {
-    mkdirSync(join(root, id))
-    writeFileSync(join(root, id, 'plan.md'), md)
-  }
-  writeFileSync(join(root, 'pub', 'confirmations.pdf'), 'not for the public')
-  writeFileSync(join(root, 'pub', 'calendar.ics'), 'BEGIN:VCALENDAR')
-  writeFileSync(join(root, 'space.md'), '---\nname: 测试\navatar: avatar.png\n---\n')
-  writeFileSync(join(root, 'avatar.png'), 'png')
-  writeFileSync(join(root, 'private-photo.png'), 'png')
-  // 目录内一个指到外面的行程目录：外面那份是 public 的 plan.md
-  outside = realpathSync(mkdtempSync(join(tmpdir(), 'jjj-routes-out-')))
-  writeFileSync(join(outside, 'plan.md'), asPublic)
-  symlinkSync(outside, join(root, 'linked'))
+  outside = tempTree('routes-out', { 'plan.md': asPublic })
+  root = tempTree('routes', {
+    'pub/plan.md': asPublic,
+    'pub/confirmations.pdf': 'not for the public',
+    'pub/calendar.ics': 'BEGIN:VCALENDAR',
+    'priv/plan.md': example,
+    '_fix/plan.md': asPublic,
+    '_demo/plan.md': example,
+    'space.md': '---\nname: 测试\navatar: avatar.png\n---\n',
+    'avatar.png': 'png',
+    'private-photo.png': 'png',
+    linked: { link: outside }, // 目录内一个指到外面的行程目录：外面那份是 public 的 plan.md
+  })
 })
-afterAll(() => {
-  rmSync(root, { recursive: true, force: true })
-  rmSync(outside, { recursive: true, force: true })
-})
+afterAll(() => removeTrees(root, outside))
 
 describe('normalizeUrlPath', () => {
   it('整条路径解码一次再规范化：// 与 /./ 收掉，前缀里的百分号转义也解开；坏转义返回 null 而不是抛', () => {

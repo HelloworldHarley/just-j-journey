@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { DIR, removeTrees, tempTree } from '@jjj/datadir/test-support'
 import { calendarToken, writeCalendarFeeds } from './calendar-feeds.ts'
 
 const TOKEN = 'a'.repeat(16) + 'B_c-' + '9'.repeat(8)
@@ -28,17 +28,14 @@ describe('writeCalendarFeeds', () => {
   let data: string
   let out: string
   beforeAll(() => {
-    data = realpathSync(mkdtempSync(join(tmpdir(), 'jjj-cal-data-')))
-    out = realpathSync(mkdtempSync(join(tmpdir(), 'jjj-cal-out-')))
-    for (const id of ['trip-a', 'trip-b', '_demo']) mkdirSync(join(data, id))
-    writeFileSync(join(data, 'trip-a', 'calendar.ics'), 'BEGIN:VCALENDAR A')
-    writeFileSync(join(data, '_demo', 'calendar.ics'), 'BEGIN:VCALENDAR DEMO')
-    // trip-b 没有 calendar.ics（data:check 没跑过或解析失败）
+    data = tempTree('cal-data', {
+      'trip-a/calendar.ics': 'BEGIN:VCALENDAR A',
+      'trip-b': DIR, // 没有 calendar.ics（data:check 没跑过或解析失败）
+      '_demo/calendar.ics': 'BEGIN:VCALENDAR DEMO',
+    })
+    out = tempTree('cal-out')
   })
-  afterAll(() => {
-    rmSync(data, { recursive: true, force: true })
-    rmSync(out, { recursive: true, force: true })
-  })
+  afterAll(() => removeTrees(data, out))
 
   it('有订阅文件的真行程拷到 cal/<密钥>/<id>.ics，示范目录与没有文件的跳过；索引写进 data/', () => {
     expect(writeCalendarFeeds(data, out, TOKEN)).toEqual(['trip-a'])

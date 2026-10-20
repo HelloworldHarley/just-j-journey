@@ -5,6 +5,7 @@ import { parse } from '../src/parse.ts'
 import { serialize } from '../src/serialize.ts'
 import { sanitize } from '../src/sanitize.ts'
 import { constraintValues, findLeaks, sensitiveValues } from '../src/leaks.ts'
+import { makeConstraint } from './support/index.ts'
 
 const md = readFileSync(join(__dirname, 'fixtures/sanitize-full.md'), 'utf8')
 const trip = () => parse(md).trip!
@@ -48,7 +49,7 @@ describe('findLeaks', () => {
   it('硬约束的 label / note 单独成名单 —— 不靠别处恰好也写了同一个值', () => {
     // 加一条只出现在硬约束里的值：值机码、门锁密码这类东西作者只会写在这里
     const t = trip()
-    t.constraints.push({ kind: 'deadline', at: '2026-11-22 12:00', label: '退房 · 门锁密码 9Z7Q', note: '值机码 K2LM8' })
+    t.constraints.push(makeConstraint({ kind: 'deadline', date: '2026-11-22', minute: 720, label: '退房 · 门锁密码 9Z7Q', note: '值机码 K2LM8' }))
     expect(constraintValues(t)).toEqual(expect.arrayContaining(['退房 · 门锁密码 9Z7Q', '值机码 K2LM8']))
     expect(sensitiveValues(t)).not.toContain('值机码 K2LM8') // 不进通用黑名单：它们只在两处查，见下两条
     // 完整版文本里它们躺在 trip-constraints 围栏里 → 结构块命中（sanitize 若没丢掉整块，就是这个形状）
@@ -62,7 +63,7 @@ describe('findLeaks', () => {
 
   it('硬约束的 label 与地点同名：在别的结构块里出现不算泄漏 —— 自由文本撞上地点名很正常，不能把构建打挂', () => {
     const t = trip()
-    t.constraints.push({ kind: 'deadline', at: '2026-11-22 15:00', label: '羽田机场' })
+    t.constraints.push(makeConstraint({ kind: 'deadline', date: '2026-11-22', minute: 900, label: '羽田机场' }))
     const leaks = findLeaks(serialize(sanitize(t)), t)
     expect(leaks.filter((l) => l.value === '羽田机场')).toEqual([])
   })

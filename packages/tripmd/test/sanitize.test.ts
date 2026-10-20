@@ -5,6 +5,7 @@ import type { Transport, Trip } from '@jjj/schema'
 import { parse } from '../src/parse.ts'
 import { serialize } from '../src/serialize.ts'
 import { blurCoord, referencedSpan, sanitize, sanitizeTransport, transportRole } from '../src/sanitize.ts'
+import { edit } from './support/index.ts'
 
 /**
  * 公开版抹除 —— 白名单：只有显式保留的字段能过。
@@ -40,14 +41,14 @@ describe('referencedSpan', () => {
 
   it('跨度只看长途：去程之前一天引用了租车，去程仍是抵达 —— 住宿 / 租车也走 detail:，混进来会把跨度撑宽', () => {
     // 在去程前一天加一天，那天只引用租车；Day 编号整体后移
-    const shifted = md
-      .replace('start: 2026-11-20', 'start: 2026-11-19')
-      .replace('## Day 3 · 2026-11-22', '## Day 4 · 2026-11-22')
-      .replace('## Day 2 · 2026-11-21', '## Day 3 · 2026-11-21')
-      .replace(
-        '## Day 1 · 2026-11-20',
-        '## Day 1 · 2026-11-19\n\n```trip-day\ntheme: 出发前一晚\n```\n\n### 机场旁取车\n\n```trip-event\ntime: "22:00"\ncategory: logistics\nplace: 羽田机场\ndetail: 日产 Note\n```\n\n## Day 2 · 2026-11-20',
-      )
+    let shifted = edit(md, 'start: 2026-11-20', 'start: 2026-11-19')
+    shifted = edit(shifted, '## Day 3 · 2026-11-22', '## Day 4 · 2026-11-22')
+    shifted = edit(shifted, '## Day 2 · 2026-11-21', '## Day 3 · 2026-11-21')
+    shifted = edit(
+      shifted,
+      '## Day 1 · 2026-11-20',
+      '## Day 1 · 2026-11-19\n\n```trip-day\ntheme: 出发前一晚\n```\n\n### 机场旁取车\n\n```trip-event\ntime: "22:00"\ncategory: logistics\nplace: 羽田机场\ndetail: 日产 Note\n```\n\n## Day 2 · 2026-11-20',
+    )
     const r = parse(shifted)
     expect(r.diagnostics.filter((d) => d.severity === 'error')).toEqual([])
     const go = journey(sanitize(r.trip!), '去程').transports[0]!
@@ -58,7 +59,7 @@ describe('referencedSpan', () => {
 
   it('首日在家、末日在家的行程：去程仍是抵达、返程仍是离开 —— 按行程首末日判会把两班都当成内部移动，家门口的机场就发出去了', () => {
     // 同一份 fixture，只把行程首末日各往外推一天（Day 1 前一天在家收拾，末日后一天在家歇着）
-    const home = md.replace('start: 2026-11-20', 'start: 2026-11-19').replace('end: 2026-11-22', 'end: 2026-11-23')
+    const home = edit(edit(md, 'start: 2026-11-20', 'start: 2026-11-19'), 'end: 2026-11-22', 'end: 2026-11-23')
     const r = parse(home)
     expect(r.diagnostics.filter((d) => d.severity === 'error')).toEqual([])
     const t = sanitize(r.trip!)

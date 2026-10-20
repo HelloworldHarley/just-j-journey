@@ -1,14 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Transport } from '@jjj/schema'
 import { dayOffsetOf, timelineDates } from '../src/transport-dates.ts'
+import { makeTransport } from './support/index.ts'
 
-const t = (over: Partial<Transport>): Transport => ({
-  mode: 'flight',
-  arrDayOffset: 0,
-  durationMin: null,
-  stops: [],
-  ...over,
-})
+const t = (over: Partial<Transport>): Transport => makeTransport(over)
 
 const stop = (over: Partial<Transport['stops'][number]>): Transport['stops'][number] => ({
   depAirport: undefined,

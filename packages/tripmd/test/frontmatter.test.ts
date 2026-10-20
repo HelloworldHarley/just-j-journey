@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from '../src/parse.ts'
 import { setFrontmatterScalar } from '../src/frontmatter.ts'
+import { edit } from './support/index.ts'
 
 /**
  * 首页「公开 / 私有」开关走的写路径：只动 frontmatter 一行，文件其余字节不变。
@@ -41,7 +42,7 @@ describe('setFrontmatterScalar', () => {
   })
 
   it('只认行首的键：拼错的 visibilty 和别的键的值里出现的字样都不算命中', () => {
-    const tricky = md.replace('currency: JPY\n', 'currency: JPY\nvisibilty: public\nsubtitle: visibility: yes\n')
+    const tricky = edit(md, 'currency: JPY\n', 'currency: JPY\nvisibilty: public\nsubtitle: visibility: yes\n')
     const out = setFrontmatterScalar(tricky, 'visibility', 'public')
     expect(out).toContain('visibilty: public\n') // 拼错的那行原样留着，交给解析器去警告
     expect(out).toContain('subtitle: visibility: yes\n')

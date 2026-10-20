@@ -14,11 +14,12 @@ import {
   visualSpan,
   type WeekAxis,
 } from './week-axis.ts'
+import { makeDay, makeEvent } from '@jjj/tripmd/test-support'
 
-const ev = (startMin: number, endMin: number): TripEvent =>
-  ({ startMin, endMin }) as TripEvent
+let evSeq = 0
+const ev = (startMin: number, endMin: number): TripEvent => makeEvent({ id: `e${++evSeq}`, startMin, endMin })
 
-const day = (date: string, ...events: TripEvent[]): Day => ({ date, events }) as Day
+const day = (date: string, ...events: TripEvent[]): Day => makeDay({ date, events })
 
 const rental = (from: string, fromMin: number, to: string, toMin: number): Rental =>
   ({

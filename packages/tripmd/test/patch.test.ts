@@ -42,7 +42,7 @@ describe('set_transports', () => {
             arrDayOffset: 0,
             durationMin: 715,
             baggage: '2 件 23kg',
-            stops: [{ airport: 'ICN', waitMin: 130 }],
+            stops: [{ airport: 'ICN', legMin: null, waitMin: 130 }],
             legs: [],
             note: undefined,
           },

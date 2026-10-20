@@ -17,7 +17,7 @@ import type { Favorites } from '../../data/useFavorites.ts'
 import { iconFor } from '../../lib/icons.tsx'
 import { CategoryChip, kindVars } from '../../components/CategoryChip.tsx'
 import { TransportTimeline } from './TransportTimeline.tsx'
-import { fmtDurationZh, formatMinutes, shortDate } from '../../lib/format.ts'
+import { fmtDurationZh, formatMinutes } from '../../lib/format.ts'
 import { CostText, RentalModule, StayModule } from './modules.tsx'
 import { MapLinkButton } from '../../components/MapLinkButton.tsx'
 import { Markdown } from '../../components/Markdown.tsx'
@@ -132,7 +132,6 @@ function EventCard({
   const cat = CATEGORIES[event.category]
   const accented = cat.kind !== 'misc'
   const faved = favorites.has(event.id)
-  const warned = event.flags.includes('warning')
   const tentative = event.flags.includes('tentative')
   const optional = event.flags.includes('optional')
   // 预订角标（需预订 / 已预订 / 待订）在公开版里不出现：sanitize 把 booking 块与 needs-booking 标记都去掉了，这里不用分支
