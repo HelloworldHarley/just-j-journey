@@ -9,6 +9,14 @@ dist-public/
 .env.local
 .wrangler/
 
+# 过程文档只留在本地：交接、设计记录、计划、审查、归档、agent 说明都不进公开仓库。
+# docs/ 下默认全部忽略，只放行写给使用者看的三份 —— 以后新增的过程文档默认不会被提交。
+CLAUDE.md
+/docs/*
+!/docs/TRIPMD_SPEC.md
+!/docs/PUBLISHING.md
+!/docs/AUTHORING_PROMPT.md
+
 # data:check 的派生产物：每次都重新生成（零成本），DTSTAMP 抖动不值得进 diff。
 # CI 在 build 前跑 data:check，文件随 public/ 进 dist —— 订阅地址由此而来。
 apps/web/public/data/*/calendar.ics

@@ -10,7 +10,7 @@
  * 再以 JJJ_DATA_DIR 指向它、VITE_PUBLIC=1 跑**同一份** vite build。
  * 产物与完整版（pnpm build）是同一个 SPA，只是数据换了、缺的字段不再画「待填」。
  *
- * 抹除规则与理由见 docs/superpowers/specs/2026-09-09-personal-space-sharing-design.md。
+ * 抹除规则见 packages/tripmd/src/sanitize.ts（白名单）与 leaks.ts（泄漏拦截）；发布步骤见 docs/PUBLISHING.md。
  */
 import { execSync } from 'node:child_process'
 import { dataDir } from '@jjj/datadir'
