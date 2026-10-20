@@ -190,8 +190,6 @@ export interface CellMetrics {
   laneAreaH: number
   /** 区间带层的绝对定位偏移（相对格子顶） */
   bandTop: number
-  /** 渐隐周压缩格的最小高度（日期行 + 泳道区 + 底部余量） */
-  compactMinHeight: number
   /** 某条带在带层里的纵坐标 */
   laneTop: (lane: number) => number
 }
@@ -203,7 +201,6 @@ export function cellMetrics(stayDepth: number, rentalDepth: number): CellMetrics
   return {
     laneAreaH,
     bandTop: CELL_PT + HEAD_H + LANE_TOP,
-    compactMinHeight: CELL_PT + HEAD_H + laneAreaH + 8,
     laneTop: (lane) => lane * (LANE_H + LANE_GAP),
   }
 }

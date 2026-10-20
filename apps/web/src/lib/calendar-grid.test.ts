@@ -227,13 +227,6 @@ describe('cellMetrics', () => {
     expect(m.laneTop(2)).toBe(2 * (MONTH_CELL.LANE_H + MONTH_CELL.LANE_GAP))
   })
 
-  it('压缩格最小高度容得下日期行 + 全部泳道', () => {
-    const m = cellMetrics(1, 1)
-    expect(m.compactMinHeight).toBe(MONTH_CELL.CELL_PT + MONTH_CELL.HEAD_H + m.laneAreaH + 8)
-    // 一致性：带层底缘不越过压缩格底 —— 三处偏移彼此吻合的核心断言
-    expect(m.bandTop + m.laneAreaH).toBeLessThanOrEqual(m.compactMinHeight + MONTH_CELL.LANE_TOP)
-  })
-
   it('没有任何预订时泳道区高度为 0', () => {
     expect(cellMetrics(0, 0).laneAreaH).toBe(0)
   })

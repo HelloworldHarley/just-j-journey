@@ -201,7 +201,7 @@ function Cell({
       */
       style={{
         paddingTop: MONTH_CELL.CELL_PT,
-        ...(compact ? { minHeight: metrics.compactMinHeight } : { aspectRatio: '1 / 2' }),
+        aspectRatio: compact ? undefined : '1 / 2',
       }}
     >
       <div className="flex items-baseline justify-between gap-1" style={{ height: MONTH_CELL.HEAD_H }}>
