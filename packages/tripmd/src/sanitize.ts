@@ -39,7 +39,9 @@ import { parseClock } from './values.ts'
  * - **长途两端按作者写的 `hide` 藏**：被藏那端的地点、时刻、日期都不发；没写就两端公开。工具不猜哪端是家 ——
  *   旅伴晚一天到、单程、往返写成一条，猜错的都是家门口的机场
  * - 引用了带 hide 长途的事件卡是作者自己的接驳：正文、注意条目、变体清空，前后两段路的说明也清（同一个开关）
- * - 住宿 / 租车只抹 cost；民宿那条住宿的备注也抹（入住说明、门锁密码最常写在那里）
+ * - **钱照发**（Harley 2026-10-20）：住宿、租车、行程中间的长途、当场散项都是照着走一遍的人也要花的真实成本；
+ *   只有接驳长途（带 hide 的去程、返程）的 cost 与票价不发 —— 从哪出发、买的什么票，每个人都不一样
+ * - 民宿那条住宿的备注抹掉（入住说明、门锁密码最常写在那里）
  * - 民宿（homestay）坐标模糊到约 1 公里，英文名 / 备注 / 链接 / 地图 id 全抹（en 常常就是门牌）；
  *   进出民宿的那几段路去掉时长、距离与说明 —— 否则「步行 3 分钟到某咖啡馆」把模糊过的位置又算回来
  * - 没人引用的地点与长途不发：界面永远不画它们，留着只是多一份风险
@@ -127,9 +129,8 @@ export function isPrivatePlace(p: Pick<Place, 'category'>): boolean {
 
 // ── 长途 ────────────────────────────────────────────────────────
 
-interface TransportCtx extends Ctx {
+interface TransportCtx extends JourneyCtx {
   hide: ReadonlySet<TransportEnd>
-  eventDate: string | undefined
   /** 完整版推出来的各节点日期 —— 出发端被藏后「钟点回卷」没了锚点，到达日要写成显式日期 */
   dates: TimelineDates
 }
@@ -154,7 +155,7 @@ const TRANSPORT: Policy<Transport, TransportCtx> = {
   hide: 'omit', // 公开版里已经没有可藏的了
   carrier: 'omit', // 「达美」这种通用词正文里到处合法出现，不进黑名单
   number: secretCode,
-  price: secretMoney,
+  price: (v, c, k) => (c.connection ? secretMoney(v, c, k) : v), // 接驳长途的票价因人而异，不发
   durationMin: 'omit',
   cabin: 'omit',
   seat: secretCode,
@@ -173,11 +174,13 @@ const TRANSPORT: Policy<Transport, TransportCtx> = {
 
 interface JourneyCtx extends Ctx {
   eventDate: string | undefined
+  /** 带 hide 的长途（去程、返程）：作者自己的接驳，钱不发 */
+  connection: boolean
 }
 
 const JOURNEY: Policy<Journey, JourneyCtx> = {
   what: 'keep',
-  cost: secretCost,
+  cost: (v, c, k) => (c.connection ? secretCost(v, c, k) : sub(COST)(v, c)),
   transports: (ts, c) =>
     ts.map((t, i) =>
       TransportSchema.parse(
@@ -206,7 +209,7 @@ const STAY: Policy<Stay, PrivacyCtx> = {
   platform: 'keep',
   from: sub(MOMENT),
   to: sub(MOMENT),
-  cost: secretCost,
+  cost: sub(COST),
   refund: 'keep',
   note: privateSecret, // 民宿的入住说明、门锁密码最常写在住宿备注里
   placeId: 'keep',
@@ -221,7 +224,7 @@ const RENTAL: Policy<Rental, Ctx> = {
   platform: 'keep',
   from: sub(MOMENT),
   to: sub(MOMENT),
-  cost: secretCost,
+  cost: sub(COST),
   refund: 'keep',
   note: 'keep',
   mileage: 'keep',
@@ -358,6 +361,8 @@ const DAY: Policy<Day, DayCtx> = {
 interface TripCtx extends Ctx {
   trip: Trip
   privatePlaces: ReadonlySet<string>
+  /** 带 hide 的长途名：它们的钱不发，引用它们的事件卡是作者自己的接驳 */
+  connections: ReadonlySet<string>
 }
 
 const TRIP: Policy<Trip, TripCtx> = {
@@ -379,12 +384,12 @@ const TRIP: Policy<Trip, TripCtx> = {
     }
     return []
   },
-  // 没被引用的长途也过一遍表 —— 它的票价、班次照样进黑名单 —— 然后不发
+  // 没被引用的长途也过一遍表 —— 它的班次、座位照样进黑名单 —— 然后不发
   journeys: (js, c) => {
     const { firstRefDate } = detailIndex(c.trip.days)
     return js.flatMap((j) => {
       const eventDate = firstRefDate.get(j.what)
-      const out = JourneySchema.parse(apply(j, JOURNEY, { ...c, where: `长途「${j.what}」`, eventDate }))
+      const out = JourneySchema.parse(apply(j, JOURNEY, { ...c, where: `长途「${j.what}」`, eventDate, connection: c.connections.has(j.what) }))
       return eventDate === undefined ? [] : [out]
     })
   },
@@ -407,17 +412,15 @@ const TRIP: Policy<Trip, TripCtx> = {
       return referenced.has(p.id) ? [out] : []
     })
   },
-  days: (days, c) => {
-    const connections = new Set(c.trip.journeys.filter((j) => j.transports.some((t) => t.hide.length > 0)).map((j) => j.what))
-    return days.map((d) => DaySchema.parse(apply(d, DAY, { ...c, where: `Day ${d.index}`, day: d, connections })))
-  },
+  days: (days, c) => days.map((d) => DaySchema.parse(apply(d, DAY, { ...c, where: `Day ${d.index}`, day: d }))),
   reference: subs(REFERENCE),
 }
 
 export function sanitize(trip: Trip): Sanitized {
   const secrets: Secret[] = []
   const privatePlaces = new Set(trip.places.filter(isPrivatePlace).map((p) => p.id))
-  const out = TripSchema.parse(apply(trip, TRIP, { where: '行程', secrets, trip, privatePlaces }))
+  const connections = new Set(trip.journeys.filter((j) => j.transports.some((t) => t.hide.length > 0)).map((j) => j.what))
+  const out = TripSchema.parse(apply(trip, TRIP, { where: '行程', secrets, trip, privatePlaces, connections }))
   return { trip: out, secrets }
 }
 

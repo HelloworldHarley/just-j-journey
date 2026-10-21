@@ -33,6 +33,7 @@ visibility: public
   platform: Airbnb
   from: "2026-10-01 18:30"
   to: "2026-10-02 08:00"
+  cost: $339.42
   room: 独栋木屋 · 自助入住/退房
   parking: 含 · 门口 · 免费特斯拉充电桩
   breakfast: 不含
@@ -52,6 +53,7 @@ visibility: public
   platform: Turo
   from: "2026-10-01 10:30"
   to: "2026-10-05 09:00"
+  cost: $343.60
   pickup: Tukwila 轻轨站
   dropoff: Tukwila 轻轨站
   mileage: "2000 英里"

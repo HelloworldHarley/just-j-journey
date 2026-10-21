@@ -56,7 +56,9 @@ describe('stagePublic', () => {
   it('plan.md 是抹过的；geometry.json 只剩对得上公开版的那一条，民宿那条与孤儿都没了', () => {
     stagePublic(src, stage)
     const md = readFileSync(join(stage, 'pub', 'plan.md'), 'utf8')
-    expect(md).not.toMatch(/price:|number:|seat:|trip-constraints/)
+    // 班次、座位、硬约束不发；接驳长途（去程 $842、返程 $715）的票价也不发 —— 行程中间的长途票价照发
+    expect(md).not.toMatch(/number:|seat:|trip-constraints|\$842|\$715/)
+    expect(md).toContain('price: "¥11,220"')
     const geo = JSON.parse(readFileSync(join(stage, 'pub', 'geometry.json'), 'utf8')) as { routes: Record<string, unknown> }
     const [staged] = stagePublic(src, stage).staged
     expect(Object.keys(geo.routes)).toHaveLength(1)

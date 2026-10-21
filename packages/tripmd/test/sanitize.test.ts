@@ -63,10 +63,22 @@ describe('sanitize · 长途按 hide 藏端', () => {
     expect(secretValues(t)).toContain('LAX T2')
   })
 
-  it('没写 hide：两端时刻与地点全发，票面细节照抹', () => {
-    const f = journey(sanitize(load()).trip, '新干线').transports[0]!
-    expect(f).toMatchObject({ mode: 'hsr', from: '东京', to: '京都', depTime: '09:00', arrTime: '11:15', arrDate: '2026-11-21' })
-    for (const k of ['carrier', 'number', 'price', 'seat', 'depDate'] as const) expect(f[k], k).toBeUndefined()
+  it('没写 hide：两端时刻与地点全发，钱也发（照着走一遍的人也要花），班次座位照抹', () => {
+    const t = load()
+    const j = journey(sanitize(t).trip, '新干线')
+    expect(j.transports[0]).toMatchObject({ mode: 'hsr', from: '东京', to: '京都', depTime: '09:00', arrTime: '11:15', arrDate: '2026-11-21', price: '¥11,220' })
+    expect(j.cost).toEqual(journey(t, '新干线').cost)
+    for (const k of ['carrier', 'number', 'seat', 'depDate'] as const) expect(j.transports[0]![k], k).toBeUndefined()
+  })
+
+  it('接驳长途（带 hide）的 cost 与票价不发、进黑名单：从哪出发、买的什么票，每个人都不一样', () => {
+    const t = load()
+    for (const what of ['去程', '返程']) {
+      const j = journey(sanitize(t).trip, what)
+      expect(j.cost, what).toBeUndefined()
+      expect(j.transports.every((x) => x.price === undefined), what).toBe(true)
+    }
+    expect(secretValues(t)).toEqual(expect.arrayContaining(['$900', '$842', '$715']))
   })
 
   it('hide: to：只剩出发端，到达地进黑名单', () => {
@@ -116,23 +128,23 @@ describe('sanitize · 长途按 hide 藏端', () => {
     expect(bus).toMatchObject({ depDate: '2026-11-21', depTime: '22:00', arrDate: '2026-11-22', arrTime: '06:00' })
   })
 
-  it('没被任何事件引用的长途不发，但它的票价、班次照样进黑名单', () => {
+  it('没被任何事件引用的长途不发，但它的班次照样进黑名单', () => {
     const t = load()
     expect(sanitize(t).trip.journeys.map((j) => j.what)).toEqual(['去程', '新干线', '返程'])
-    expect(secretValues(t)).toEqual(expect.arrayContaining(['X99', '¥3200']))
+    expect(secretValues(t)).toContain('X99')
   })
 })
 
 describe('sanitize · 住宿 / 租车 / 地点', () => {
-  it('住宿与租车只抹 cost；民宿那条住宿连备注一起抹（入住说明、门锁密码最常写在这里）', () => {
+  it('住宿与租车原样公开，钱也在（真实成本）；只有民宿那条住宿的备注抹掉（入住说明、门锁密码最常写在这里）', () => {
     const before = load()
     const { trip: after, secrets } = sanitize(before)
-    const { cost: _sc, note: stayNote, ...stayRest } = before.stays[0]!
+    const { note: stayNote, ...stayRest } = before.stays[0]!
+    expect(stayRest.cost).toBeDefined() // fixture 里真有房费，断言不是空对空
     expect(after.stays[0]).toEqual(stayRest)
     expect(secrets).toContainEqual(expect.objectContaining({ kind: 'text', value: stayNote }))
-    const { cost: _rc, ...rentalRest } = before.rentals[0]!
-    expect(after.rentals[0]).toEqual(rentalRest)
-    expect(secrets).toContainEqual(expect.objectContaining({ kind: 'money', value: '$88.40' }))
+    expect(after.rentals[0]).toEqual(before.rentals[0])
+    expect(secrets.some((s) => s.kind === 'money' && ['$120.00', '$88.40'].includes(s.value))).toBe(false)
   })
 
   it('民宿：坐标模糊到 2 位小数，en / note / url / gmaps_place_id 全删且进黑名单；其他类别原样', () => {
