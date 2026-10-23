@@ -2,8 +2,10 @@
 /**
  * 构建产物体检 —— 验「打包出来的网站，地图到底能不能画」。
  *
- *   pnpm check:built              完整版产物
- *   pnpm check:built --public     公开版产物（抹除后的数据 + VITE_PUBLIC=1，base 路径同样是子路径）
+ *   pnpm check:built                        完整版：构建到 apps/web/dist-check 再验
+ *   pnpm check:built --public               公开版：抹除后的数据 + VITE_PUBLIC=1，同样构建到 dist-check
+ *   pnpm check:built --base=/<repo>/        挂在哪个子路径下（缺省 /just-j-journey/，CI 传与部署同一个表达式）
+ *   pnpm check:built --public --dir=apps/web/dist-public   不构建，直接验已经构建好的那份 —— CI 验的就是要上传的产物
  *
  * 为什么必须对产物验：dev 直接从 node_modules 加载 maplibre（worker 就躺在旁边），
  * `vite preview` 又有 SPA 回退（缺失文件回 200 + index.html）—— 两处都照不出
@@ -22,21 +24,24 @@
  *   - Chromium：自动在 ~/.cache/ms-playwright 里找，或 JJJ_CHROMIUM=<可执行文件> 指定
  *   - playwright-core：就近 import，或 JJJ_PLAYWRIGHT=<包目录> 指定
  */
-import { execSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
-import { homedir } from 'node:os'
-import { extname, join } from 'node:path'
+import { extname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { DATA_MIME, dataDir, readManifestIds } from '@jjj/datadir'
-import { ROOT } from './lib/paths.ts'
+import { TOOL_ROOT, dataDir, insideDir, mimeOf, readManifestIds } from '@jjj/datadir'
+import { viteBuild } from './lib/build.ts'
+import { headlessChromium } from './lib/chrome.ts'
 import { die, dim, green, red, yellow } from './lib/cli.ts'
 import { STAGE_DIR, stagePublic } from './lib/stage-public.ts'
 
-/** base 用真实仓库名 —— 检查的就是「挂在子路径下」这个 CI 形态 */
-const BASE = '/just-j-journey/'
-/** 独立产物目录，不覆盖手动 `pnpm build` 的 dist */
-const OUT = join(ROOT, 'apps/web/dist-check')
+const args = process.argv.slice(2)
+const arg = (name: string): string | undefined => args.find((a) => a.startsWith(`${name}=`))?.slice(name.length + 1)
+const isPublic = args.includes('--public')
+/** 挂在子路径下 —— 检查的就是这个 CI 形态（worker 那两层坑只在子路径下现形） */
+const BASE = arg('--base') ?? '/just-j-journey/'
+/** 给了 --dir 就验那份现成的产物；否则构建到独立目录，不覆盖手动 `pnpm build` 的 dist */
+const given = arg('--dir')
+const OUT = given ? resolve(TOOL_ROOT, given) : join(TOOL_ROOT, 'apps/web/dist-check')
 
 const fails: string[] = []
 const ok = (msg: string) => console.log(`${green('✓')} ${msg}`)
@@ -46,23 +51,23 @@ const bad = (msg: string) => {
 }
 
 // ── 构建（与 CI 同一形态：子路径 base）─────────────────────────
-// 公开版走的是同一份 SPA，只是数据换成抹除后的暂存目录、置 VITE_PUBLIC=1 ——
+// 公开版走的是同一份 SPA，只是数据换成抹除后的暂存目录、打开公开开关 ——
 // base 路径变了就得把 worker 那两层历史坑重放一遍，所以两种产物都要过这个关口
-const isPublic = process.argv.includes('--public')
-if (isPublic) {
-  console.log(dim('公开版：先生成抹除后的暂存数据目录'))
-  try {
-    stagePublic(dataDir(), STAGE_DIR)
-  } catch (e) {
-    die(e instanceof Error ? e.message : String(e))
+if (given) {
+  if (!existsSync(OUT)) die(`--dir 指向的产物不存在：${OUT}`)
+  console.log(dim(`验现成的产物 ${OUT}（base ${BASE}）`))
+} else {
+  if (isPublic) {
+    console.log(dim('公开版：先生成抹除后的暂存数据目录'))
+    try {
+      stagePublic(dataDir(), STAGE_DIR)
+    } catch (e) {
+      die(e instanceof Error ? e.message : String(e))
+    }
   }
+  console.log(dim(`vite build --base=${BASE} → apps/web/dist-check${isPublic ? '（公开版）' : ''}`))
+  viteBuild({ outDir: 'dist-check', base: BASE, publicData: isPublic ? STAGE_DIR : undefined, quiet: true })
 }
-console.log(dim(`vite build --base=${BASE} → apps/web/dist-check${isPublic ? '（公开版）' : ''}`))
-execSync(`pnpm --filter @jjj/web exec vite build --base=${BASE} --outDir dist-check`, {
-  cwd: ROOT,
-  stdio: ['ignore', 'ignore', 'inherit'],
-  env: isPublic ? { ...process.env, JJJ_DATA_DIR: STAGE_DIR, VITE_PUBLIC: '1' } : process.env,
-})
 
 // ── 结构层 ──────────────────────────────────────────────────────
 const assetsDir = join(OUT, 'assets')
@@ -100,7 +105,7 @@ if (isPublic) {
 }
 
 // ── 浏览器层（可选）────────────────────────────────────────────
-const chromium = findChromium()
+const chromium = headlessChromium()
 const pw = await loadPlaywright()
 
 if (!chromium || !pw) {
@@ -120,24 +125,31 @@ process.exit(fails.length ? 1 : 0)
 
 // ── 细节 ────────────────────────────────────────────────────────
 
-/** 模拟 GitHub Pages：静态直出、缺文件就 404 —— **绝不**回退 index.html */
+/**
+ * 模拟静态托管：直出、缺文件就 404 —— **绝不**回退 index.html。只听本机，路径按真实位置限制在产物目录里：
+ * 浏览器层跑的时候，`/<base>/..%2F..%2F.env` 不能把仓库根的 .env 发给局域网
+ */
 function serve(): Promise<{ port: number; close: () => void }> {
-  // 数据文件的类型与 dev 服务器同一张表，这里只多出构建产物自己的几种
-  const MIME: Record<string, string> = {
-    ...DATA_MIME,
+  // 数据文件的类型与 dev 服务器同一张表（mimeOf），这里只多出构建产物自己的几种
+  const BUILD_MIME: Record<string, string> = {
     '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2',
   }
   const server = createServer((req, res) => {
     const path = (req.url ?? '').split('?')[0]!
     if (!path.startsWith(BASE)) { res.writeHead(404).end(); return }
-    let file = join(OUT, decodeURIComponent(path.slice(BASE.length)))
-    if (path.endsWith('/')) file = join(file, 'index.html')
-    if (!existsSync(file)) { res.writeHead(404).end(); return }
-    res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' })
+    let rel: string
+    try {
+      rel = decodeURIComponent(path.slice(BASE.length)) + (path.endsWith('/') ? 'index.html' : '')
+    } catch {
+      res.writeHead(400).end(); return
+    }
+    const file = insideDir(OUT, rel)
+    if (!file || !statSync(file, { throwIfNoEntry: false })?.isFile()) { res.writeHead(404).end(); return }
+    res.writeHead(200, { 'content-type': BUILD_MIME[extname(file)] ?? mimeOf(file) })
     res.end(readFileSync(file))
   })
   return new Promise((r) => {
-    server.listen(0, () => r({
+    server.listen(0, '127.0.0.1', () => r({
       port: (server.address() as { port: number }).port,
       close: () => server.close(),
     }))
@@ -159,7 +171,7 @@ async function browserPass(pw: { chromium: { launch: (o: object) => Promise<Brow
     page.on('response', (r) => {
       if (r.status() >= 400) notFound.push(`${r.status()} ${r.url()}`)
     })
-    await page.goto(`http://localhost:${port}${BASE}#/trip/${tripId}/map`, { waitUntil: 'load' })
+    await page.goto(`http://127.0.0.1:${port}${BASE}#/trip/${tripId}/map`, { waitUntil: 'load' })
 
     // 条件等待而不是赌一个固定秒数：瓦片来自公网，快慢不由我们定。
     // 最多等 25 秒，两个条件都到齐就提前收工。
@@ -200,34 +212,6 @@ interface Browser {
     evaluate<T>(fn: () => T): Promise<T>
   }>
   close(): Promise<void>
-}
-
-function findChromium(): string | null {
-  const env = process.env['JJJ_CHROMIUM']
-  if (env && existsSync(env)) return env
-  // Playwright 的缓存位置随平台不同：Linux 在 ~/.cache，macOS 在 ~/Library/Caches
-  const caches = [join(homedir(), '.cache/ms-playwright'), join(homedir(), 'Library/Caches/ms-playwright')]
-  // 同一份缓存里各平台的可执行文件路径也不同
-  const layouts = [
-    'chrome-linux64/chrome',
-    'chrome-linux/chrome',
-    'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
-    'chrome-mac/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
-  ]
-  for (const cache of caches) {
-    if (!existsSync(cache)) continue
-    // 取版本号最大的一份 —— 目录形如 chromium-1223
-    const dirs = readdirSync(cache)
-      .filter((d) => /^chromium-\d+$/.test(d))
-      .sort((a, b) => Number(a.slice(9)) - Number(b.slice(9)))
-    for (const d of dirs.reverse()) {
-      for (const layout of layouts) {
-        const exe = join(cache, d, layout)
-        if (existsSync(exe)) return exe
-      }
-    }
-  }
-  return null
 }
 
 async function loadPlaywright(): Promise<{ chromium: { launch: (o: object) => Promise<Browser> } } | null> {

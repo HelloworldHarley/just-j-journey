@@ -1,4 +1,5 @@
 import { SpaceSchema, type Space } from '@jjj/schema'
+import { SPACE_FILE } from './layout.ts'
 import { DiagnosticBag, type Diagnostic } from './diagnostics.ts'
 import { lex, proseOf } from './lexer.ts'
 import { asRecord, checkKeys, str, yamlOf } from './read.ts'
@@ -25,7 +26,7 @@ export function parseSpace(src: string): SpaceParseResult {
     return { space: null, diagnostics: bag.sorted() }
   }
   const meta = asRecord(yamlOf(bag, 0, fm.yaml, 'frontmatter')) ?? {}
-  checkKeys(bag, meta, SPACE_KEYS, fm.line, 'space.md')
+  checkKeys(bag, meta, SPACE_KEYS, fm.line, SPACE_FILE)
 
   const name = str(meta['name'])
   if (!name) bag.error(fm.line, 'space.md 缺少必需字段 `name`')

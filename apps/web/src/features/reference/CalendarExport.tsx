@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { CalendarPlus, Check, Copy, Download } from 'lucide-react'
 import type { Trip } from '@jjj/schema'
-import { toIcs } from '@jjj/tripmd'
+import { isSecretFeed, toIcs } from '@jjj/tripmd'
 import { segChip } from '../../components/Segmented.tsx'
-import { calendarLinks, isSecretFeed } from '../../lib/calendar-link.ts'
+import { calendarLinks } from '../../lib/calendar-link.ts'
 import { useCalendarFeed } from '../../data/hooks.ts'
 
 /**

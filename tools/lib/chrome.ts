@@ -1,7 +1,8 @@
 import { execSync, spawn } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { sleep } from './cli.ts'
 
 /**
  * 用 Chrome 开地址 —— 找二进制、按邮箱选 profile、判断在不在跑、决定开标签还是开窗口。
@@ -160,6 +161,34 @@ function activeProfiles(): string[] {
   return readLocalState()?.profile?.last_active_profiles ?? []
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms))
+/**
+ * 无头 Chromium（Playwright 下载的那份）—— `check:built` 的浏览器层用。和上面那个日常 Chrome 是两回事：
+ * 这里要的是可执行文件路径，交给 playwright-core 去启动。JJJ_CHROMIUM 指定优先，否则在 Playwright 的缓存里找最新一份
+ */
+export function headlessChromium(): string | null {
+  const env = process.env['JJJ_CHROMIUM']
+  if (env && existsSync(env)) return env
+  // Playwright 的缓存位置随平台不同：Linux 在 ~/.cache，macOS 在 ~/Library/Caches
+  const caches = [join(homedir(), '.cache/ms-playwright'), join(homedir(), 'Library/Caches/ms-playwright')]
+  // 同一份缓存里各平台的可执行文件路径也不同
+  const layouts = [
+    'chrome-linux64/chrome',
+    'chrome-linux/chrome',
+    'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+    'chrome-mac/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+  ]
+  for (const cache of caches) {
+    if (!existsSync(cache)) continue
+    // 取版本号最大的一份 —— 目录形如 chromium-1223
+    const dirs = readdirSync(cache)
+      .filter((d) => /^chromium-\d+$/.test(d))
+      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)))
+    for (const d of dirs) {
+      for (const layout of layouts) {
+        const exe = join(cache, d, layout)
+        if (existsSync(exe)) return exe
+      }
+    }
+  }
+  return null
 }

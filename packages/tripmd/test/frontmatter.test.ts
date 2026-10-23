@@ -61,4 +61,11 @@ describe('setFrontmatterScalar', () => {
     expect(() => setFrontmatterScalar('# 没有 frontmatter\n', 'visibility', 'public')).toThrow('缺少 frontmatter')
     expect(() => setFrontmatterScalar('---\nid: x\n', 'visibility', 'public')).toThrow('没有闭合')
   })
+
+  it('CRLF 文件：改写与新增的那一行也是 CRLF，不留混合换行', () => {
+    const crlf = md.replace(/\n/g, '\r\n')
+    for (const out of [setFrontmatterScalar(crlf, 'visibility', 'public'), setFrontmatterScalar(setFrontmatterScalar(crlf, 'visibility', 'public'), 'visibility', 'private')]) {
+      expect(out.replace(/\r\n/g, '')).not.toContain('\n')
+    }
+  })
 })

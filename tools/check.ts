@@ -15,15 +15,24 @@
  *      CI 每次部署都跑这里，所以推 main 之后订阅方的日历自动跟上；
  *      文件被 gitignore —— 重新生成零成本，不值得进版本库吃 DTSTAMP 抖动的 diff）
  */
-import { existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { dataDir, readGeometry, readSpace, readTrip, tripDirs } from '@jjj/datadir'
-import { buildManifest, formatDiagnostics, mergeGeometry, spaceAssets, summarize, toIcs, type ManifestEntry } from '@jjj/tripmd'
+import { dataDir, hasDataFile, isDefaultDataDir, readGeometry, readSpace, readTrip, strayDirs, tripDirs, writeDataFile, writeManifest } from '@jjj/datadir'
+import {
+  CALENDAR_FILE,
+  SPACE_FILE,
+  formatDiagnostics,
+  mergeGeometry,
+  mustFailToParse,
+  spaceAssets,
+  summarize,
+  toIcs,
+  type ManifestEntry,
+} from '@jjj/tripmd'
 import type { Trip } from '@jjj/schema'
-import { bold, dim, green, red, yellow } from './lib/cli.ts'
+import { bold, die, dim, green, red, yellow } from './lib/cli.ts'
 
 const DATA = dataDir()
-if (process.env['JJJ_DATA_DIR']) console.log(dim(`数据目录 ${DATA}`))
+if (!isDefaultDataDir(DATA)) console.log(dim(`数据目录 ${DATA}`))
 
 const only = process.argv[2]
 
@@ -31,32 +40,32 @@ let all: string[]
 try {
   all = tripDirs(DATA)
 } catch (e) {
-  console.error(red(e instanceof Error ? e.message : String(e)))
-  process.exit(1)
+  die(e instanceof Error ? e.message : String(e))
 }
 const dirs = all.filter((d) => (only ? d === only : true))
 
-if (dirs.length === 0) {
-  console.error(red(only ? `找不到行程 "${only}"` : 'data 下没有任何行程目录'))
-  process.exit(1)
-}
+if (dirs.length === 0) die(only ? `找不到行程 "${only}"` : '数据目录里没有任何行程目录')
 
 let failed = 0
 const manifest: ManifestEntry[] = []
 
+// 有 plan.md、名字却不是合法 id 的目录：它进不了任何清单、链接也拼不出来 —— 静默跳过就是丢了一份行程
+if (!only) {
+  for (const d of strayDirs(DATA)) {
+    console.error(red(`✗ ${d}：目录名不是合法的行程 id（只能有字母、数字、_ 和 -），这份行程不会出现在任何地方`))
+    failed++
+  }
+}
+
 for (const dir of dirs) {
   const read = readTrip(DATA, dir)
-  if (!read) {
-    console.error(red(`${dir}: 缺少 plan.md`))
-    failed++
-    continue
-  }
+  if (!read) continue // tripDirs 只列有 plan.md 的目录
   const { trip, diagnostics, label } = read
   const errors = diagnostics.filter((d) => d.severity === 'error')
   const warnings = diagnostics.filter((d) => d.severity === 'warning')
 
-  // _broken 是故意写坏的诊断样本：它必须失败，失败了才算过
-  if (dir === '_broken') {
+  // 故意写坏的诊断样本：它必须失败，失败了才算过
+  if (mustFailToParse(dir)) {
     if (errors.length > 0) {
       console.log(`${green('✓')} ${bold(dir)} ${dim(`按预期报出 ${errors.length} 个错误`)}`)
     } else {
@@ -67,7 +76,7 @@ for (const dir of dirs) {
   }
 
   if (diagnostics.length > 0) {
-    console.log(formatDiagnostics(`data/${label}`, diagnostics))
+    console.log(formatDiagnostics(label, diagnostics))
   }
   if (!trip) {
     console.error(red(`✗ ${dir}  ${errors.length} 个错误`))
@@ -83,9 +92,8 @@ for (const dir of dirs) {
     )}`,
   )
   geometryHealth(dir, trip)
-  // 解析通过就生成订阅文件 —— `_` 前缀行程也生成（本地 dev 可订阅试用），
-  // 反正 CI 部署前会把 _* 目录整个从 dist 里删掉，线上不会多出东西
-  writeFileSync(join(DATA, dir, 'calendar.ics'), toIcs(trip))
+  // 解析通过就生成订阅文件 —— `_` 前缀行程也生成（本地 dev 可订阅试用）；`_` 目录不进任何构建产物，线上不会多出东西
+  writeDataFile(DATA, join(dir, CALENDAR_FILE), toIcs(trip))
   manifest.push({ id: dir, visibility: trip.visibility })
 }
 
@@ -123,27 +131,26 @@ function geometryHealth(dir: string, trip: Trip): void {
 const spaceFile = readSpace(DATA)
 if (spaceFile) {
   const { space, diagnostics } = spaceFile
-  if (diagnostics.length > 0) console.log(formatDiagnostics('space.md', diagnostics))
+  if (diagnostics.length > 0) console.log(formatDiagnostics(SPACE_FILE, diagnostics))
   if (!space) {
     console.error(red('✗ space.md 解析失败'))
     failed++
   } else {
     // 名片引用的本地文件（头像、打赏二维码）必须在数据目录里，否则线上是一张裂图；
     // 绝对 URL 不在名单里 —— 远程头像是作者自己的选择，这里管不到也不该管
-    const missing = spaceAssets(space).filter((f) => !existsSync(join(DATA, f)))
+    const missing = spaceAssets(space).filter((f) => !hasDataFile(DATA, f))
     if (missing.length > 0) {
       console.error(red(`✗ space.md 引用的文件在数据目录里找不到：${missing.join(', ')}`))
       failed++
     } else {
-      console.log(`${green('✓')} ${bold('space.md')} ${dim(`${space.name}${space.handle ? ` @${space.handle}` : ''} · ${space.links.length} 个链接 · ${space.tips.length} 个打赏入口`)}`)
+      console.log(`${green('✓')} ${bold(SPACE_FILE)} ${dim(`${space.name}${space.handle ? ` @${space.handle}` : ''} · ${space.links.length} 个链接 · ${space.tips.length} 个打赏入口`)}`)
     }
   }
 }
 
 // 全量跑的时候顺手把 manifest 对齐 —— 新增行程 = 建目录 + 跑一次 check
 if (!only && failed === 0) {
-  const doc = buildManifest(manifest)
-  writeFileSync(join(DATA, 'manifest.json'), JSON.stringify(doc, null, 2) + '\n')
+  const doc = writeManifest(DATA, manifest)
   console.log(dim(`\nmanifest.json ← [${doc.trips.map((t) => `${t.id}${t.visibility === 'public' ? ' (public)' : ''}`).join(', ')}]`))
 }
 

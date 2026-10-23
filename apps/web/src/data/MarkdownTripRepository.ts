@@ -1,9 +1,25 @@
 import type { Space, Trip, TripSummary, Visibility } from '@jjj/schema'
-import { formatDiagnostics, isAbsoluteUrl, manifestIds, mergeGeometry, parse, parseSpace, summarize } from '@jjj/tripmd'
+import {
+  CALENDAR_FILE,
+  CALENDAR_INDEX_FILE,
+  GEOMETRY_FILE,
+  MANIFEST_FILE,
+  PLAN_FILE,
+  SITE_DATA_DIR,
+  SPACE_FILE,
+  formatDiagnostics,
+  isAbsoluteUrl,
+  manifestIds,
+  mergeGeometry,
+  parse,
+  parseSpace,
+  planLabel,
+  summarize,
+  tripFile,
+  type CalendarIndex,
+} from '@jjj/tripmd'
 import { TripNotFoundError, type TripRepository } from './TripRepository.ts'
 import { VISIBILITY_ENDPOINT, type VisibilityRequest } from './visibility-api.ts'
-import { CALENDAR_INDEX, type CalendarIndex } from './calendar-api.ts'
-import { defaultFeedPath } from '../lib/calendar-link.ts'
 
 /**
  * 单工件数据源：浏览器直接 fetch plan.md，现场解析。
@@ -18,10 +34,10 @@ export class MarkdownTripRepository implements TripRepository {
   /** 订阅索引只取一次；没有（404、坏 JSON、网络断）就是 null，订阅地址退回缺省路径 */
   private calendarIndex: Promise<CalendarIndex | null> | undefined
 
-  constructor(private readonly base = `${import.meta.env.BASE_URL}data`) {}
+  constructor(private readonly base = `${import.meta.env.BASE_URL}${SITE_DATA_DIR}`) {}
 
   async listTrips(): Promise<TripSummary[]> {
-    const res = await fetch(`${this.base}/manifest.json`)
+    const res = await fetch(`${this.base}/${MANIFEST_FILE}`)
     if (!res.ok) throw new Error(`行程清单加载失败（HTTP ${res.status}）— 运行 pnpm data:check 生成`)
     // 有哪些行程只有清单知道：dev 服务器现算（示范目录也在），构建产物里是 data:check 写的文件。
     // 浏览器不认识任何一个具体 id —— 示范数据是数据目录的事
@@ -41,18 +57,18 @@ export class MarkdownTripRepository implements TripRepository {
     const hit = this.parsed.get(id)
     if (hit) return hit
 
-    const res = await fetch(`${this.base}/${encodeURIComponent(id)}/plan.md`)
+    const res = await fetch(`${this.base}/${tripFile(id, PLAN_FILE)}`)
     if (res.status === 404) throw new TripNotFoundError(id)
     if (!res.ok) throw new Error(`行程「${id}」加载失败（HTTP ${res.status}）`)
 
     const { trip, diagnostics } = parse(await res.text())
     if (!trip) {
       // 带行号的诊断直接作为错误正文上屏（Problem 组件按 pre-wrap 渲染）
-      throw new Error(formatDiagnostics(`${id}/plan.md`, diagnostics))
+      throw new Error(formatDiagnostics(planLabel(id), diagnostics))
     }
     const warnings = diagnostics.filter((d) => d.severity === 'warning')
     if (warnings.length > 0) {
-      console.warn(`[jjj] ${id} 有 ${warnings.length} 条警告：\n` + formatDiagnostics(`${id}/plan.md`, warnings))
+      console.warn(`[jjj] ${id} 有 ${warnings.length} 条警告：\n` + formatDiagnostics(planLabel(id), warnings))
     }
     await this.mergeGeometry(id, trip)
     this.parsed.set(id, trip)
@@ -87,20 +103,21 @@ export class MarkdownTripRepository implements TripRepository {
   }
 
   async calendarFeed(tripId: string): Promise<string> {
-    this.calendarIndex ??= fetch(`${this.base}/${CALENDAR_INDEX}`)
+    this.calendarIndex ??= fetch(`${this.base}/${CALENDAR_INDEX_FILE}`)
       .then((res) => (res.ok ? (res.json() as Promise<CalendarIndex>) : null))
       .catch(() => null)
     const feed = (await this.calendarIndex)?.feeds?.[tripId]
-    return typeof feed === 'string' ? feed : defaultFeedPath(tripId)
+    // 没有索引：行程目录里 data:check 生成的那份，路径相对站点根
+    return typeof feed === 'string' ? feed : `${SITE_DATA_DIR}/${tripFile(tripId, CALENDAR_FILE)}`
   }
 
   async getSpace(): Promise<Space | null> {
-    const res = await fetch(`${this.base}/space.md`)
+    const res = await fetch(`${this.base}/${SPACE_FILE}`)
     if (res.status === 404) return null // 没写 space.md 是常态，不是错
     if (!res.ok) throw new Error(`space.md 加载失败（HTTP ${res.status}）`)
     const { space, diagnostics } = parseSpace(await res.text())
     // 写坏了要看得见：与 plan.md 同一待遇，带行号的诊断直接上屏
-    if (!space) throw new Error(formatDiagnostics('space.md', diagnostics))
+    if (!space) throw new Error(formatDiagnostics(SPACE_FILE, diagnostics))
     return space
   }
 
@@ -116,7 +133,7 @@ export class MarkdownTripRepository implements TripRepository {
   private async mergeGeometry(id: string, trip: Trip): Promise<void> {
     let raw: unknown
     try {
-      const res = await fetch(`${this.base}/${encodeURIComponent(id)}/geometry.json`)
+      const res = await fetch(`${this.base}/${tripFile(id, GEOMETRY_FILE)}`)
       if (!res.ok) return // 404 是常态：还没跑过 enrich 的行程就是没有
       raw = await res.json()
     } catch {

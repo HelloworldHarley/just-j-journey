@@ -1,6 +1,7 @@
 import type { Trip } from '@jjj/schema'
 import { formatDiagnostics, type Diagnostic } from './diagnostics.ts'
 import { filterGeometry, type GeometryDoc } from './geometry.ts'
+import { planLabel } from './layout.ts'
 import { findLeaks, type Leak } from './leaks.ts'
 import { parse } from './parse.ts'
 import { hideReminders, sanitize } from './sanitize.ts'
@@ -47,7 +48,7 @@ export function publicPlan(source: Trip, opts: { geometry?: unknown; label?: str
     reminders: hideReminders(source),
     geometry: trip && opts.geometry !== undefined ? filterGeometry(trip, opts.geometry) : null,
     problem: !trip
-      ? `${label} 抹除后解析不过：\n${formatDiagnostics(`${label}/plan.md`, diagnostics)}`
+      ? `${label} 抹除后解析不过：\n${formatDiagnostics(planLabel(label), diagnostics)}`
       : fatal.length > 0
         ? `${label} 的公开版里仍有抹掉的值：\n` +
           fatal.map((l) => `  ${l.where}：「${l.value}」（完整版里在 ${l.source}）`).join('\n') +

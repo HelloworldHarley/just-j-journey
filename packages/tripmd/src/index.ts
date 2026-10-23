@@ -36,7 +36,19 @@ export {
 export { lex, proseOf, type Token } from './lexer.ts'
 export { toIcs, type IcsOptions } from './ics.ts'
 export * from './values.ts'
-export { buildManifest, isFixtureId, isTripId, manifestIds, publicEntries, type Manifest, type ManifestEntry } from './manifest.ts'
+export {
+  buildManifest,
+  devHomeEntries,
+  isFixtureId,
+  isTripId,
+  manifestIds,
+  mustFailToParse,
+  publicEntries,
+  SHOWCASE_ID,
+  type Manifest,
+  type ManifestEntry,
+} from './manifest.ts'
+export * from './layout.ts'
 export { isAbsoluteUrl, parseSpace, serializeSpace, spaceAssets, SPACE_KEYS, type SpaceParseResult } from './space.ts'
 export { blurCoord, hideReminders, isPrivatePlace, sanitize, type Sanitized, type Secret } from './sanitize.ts'
 export { publicNotices, publicPlan, type PublicPlan } from './public.ts'

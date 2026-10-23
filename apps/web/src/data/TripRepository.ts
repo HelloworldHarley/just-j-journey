@@ -20,7 +20,7 @@ export interface TripRepository {
   assetUrl(rel: string): string
   /**
    * 一份行程的日历订阅文件路径，相对站点根（BASE_URL）。订阅文件放在哪是数据源的事：
-   * 完整站挡在登录后面，日历 App 进不去，所以它那里是一条带密钥的路径（src/data/calendar-api.ts）
+   * 完整站挡在登录后面，日历 App 进不去，所以它那里是一条带钥匙的路径（@jjj/tripmd 的 layout.ts）
    */
   calendarFeed(tripId: string): Promise<string>
   /**

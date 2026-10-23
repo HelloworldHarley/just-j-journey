@@ -1,8 +1,17 @@
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { readGeometry, readSpace, readTrip, tripDirs } from '@jjj/datadir'
-import { buildManifest, formatDiagnostics, isFixtureId, publicNotices, publicPlan, spaceAssets, type ManifestEntry } from '@jjj/tripmd'
-import { ROOT } from './paths.ts'
+import { mkdirSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+import { TOOL_ROOT, copyDataFile, readGeometry, readSpace, readTrip, tripDirs, writeDataFile, writeManifest } from '@jjj/datadir'
+import {
+  GEOMETRY_FILE,
+  PLAN_FILE,
+  SPACE_FILE,
+  formatDiagnostics,
+  isFixtureId,
+  publicNotices,
+  publicPlan,
+  spaceAssets,
+  type ManifestEntry,
+} from '@jjj/tripmd'
 
 /**
  * 公开版数据目录的生成 —— `pnpm build:public` 与 `pnpm check:built --public` 共用这一份。
@@ -12,7 +21,7 @@ import { ROOT } from './paths.ts'
  */
 
 /** 公开版的临时数据目录（gitignored）。留在仓库里而不用系统 tmp，出问题时直接翻 */
-export const STAGE_DIR = join(ROOT, 'apps/web/.public-data')
+export const STAGE_DIR = join(TOOL_ROOT, 'apps/web/.public-data')
 
 export interface StagedTrip {
   id: string
@@ -56,27 +65,21 @@ export function stagePublic(src: string, stage: string): StageResult {
     const plan = publicPlan(read.trip, { geometry: raw, label: id })
     if (plan.problem) throw new Error(plan.problem)
     const { md, geometry } = plan
-    mkdirSync(join(stage, id), { recursive: true })
-    writeFileSync(join(stage, id, 'plan.md'), md)
-    if (geometry) writeFileSync(join(stage, id, 'geometry.json'), JSON.stringify(geometry))
+    writeDataFile(stage, join(id, PLAN_FILE), md)
+    if (geometry) writeDataFile(stage, join(id, GEOMETRY_FILE), JSON.stringify(geometry))
     const total = raw ? Object.keys((raw as { routes?: object }).routes ?? {}).length : 0
     staged.push({ id, notices: publicNotices(id, plan), routes: { kept: geometry ? Object.keys(geometry.routes).length : 0, total } })
     entries.push({ id, visibility: 'public' })
   }
 
-  writeFileSync(join(stage, 'manifest.json'), JSON.stringify(buildManifest(entries), null, 2) + '\n')
+  writeManifest(stage, entries)
 
-  // 个人空间名片：公开版与完整版共用同一份，区别只在列出的行程
+  // 个人空间名片：公开版与完整版共用同一份，区别只在列出的行程。
+  // 拷贝走 copyDataFile：真实位置在数据目录外的（指出去的链接）不拷；缺文件 data:check 已经拦过，这里只管拷
   const space = readSpace(src)
   if (space) {
-    cpSync(join(src, 'space.md'), join(stage, 'space.md'))
-    // spaceAssets 的路径在解析时已经规范化、校验过不越界（parseSpace），这里拼上去是安全的
-    for (const f of space.space ? spaceAssets(space.space) : []) {
-      const from = join(src, f)
-      if (!existsSync(from)) continue // data:check 已经拦过缺文件，这里只管拷
-      mkdirSync(dirname(join(stage, f)), { recursive: true })
-      cpSync(from, join(stage, f))
-    }
+    copyDataFile(src, SPACE_FILE, join(stage, SPACE_FILE))
+    for (const f of space.space ? spaceAssets(space.space) : []) copyDataFile(src, f, join(stage, f))
   }
   return { staged, skipped }
 }

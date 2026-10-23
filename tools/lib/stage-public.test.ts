@@ -28,12 +28,14 @@ beforeAll(() => {
       'drive|p-nobody|p-nowhere': { poly: GEOM, from: [0, 0], to: [1, 1] },
     },
   }
+  // 行程 id 必须等于目录名：同一份 fixture 放进三个目录，各自改 id
+  const at = (id: string): string => setFrontmatterScalar(FIXTURE, 'id', id)
   src = tempTree('stage-src', {
-    'pub/plan.md': FIXTURE, // fixture 自带 visibility: public
+    'pub/plan.md': at('pub'), // fixture 自带 visibility: public
     'pub/geometry.json': JSON.stringify(doc),
     'pub/calendar.ics': 'BEGIN:VCALENDAR',
-    'priv/plan.md': setFrontmatterScalar(FIXTURE, 'visibility', null),
-    '_demo/plan.md': FIXTURE,
+    'priv/plan.md': setFrontmatterScalar(at('priv'), 'visibility', null),
+    '_demo/plan.md': at('_demo'),
     'space.md': '---\nname: 测试\navatar: avatar.png\ntips:\n  - {label: 微信, image: tips/wx.png}\n---\n',
     'avatar.png': 'png',
     'tips/wx.png': 'png',

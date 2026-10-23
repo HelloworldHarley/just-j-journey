@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { DIR, removeTrees, tempTree } from '@jjj/datadir/test-support'
-import { calendarToken, writeCalendarFeeds } from './calendar-feeds.ts'
+import { calendarToken, feedKey, writeCalendarFeeds } from './calendar-feeds.ts'
 
 const TOKEN = 'a'.repeat(16) + 'B_c-' + '9'.repeat(8)
 
@@ -29,21 +29,33 @@ describe('writeCalendarFeeds', () => {
   let out: string
   beforeAll(() => {
     data = tempTree('cal-data', {
+      'trip-a/plan.md': 'x',
       'trip-a/calendar.ics': 'BEGIN:VCALENDAR A',
-      'trip-b': DIR, // 没有 calendar.ics（data:check 没跑过或解析失败）
+      'trip-b/plan.md': 'x', // 没有 calendar.ics（data:check 没跑过或解析失败）
+      '_demo/plan.md': 'x',
       '_demo/calendar.ics': 'BEGIN:VCALENDAR DEMO',
+      'images': DIR, // 不是行程
     })
     out = tempTree('cal-out')
   })
   afterAll(() => removeTrees(data, out))
 
-  it('有订阅文件的真行程拷到 cal/<密钥>/<id>.ics，示范目录与没有文件的跳过；索引写进 data/', () => {
+  it('有订阅文件的真行程拷到 cal/<这份行程的钥匙>/<id>.ics，示范目录与没有文件的跳过；索引写进 data/', () => {
+    const key = feedKey(TOKEN, 'trip-a')
     expect(writeCalendarFeeds(data, out, TOKEN)).toEqual(['trip-a'])
-    expect(readdirSync(join(out, 'cal', TOKEN))).toEqual(['trip-a.ics'])
-    expect(readFileSync(join(out, 'cal', TOKEN, 'trip-a.ics'), 'utf8')).toBe('BEGIN:VCALENDAR A')
+    expect(readdirSync(join(out, 'cal'))).toEqual([key])
+    expect(readFileSync(join(out, 'cal', key, 'trip-a.ics'), 'utf8')).toBe('BEGIN:VCALENDAR A')
     expect(JSON.parse(readFileSync(join(out, 'data', 'calendar.json'), 'utf8'))).toEqual({
-      feeds: { 'trip-a': `cal/${TOKEN}/trip-a.ics` },
+      feeds: { 'trip-a': `cal/${key}/trip-a.ics` },
     })
-    expect(existsSync(join(out, 'cal', TOKEN, '_demo.ics'))).toBe(false)
+    expect(existsSync(join(out, 'cal', feedKey(TOKEN, '_demo')))).toBe(false)
+  })
+
+  it('钥匙每份行程各不相同、稳定、看不出总密钥 —— 分享一份行程的订阅链接，换个 id 拿不到别的', () => {
+    expect(feedKey(TOKEN, 'trip-a')).toMatch(/^[0-9a-f]{32}$/)
+    expect(feedKey(TOKEN, 'trip-a')).toBe(feedKey(TOKEN, 'trip-a'))
+    expect(feedKey(TOKEN, 'trip-a')).not.toBe(feedKey(TOKEN, 'trip-b'))
+    expect(feedKey(TOKEN, 'trip-a')).not.toContain(TOKEN.slice(0, 8))
+    expect(feedKey(`${TOKEN}x`, 'trip-a')).not.toBe(feedKey(TOKEN, 'trip-a'))
   })
 })

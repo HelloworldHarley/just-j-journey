@@ -13,10 +13,38 @@ export interface Manifest {
   trips: ManifestEntry[]
 }
 
-/** `_` 前缀目录是仓库自带的 dev-only 样本（_example / _demo / _broken）：不入册，CI 部署前从 dist 删掉，公开版也不收 */
+/** `_` 前缀目录是仓库自带的 dev-only 样本（_example / _demo / _broken）：不入册，不进任何构建产物，公开版也不收 */
 export function isFixtureId(id: string): boolean {
   return id.startsWith('_')
 }
+
+/**
+ * 示范目录各自的用处 —— 上不上完整版 dev 首页、data:check 怎么判，只在这里定：
+ *   _demo      全要素演示，改界面时拿它看效果 → 上 dev 首页
+ *   _example   TripMD 最小示例，给文档用；直链照样能开
+ *   _broken    故意写坏的负向样本 → data:check 要求它解析失败，诊断逐条锁在 regressions.test.ts
+ */
+const FIXTURE_ROLES: Readonly<Record<string, { devHome?: true; mustFail?: true }>> = {
+  _demo: { devHome: true },
+  _example: {},
+  _broken: { mustFail: true },
+}
+
+/** 这个示范目录必须解析失败 —— 它通过了说明诊断能力退化 */
+export function mustFailToParse(id: string): boolean {
+  return FIXTURE_ROLES[id]?.mustFail === true
+}
+
+/** 完整版 dev 首页列哪些：入册的行程，加上要上首页的示范目录 */
+export function devHomeEntries(entries: readonly ManifestEntry[]): ManifestEntry[] {
+  return entries.filter((e) => !isFixtureId(e.id) || FIXTURE_ROLES[e.id]?.devHome === true)
+}
+
+/**
+ * 示范行程：数据仓库里一份真行程抹除后的公开副本，工具仓库唯一的真实规模样本。不带 `_` ——
+ * 它入册、随演示站部署。`pnpm showcase:refresh` 写它，roundtrip / patch 测试读它
+ */
+export const SHOWCASE_ID = 'showcase-seattle-2026-10'
 
 /**
  * 合法的行程 id = 目录名：字母数字下划线连字符，可以 `_` 开头（dev fixture）；

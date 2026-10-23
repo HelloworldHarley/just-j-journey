@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Trip } from '@jjj/schema'
 import { applyPatch } from '../src/patch.ts'
+import { SHOWCASE_ID } from '../src/manifest.ts'
 import { parse } from '../src/parse.ts'
 import { resolveDetails } from '../src/resolve.ts'
 import { makeTransport } from './support/index.ts'
@@ -14,7 +15,7 @@ import { makeTransport } from './support/index.ts'
 
 // 吃示范行程 showcase-seattle-2026-10（真行程抹除后的公开版副本）：真行程住在数据仓库里，工具仓库没有它，
 // 而 patch 只动事件 —— 抹除不碰事件，所以锚点（抵达航班 / 午餐）在两份里一样
-const md = readFileSync(join(__dirname, '../../../apps/web/public/data/showcase-seattle-2026-10/plan.md'), 'utf8')
+const md = readFileSync(join(__dirname, '../../../apps/web/public/data', SHOWCASE_ID, 'plan.md'), 'utf8')
 
 let trip: Trip
 beforeEach(() => {

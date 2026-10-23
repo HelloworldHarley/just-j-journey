@@ -1,5 +1,5 @@
 ---
-id: example-kyoto-2days
+id: _example
 title: 京都 2 天 1 夜
 subtitle: 最小示例 · 用来说明 TripMD 的每一种块
 destination: Kyoto, Japan

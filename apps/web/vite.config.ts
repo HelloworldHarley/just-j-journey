@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { dataPlugin } from './vite/data-plugin.ts'
+import { DEV_PORT, devHost } from './vite/dev-server.ts'
 
 // GitHub Pages 项目页挂在 /<repo>/ 子路径下，CI 里用 `vite build --base=/<repo>/` 覆盖。
 // 数据加载（MarkdownTripRepository）跟着 import.meta.env.BASE_URL 走，
@@ -16,11 +17,9 @@ export default defineConfig({
     exclude: ['maplibre-gl'],
   },
   server: {
-    port: 5173,
-    // 监听所有网卡，这样 SSH 端口转发 / VS Code 端口转发都能接上
-    host: true,
-    // Vite 6 默认会按 Host 头拦请求。直接用公网 IP 或域名访问时会被挡，
-    // 放开以便远程开发机上调试。生产构建走静态文件，与此无关。
-    allowedHosts: true,
+    port: DEV_PORT,
+    // 默认只听本机（理由见 vite/dev-server.ts）；端口转发照常能接上。
+    // Host 头沿用 vite 的缺省检查（IP 与 localhost 放行）—— 不开 allowedHosts: true，那会向 DNS 重绑定敞开
+    host: devHost(),
   },
 })

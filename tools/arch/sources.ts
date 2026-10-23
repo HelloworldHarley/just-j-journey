@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { builtinModules } from 'node:module'
 import { dirname, join, relative, sep } from 'node:path'
-import { ROOT } from '../lib/paths.ts'
+import { TOOL_ROOT } from '@jjj/datadir'
 
 /**
  * 架构测试共用的源码扫描：列出生产源码、剥掉注释、抽出 import。
@@ -22,7 +22,7 @@ export function isTestPath(rel: string): boolean {
   return /\.test\.tsx?$/.test(rel) || rel.split('/').includes('test')
 }
 
-const toRel = (abs: string): string => relative(ROOT, abs).split(sep).join('/')
+const toRel = (abs: string): string => relative(TOOL_ROOT, abs).split(sep).join('/')
 
 /** 给定目录（或单个文件）下的全部生产源码，路径相对仓库根 */
 export function sources(...paths: string[]): Source[] {
@@ -39,7 +39,7 @@ export function sources(...paths: string[]): Source[] {
       out.push({ path: rel, code: stripComments(readFileSync(abs, 'utf8')) })
     }
   }
-  for (const p of paths) visit(join(ROOT, p))
+  for (const p of paths) visit(join(TOOL_ROOT, p))
   return out
 }
 
@@ -96,5 +96,5 @@ export function isNodeBuiltin(spec: string): boolean {
 /** 相对说明符解析成仓库相对路径；非相对的原样返回 null */
 export function resolveRelative(from: string, spec: string): string | null {
   if (!spec.startsWith('.')) return null
-  return toRel(join(ROOT, dirname(from), spec))
+  return toRel(join(TOOL_ROOT, dirname(from), spec))
 }

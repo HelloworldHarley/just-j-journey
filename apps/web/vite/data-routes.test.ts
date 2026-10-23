@@ -4,28 +4,31 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { DEFAULT_DATA_DIR } from '@jjj/datadir'
 import { removeTrees, tempTree } from '@jjj/datadir/test-support'
 import { setFrontmatterScalar } from '@jjj/tripmd'
-import { dataRoute, fileRoute, isVisibilityCall, manifestRoute, normalizeUrlPath, publicRoute, shipsToDist, visibilityRoute, type DataServer } from './data-routes.ts'
+import { dataRoute, fileRoute, hostAllowed, isVisibilityCall, manifestRoute, normalizeUrlPath, publicRoute, rawServingDir, visibilityRoute, type DataServer } from './data-routes.ts'
 
 /**
  * dev 服务器应答的直接测试 —— 不起 vite，直接调路由函数。
  * 数据目录用 _example 拼：一份 public（pub）、一份 private（priv）、一份 `_` 示范（_fix，public）、
- * 行程目录里多放一个不该发的文件、名片 + 头像 + 一个名片没引用的图。
+ * 行程目录里多放一个不该发的文件、名片 + 头像 + 一个名片没引用的图。每份的 frontmatter id 都改成目录名（id 必须等于目录名）。
  */
 let root: string
 let outside: string
 const example = readFileSync(join(DEFAULT_DATA_DIR, '_example/plan.md'), 'utf8')
-const asPublic = setFrontmatterScalar(example, 'visibility', 'public')
+const tripAt = (id: string, visibility: 'public' | null): string =>
+  setFrontmatterScalar(setFrontmatterScalar(example, 'id', id), 'visibility', visibility)
+const privText = tripAt('priv', null)
+const linkedText = tripAt('linked', 'public')
 const body = (r: { body: string | Buffer }): string => r.body.toString()
 
 beforeAll(() => {
-  outside = tempTree('routes-out', { 'plan.md': asPublic })
+  outside = tempTree('routes-out', { 'plan.md': linkedText })
   root = tempTree('routes', {
-    'pub/plan.md': asPublic,
+    'pub/plan.md': tripAt('pub', 'public'),
     'pub/confirmations.pdf': 'not for the public',
     'pub/calendar.ics': 'BEGIN:VCALENDAR',
-    'priv/plan.md': example,
-    '_fix/plan.md': asPublic,
-    '_demo/plan.md': example,
+    'priv/plan.md': privText,
+    '_fix/plan.md': tripAt('_fix', 'public'),
+    '_demo/plan.md': tripAt('_demo', null),
     'space.md': '---\nname: 测试\navatar: avatar.png\n---\n',
     'avatar.png': 'png',
     'private-photo.png': 'png',
@@ -137,27 +140,47 @@ describe('visibilityRoute', () => {
     expect(call({ body: JSON.stringify({ id: 'priv', visibility: 'private' }) }).status).toBe(200)
     expect(readFileSync(join(root, 'priv', 'plan.md'), 'utf8')).toBe(before)
   })
-  it('方法、同源、内容类型、id、值、存在性各自的错误码', () => {
-    expect(call({ method: 'GET' }).status).toBe(405)
+  it('来源：必须是本机页面且同源 —— 没有 Origin（curl、局域网里的脚本）、跨站、DNS 重绑定（Origin 与 Host 都是它的域名）一律 403', () => {
+    expect(call({ origin: undefined }).status).toBe(403)
     expect(call({ origin: 'http://evil.example' }).status).toBe(403)
-    expect(call({ origin: undefined }).status).toBe(200) // curl 这类没有 Origin 的调用照旧（本机脚本）
+    expect(call({ origin: 'http://rebind.example:5173', host: 'rebind.example:5173' }).status).toBe(403)
+    expect(call({ origin: 'http://localhost:5173', host: '192.168.1.20:5173' }).status).toBe(403)
+    expect(call({ origin: 'http://127.0.0.1:5173', host: '127.0.0.1:5173' }).status).toBe(200)
     call({ body: JSON.stringify({ id: 'priv', visibility: 'private' }) })
+    expect(readFileSync(join(root, 'priv', 'plan.md'), 'utf8')).toBe(privText)
+  })
+  it('方法、内容类型、id、值、存在性各自的错误码', () => {
+    expect(call({ method: 'GET' }).status).toBe(405)
     expect(call({ contentType: 'text/plain' }).status).toBe(415)
     expect(call({ body: '{nope' }).status).toBe(400)
     expect(call({ body: JSON.stringify({ id: '../x', visibility: 'public' }) }).status).toBe(400)
     expect(call({ body: JSON.stringify({ id: 'priv', visibility: 'pubilc' }) }).status).toBe(400)
     expect(call({ body: JSON.stringify({ id: 'nope', visibility: 'public' }) }).status).toBe(404)
     expect(call({ body: JSON.stringify({ id: 'linked', visibility: 'private' }) }).status).toBe(404) // 链接出去的 plan.md 写不到
-    expect(readFileSync(join(outside, 'plan.md'), 'utf8')).toBe(asPublic)
-    expect(readFileSync(join(root, 'priv', 'plan.md'), 'utf8')).toBe(example)
+    expect(readFileSync(join(outside, 'plan.md'), 'utf8')).toBe(linkedText)
+    expect(readFileSync(join(root, 'priv', 'plan.md'), 'utf8')).toBe(privText)
   })
 })
 
-describe('shipsToDist', () => {
-  it('构建期拷贝跳过数据目录内的 dotfiles 及其子树；数据目录自己的路径里有 `.` 段不算', () => {
-    expect(shipsToDist('/x/trips', '/x/trips/.git/config')).toBe(false)
-    expect(shipsToDist('/x/trips', '/x/trips/.env')).toBe(false)
-    expect(shipsToDist('/x/trips', '/x/trips/pub/plan.md')).toBe(true)
-    expect(shipsToDist('/home/u/.data/trips', '/home/u/.data/trips/pub/plan.md')).toBe(true)
+describe('hostAllowed', () => {
+  it('IP 字面量与 localhost 总能进；别的域名要在 allowedHosts 里（.example.com 收子域）；true 全放行', () => {
+    for (const h of ['localhost:5173', '127.0.0.1:5173', '[::1]:5173', 'app.localhost:5173', '192.168.1.20:5173']) {
+      expect(hostAllowed(h, undefined), h).toBe(true)
+    }
+    expect(hostAllowed('rebind.example:5173', undefined)).toBe(false)
+    expect(hostAllowed('rebind.example:5173', ['other.example'])).toBe(false)
+    expect(hostAllowed('dev.example.com:5173', ['.example.com'])).toBe(true)
+    expect(hostAllowed('example.com', ['.example.com'])).toBe(true)
+    expect(hostAllowed('anything:1', true)).toBe(true)
+    expect(hostAllowed(undefined, undefined)).toBe(false)
+  })
+})
+
+describe('rawServingDir', () => {
+  it('公开版 dev 的数据目录落在 vite 能直读的范围里就报出来；自带的示范数据不算', () => {
+    expect(rawServingDir(root, [join(root, '..')])).toBe(join(root, '..'))
+    expect(rawServingDir(root, [root])).toBe(root)
+    expect(rawServingDir(root, [outside])).toBeNull()
+    expect(rawServingDir(DEFAULT_DATA_DIR, [join(DEFAULT_DATA_DIR, '../../../..')])).toBeNull()
   })
 })

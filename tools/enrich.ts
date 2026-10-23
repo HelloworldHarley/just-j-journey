@@ -13,34 +13,36 @@
  *    地点坐标一改，旧路线自动失效，绝不会出现「线还连着旧位置」。
  * 2. **运行时零 API 调用**是地图的硬约束。所有网络请求只发生在这个离线工具里。
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { TRANSPORTS, type Place, type TransportMode, type Trip } from '@jjj/schema'
 import {
+  GEOMETRY_FILE,
+  PLAN_FILE,
   formatDiagnostics,
   missingCoords,
   parse,
+  planLabel,
   routableLegs,
   type GeometryDoc,
   type GeometryRecord,
 } from '@jjj/tripmd'
-import { dataDir, planFile, readTrip } from '@jjj/datadir'
-import { ROOT } from './lib/paths.ts'
-import { bold, die, dim, green, red, yellow } from './lib/cli.ts'
+import { TOOL_ROOT, dataDir, isDefaultDataDir, planFile, readTrip, writeDataFile } from '@jjj/datadir'
+import { bold, die, dim, green, red, sleep, yellow } from './lib/cli.ts'
 
 const DATA = dataDir()
-if (process.env['JJJ_DATA_DIR']) console.log(dim(`数据目录 ${DATA}`))
+if (!isDefaultDataDir(DATA)) console.log(dim(`数据目录 ${DATA}`))
 
 /**
  * key 从仓库根的 `.env` 读（已在 .gitignore 里，不进仓库）。
  * 显式 export 的环境变量优先 —— 临时换一个 key 时不用去改文件。
- * 这里的 ROOT 是工具仓库根，不是数据目录：.env 跟着代码走，不跟着数据仓库走。
+ * 这里用的是工具仓库根，不是数据目录：.env 跟着代码走，不跟着数据仓库走。
  */
 function secret(name: string): string | undefined {
   const exported = process.env[name]
   if (exported) return exported
   try {
-    process.loadEnvFile(join(ROOT, '.env'))
+    process.loadEnvFile(join(TOOL_ROOT, '.env'))
   } catch {
     return undefined // 没有 .env 是常态
   }
@@ -55,8 +57,6 @@ const COORD_EPS = 1e-5
 
 const sameCoord = (a: [number, number], b: [number, number]): boolean =>
   Math.abs(a[0] - b[0]) < COORD_EPS && Math.abs(a[1] - b[1]) < COORD_EPS
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 // ── 入口 ────────────────────────────────────────────────────────
 
@@ -74,11 +74,11 @@ if (flags.has('--apply') && !flags.has('--geocode')) {
 
 // 读与 --apply 写回用同一个路径：planFile 查过它真的在数据目录里。
 // `?? die()` 而不是 if 收窄 —— 下面的函数声明会提升，看不到顶层 if 的收窄
-const mdPath = planFile(DATA, dir!) ?? die(`找不到 ${dir}/plan.md`)
-const read = readTrip(DATA, dir!) ?? die(`找不到 ${dir}/plan.md`)
+const mdPath = planFile(DATA, dir!) ?? die(`找不到 ${planLabel(dir!)}`)
+const read = readTrip(DATA, dir!) ?? die(`找不到 ${planLabel(dir!)}`)
 const { trip, diagnostics, label } = read
 if (!trip) {
-  console.error(formatDiagnostics(`data/${label}`, diagnostics))
+  console.error(formatDiagnostics(label, diagnostics))
   die(`${dir} 解析失败 —— 先把 plan.md 修好（pnpm data:check ${dir}）`)
 }
 
@@ -124,7 +124,7 @@ async function routes(trip: Trip): Promise<void> {
   }
   const legCount = trip.days.reduce((n, d) => n + d.legs.length, 0)
 
-  const outPath = join(DATA, dir!, 'geometry.json')
+  const outPath = join(DATA, dir!, GEOMETRY_FILE)
   const kept = reusable(outPath, wanted)
   const todo = [...wanted].filter(([k]) => !kept[k])
 
@@ -159,9 +159,9 @@ async function routes(trip: Trip): Promise<void> {
     console.log(yellow('一条都没算出来，不写文件（保留现状总好过写个空壳）'))
     process.exit(failed > 0 ? 1 : 0)
   }
-  writeFileSync(outPath, JSON.stringify(doc, null, 2) + '\n')
+  writeDataFile(DATA, join(dir!, GEOMETRY_FILE), JSON.stringify(doc, null, 2) + '\n')
   console.log(
-    `${green('✓')} ${bold(`${dir}/geometry.json`)} ${dim(`${n} 条路线`)}` +
+    `${green('✓')} ${bold(`${dir}/${GEOMETRY_FILE}`)} ${dim(`${n} 条路线`)}` +
       (failed > 0 ? yellow(`  ${failed} 条失败，那几段仍画虚线`) : ''),
   )
 }
@@ -451,12 +451,12 @@ function writeCoords(hits: Hit[]): void {
   const check = parse(after)
   const bad = check.diagnostics.filter((d) => d.severity === 'error')
   if (!check.trip || bad.length > 0) {
-    console.error(formatDiagnostics(`data/${dir}/plan.md`, bad))
+    console.error(formatDiagnostics(label, bad))
     die('写入后解析不过，已放弃（文件未改动）')
   }
 
-  writeFileSync(mdPath, after)
-  console.log(`\n${green('✓')} ${bold(`${dir}/plan.md`)} ${dim(`写入 ${plan.length} 个 coord`)}`)
+  writeDataFile(DATA, join(dir!, PLAN_FILE), after)
+  console.log(`\n${green('✓')} ${bold(label)} ${dim(`写入 ${plan.length} 个 coord`)}`)
   for (const p of plan) console.log(dim(`    ${p.name} ${p.text.trim()}`))
   console.log(dim(`\n接着算路线：pnpm enrich ${dir}`))
 }

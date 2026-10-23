@@ -69,6 +69,36 @@ const LOCKS: Lock[] = [
     scope: ALL_CODE,
     home: ['packages/tripmd/src/sanitize.ts', 'packages/tripmd/src/public.ts'],
   },
+  {
+    rule: '数据文件叫什么只在布局模块里定（其余一律用 PLAN_FILE 这些常量）',
+    pattern: /['"`](plan\.md|geometry\.json|calendar\.ics|manifest\.json|space\.md|calendar\.json)['"`]/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/layout.ts'],
+  },
+  {
+    rule: '拷贝与改名只在数据目录模块里做（真实位置越界的不拷、写入先写临时文件再改名）',
+    pattern: /\b(cpSync|copyFileSync|renameSync)\b/,
+    scope: ALL_CODE,
+    home: ['packages/datadir/src/index.ts'],
+  },
+  {
+    rule: '跨进程的环境变量不直接读写 process.env（名字与读法在 datadir 的 env.ts）',
+    pattern: /process\.env(\.|\[['"])(JJJ_DATA_DIR|JJJ_CALENDAR_TOKEN|JJJ_DEV_HOST|VITE_PUBLIC)|\b(JJJ_DATA_DIR|VITE_PUBLIC)\s*:/,
+    scope: ALL_CODE,
+    home: [],
+  },
+  {
+    rule: 'dev 端口只定义一次',
+    pattern: /\b517[34]\b/,
+    scope: ALL_CODE,
+    home: ['apps/web/vite/dev-server.ts'],
+  },
+  {
+    rule: '「是不是自带的数据目录」按真实路径比（isDefaultDataDir），不拿字符串比',
+    pattern: /[!=]==\s*DEFAULT_DATA_DIR|DEFAULT_DATA_DIR\s*[!=]==/,
+    scope: ALL_CODE,
+    home: [],
+  },
 ]
 
 describe('规则只写在一处', () => {

@@ -1,4 +1,4 @@
-/** 终端着色与致命退出 —— 三个 CLI 原先各抄一份，现在只有这一份 */
+/** 终端着色、致命退出、等待 —— CLI 原先各抄一份，现在只有这一份 */
 export const dim = (s: string): string => `\x1b[2m${s}\x1b[0m`
 export const red = (s: string): string => `\x1b[31m${s}\x1b[0m`
 export const yellow = (s: string): string => `\x1b[33m${s}\x1b[0m`
@@ -9,4 +9,8 @@ export const bold = (s: string): string => `\x1b[1m${s}\x1b[0m`
 export function die(msg: string): never {
   console.error(red(msg))
   process.exit(1)
+}
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms))
 }

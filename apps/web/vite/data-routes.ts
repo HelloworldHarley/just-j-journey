@@ -1,17 +1,23 @@
-import { readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
-import { extname, posix, relative, sep } from 'node:path'
+import { readFileSync, realpathSync, statSync } from 'node:fs'
+import { isIP } from 'node:net'
+import { join, posix, resolve, sep } from 'node:path'
 import { VISIBILITIES } from '@jjj/schema'
-import { DATA_MIME, insideDir, planFile, readGeometry, readSpace, readTrip, tripDirs } from '@jjj/datadir'
+import { insideDir, isDefaultDataDir, mimeOf, planFile, readGeometry, readSpace, readTrip, scanEntries, writeDataFile } from '@jjj/datadir'
 import {
+  GEOMETRY_FILE,
+  MANIFEST_FILE,
+  PLAN_FILE,
+  SPACE_FILE,
+  devHomeEntries,
   formatDiagnostics,
   isFixtureId,
   isTripId,
   parse,
+  planLabel,
   publicEntries,
   publicPlan,
   setFrontmatterScalar,
   spaceAssets,
-  type ManifestEntry,
 } from '@jjj/tripmd'
 import { VISIBILITY_ENDPOINT, type VisibilityRequest } from '../src/data/visibility-api.ts'
 
@@ -65,7 +71,7 @@ export function dataRoute(s: DataServer, path: string): Reply | null {
   const prefix = `${s.base}data/`
   if (!path.startsWith(prefix)) return null
   const rel = path.slice(prefix.length)
-  if (rel === 'manifest.json') return manifestRoute(s.root, s.publicMode)
+  if (rel === MANIFEST_FILE) return manifestRoute(s.root, s.publicMode)
   if (s.publicMode) return publicRoute(s.root, rel)
   if (s.external) return fileRoute(s.root, rel)
   return insideDir(s.root, rel) ? null : text(404, '')
@@ -77,28 +83,13 @@ export function isVisibilityCall(s: DataServer, path: string): boolean {
 }
 
 /**
- * 完整版 dev 首页上**要看**的示范目录。示范目录各有各的用处，不是都该上首页：
- *   _demo      全要素演示 —— 改界面时拿它看效果，上首页
- *   _example   TripMD 最小示例，给文档用
- *   _broken    故意写坏的负向样本，解析必失败
- * 示范行程 showcase-seattle-2026-10 不带 `_`，是入册的正式行程，走上面 isFixtureId 之外的那条路。
- * （它曾叫 _showcase 且和真行程并存；首页同时列两张西雅图是 Harley 明确不要的，所以当时不上首页）
- * 公开版不列任何示范（buildManifest 的 `_` 规则），这张表只管完整版 dev。
- */
-const DEV_HOME_FIXTURES: readonly string[] = ['_demo']
-
-/**
  * dev 首页读的清单 —— 扫目录现算，不读可能过期的 manifest.json（首页开关改的是 plan.md）。
- * 完整版：入册的真行程 + 上面那张表里的示范；公开版：只列 public 且不含示范。
+ * 完整版：入册的行程 + 要上首页的示范目录（@jjj/tripmd 的 devHomeEntries）；公开版：只列 public 且不含示范。
  * 没列的示范目录直链照样能开（#/trip/_example），只是不上首页
  */
 export function manifestRoute(root: string, publicMode: boolean): Reply {
-  const entries: ManifestEntry[] = tripDirs(root).flatMap((id) => {
-    const trip = readTrip(root, id)?.trip
-    return trip ? [{ id, visibility: trip.visibility }] : []
-  })
-  if (publicMode) return json({ trips: publicEntries(entries) })
-  return json({ trips: entries.filter((e) => !isFixtureId(e.id) || DEV_HOME_FIXTURES.includes(e.id)) })
+  const entries = scanEntries(root)
+  return json({ trips: publicMode ? publicEntries(entries) : devHomeEntries(entries) })
 }
 
 /**
@@ -110,24 +101,24 @@ export function manifestRoute(root: string, publicMode: boolean): Reply {
  * 黑名单式的「只拦几种、其余放行」曾让作者放在行程目录里的任何文件都能被 fetch 到。
  */
 export function publicRoute(root: string, rel: string): Reply {
-  const m = /^([^/]+)\/(plan\.md|geometry\.json)$/.exec(rel)
-  if (m) return publicTripFile(root, m[1]!, m[2] as 'plan.md' | 'geometry.json')
-  if (rel === 'space.md') return fileRoute(root, rel)
+  const [id, file, ...rest] = rel.split('/')
+  if (rest.length === 0 && id && (file === PLAN_FILE || file === GEOMETRY_FILE)) return publicTripFile(root, id, file)
+  if (rel === SPACE_FILE) return fileRoute(root, rel)
   const space = readSpace(root)?.space
   if (space && spaceAssets(space).includes(rel)) return fileRoute(root, rel)
   return text(404, '公开版没有这个文件')
 }
 
-function publicTripFile(root: string, id: string, file: 'plan.md' | 'geometry.json'): Reply {
+function publicTripFile(root: string, id: string, file: typeof PLAN_FILE | typeof GEOMETRY_FILE): Reply {
   if (!isTripId(id) || isFixtureId(id)) return text(404, `公开版里没有 ${id}`)
   const read = readTrip(root, id)
-  if (!read) return text(404, `找不到 ${id}/plan.md`)
+  if (!read) return text(404, `找不到 ${planLabel(id)}`)
   if (!read.trip) return text(500, formatDiagnostics(read.label, read.diagnostics))
   if (read.trip.visibility !== 'public') return text(404, `${id} 不是 visibility: public，公开版里没有它`)
 
-  const plan = publicPlan(read.trip, { geometry: file === 'geometry.json' ? readGeometry(root, id) : undefined, label: id })
+  const plan = publicPlan(read.trip, { geometry: file === GEOMETRY_FILE ? readGeometry(root, id) : undefined, label: id })
   if (plan.problem) return text(500, `${plan.problem}\n—— build:public 会在这里失败`)
-  if (file === 'plan.md') return { status: 200, type: DATA_MIME['.md']!, body: plan.md }
+  if (file === PLAN_FILE) return { status: 200, type: mimeOf(PLAN_FILE), body: plan.md }
   return plan.geometry ? json(plan.geometry) : text(404, `${id} 没有可随公开版走的路网`)
 }
 
@@ -135,12 +126,12 @@ function publicTripFile(root: string, id: string, file: 'plan.md' | 'geometry.js
 export function fileRoute(root: string, rel: string): Reply {
   const file = insideDir(root, rel)
   if (!file || !statSync(file, { throwIfNoEntry: false })?.isFile()) return text(404, '')
-  return { status: 200, type: DATA_MIME[extname(file)] ?? 'application/octet-stream', body: readFileSync(file) }
+  return { status: 200, type: mimeOf(file), body: readFileSync(file) }
 }
 
 export interface VisibilityCall {
   method: string | undefined
-  /** 浏览器的 Origin 与请求的 Host —— 同源才准写 */
+  /** 浏览器的 Origin 与请求的 Host —— 必须是本机页面、且同源才准写 */
   origin: string | undefined
   host: string | undefined
   contentType: string | undefined
@@ -149,14 +140,15 @@ export interface VisibilityCall {
 
 /**
  * 首页「公开 / 私有」开关的写路径：只改那份 plan.md 的 frontmatter 一行（文本手术，不做 serialize 往返），
- * 改完再 parse 验收，过了才写回，写回是「写临时文件再改名」—— plan.md 是唯一的真相，不能留半截。
- * 同源校验：dev 服务器开着 host: true，作者浏览别的网页时那页可以用 text/plain 的 POST 绕过预检打到这里，
- * 把一份私有行程翻成公开 —— 有 Origin 就必须和 Host 一致，且请求体必须声明是 JSON。
- * 路径走 planFile：真实路径必须落在数据目录里，目录内指向外面的符号链接写不出去。
+ * 改完再 parse 验收，过了才写回（writeDataFile：写临时文件再改名，真实位置必须在数据目录里）。
+ * 来源校验：**必须**带 Origin，且它是本机页面（localhost / 127.0.0.1 / [::1]）、与 Host 同源。
+ * 不带 Origin 的请求（curl、别的程序）一律拒绝；作者浏览的别的网页可以用 text/plain 的 POST 绕过预检打到这里，
+ * DNS 重绑定的页面能让 Origin 与 Host 都是它自己的域名 —— 两者都过不了「本机页面」这一条。请求体还必须声明是 JSON。
+ * I/O 出错直接抛出，由插件统一回通用的 500。
  */
 export function visibilityRoute(root: string, call: VisibilityCall): Reply {
   if (call.method !== 'POST') return text(405, '只接受 POST')
-  if (call.origin !== undefined && !sameOrigin(call.origin, call.host)) return text(403, '跨站请求：Origin 与 Host 不一致')
+  if (!fromLocalPage(call.origin, call.host)) return text(403, '只接受本机页面发来的请求')
   if (!call.contentType?.startsWith('application/json')) return text(415, '请求体必须是 application/json')
 
   let payload: Partial<Record<keyof VisibilityRequest, unknown>>
@@ -171,31 +163,58 @@ export function visibilityRoute(root: string, call: VisibilityCall): Reply {
     return text(400, `visibility 只能是 ${VISIBILITIES.join(' / ')}`)
   }
   const file = planFile(root, id)
-  if (!file) return text(404, `找不到 ${id}/plan.md`)
+  if (!file) return text(404, `找不到 ${planLabel(id)}`)
 
-  try {
-    // 缺省值不写：private 就把这一行删掉，与 serialize 的口径一致
-    const next = setFrontmatterScalar(readFileSync(file, 'utf8'), 'visibility', visibility === 'private' ? null : visibility)
-    const { trip, diagnostics } = parse(next)
-    if (!trip) return text(500, `改完解析不过，没有写回：\n${formatDiagnostics(`${id}/plan.md`, diagnostics)}`)
-    if (trip.visibility !== visibility) return text(500, `改完解析出来的 visibility 是 ${trip.visibility}，没有写回`)
-    writeFileSync(`${file}.tmp`, next)
-    renameSync(`${file}.tmp`, file)
-  } catch (e) {
-    return text(500, `写回失败：${e instanceof Error ? e.message : String(e)}`)
-  }
+  // 缺省值不写：private 就把这一行删掉，与 serialize 的口径一致
+  const next = setFrontmatterScalar(readFileSync(file, 'utf8'), 'visibility', visibility === 'private' ? null : visibility)
+  const { trip, diagnostics } = parse(next)
+  if (!trip) return text(500, `改完解析不过，没有写回：\n${formatDiagnostics(planLabel(id), diagnostics)}`)
+  if (trip.visibility !== visibility) return text(500, `改完解析出来的 visibility 是 ${trip.visibility}，没有写回`)
+  writeDataFile(root, join(id, PLAN_FILE), next)
   return json({ id, visibility } satisfies VisibilityRequest)
 }
 
-function sameOrigin(origin: string, host: string | undefined): boolean {
+const LOOPBACK_NAMES: ReadonlySet<string> = new Set(['localhost', '127.0.0.1', '[::1]'])
+
+function fromLocalPage(origin: string | undefined, host: string | undefined): boolean {
+  if (!origin || !host) return false
   try {
-    return host !== undefined && new URL(origin).host === host
+    const u = new URL(origin)
+    return u.host === host && LOOPBACK_NAMES.has(u.hostname)
   } catch {
     return false
   }
 }
 
-/** 构建期整份拷贝时要跳过的：数据目录内任何一段以 `.` 开头的路径（.git / .env / .DS_Store 及其下一切）—— 数据仓库里的杂物不该进产物 */
-export function shipsToDist(root: string, path: string): boolean {
-  return !relative(root, path).split(sep).some((seg) => seg.startsWith('.'))
+/**
+ * 公开版 dev 下，数据目录若落在 vite 允许直读文件的范围里（server.fs.allow，缺省是整个工作区），
+ * `/@fs/<绝对路径>/<id>/plan.md` 会绕过公开版的白名单、由 vite 直接把没抹的原文发出去 ——
+ * 返回命中的那一项，插件据此拒绝启动。仓库自带的示范数据本来就能公开，不算
+ */
+export function rawServingDir(root: string, allow: readonly string[]): string | null {
+  if (isDefaultDataDir(root)) return null
+  const real = realpathSync(root)
+  return allow.find((dir) => {
+    const a = resolve(dir)
+    return real === a || real.startsWith(a + sep)
+  }) ?? null
+}
+
+/**
+ * 请求的 Host 能不能进 —— 与 vite 自己的 allowedHosts 同一口径：IP 字面量、localhost 与 *.localhost 总能进，
+ * 其余要在 allowedHosts 里（`.example.com` 收它和所有子域）；allowedHosts 为 true 全放行。
+ * jjj:data 的中间件排在 vite 的 Host 检查前面、直接应答，那道检查管不到这里，所以自己查 ——
+ * 不查的话，DNS 重绑定的页面能以它自己的域名读到全部私有行程
+ */
+export function hostAllowed(host: string | undefined, allowed: true | readonly string[] | undefined): boolean {
+  if (allowed === true) return true
+  if (!host) return false
+  let name: string
+  try {
+    name = new URL(`http://${host}`).hostname
+  } catch {
+    return false
+  }
+  if (name === 'localhost' || name.endsWith('.localhost') || isIP(name.replace(/^\[|\]$/g, '')) !== 0) return true
+  return (allowed ?? []).some((a) => (a.startsWith('.') ? name === a.slice(1) || name.endsWith(a) : name === a))
 }

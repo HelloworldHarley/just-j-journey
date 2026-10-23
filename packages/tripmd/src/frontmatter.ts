@@ -7,6 +7,7 @@
  *
  * `value` 按原样写进去、不加引号 —— 枚举值（public / private）用不着；需要引号的值调用方自己包。
  * `value` 为 null 表示删掉这一行：缺省值不写，与 serialize 的口径一致。
+ * 换行风格跟着原文件走：CRLF 的文件改出来的那一行也是 CRLF，不留混合换行。
  */
 export function setFrontmatterScalar(md: string, key: string, value: string | null): string {
   const lines = md.split('\n')
@@ -16,7 +17,8 @@ export function setFrontmatterScalar(md: string, key: string, value: string | nu
 
   const isKey = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`)
   const at = lines.findIndex((l, i) => i > 0 && i < end && isKey.test(l))
-  const line = value === null ? null : `${key}: ${value}`
+  const cr = md.includes('\r\n') ? '\r' : '' // 按 \n 切开后 CRLF 文件的每行都带着 \r，新写的那行也要带
+  const line = value === null ? null : `${key}: ${value}${cr}`
 
   if (at !== -1) {
     if (line === null) lines.splice(at, 1)

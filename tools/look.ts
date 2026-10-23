@@ -24,10 +24,11 @@ import { execSync, spawn, type ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { join } from 'node:path'
-import { dataDir, readManifestIds } from '@jjj/datadir'
+import { PUBLIC_DEV_ENV, TOOL_ROOT, dataDir, scanEntries } from '@jjj/datadir'
+import { buildManifest, publicEntries } from '@jjj/tripmd'
+import { DEV_PORT, PUBLIC_DEV_PORT, devHost } from '../apps/web/vite/dev-server.ts'
 import { resolveBrowser } from './lib/chrome.ts'
-import { bold, die, dim, green, yellow } from './lib/cli.ts'
-import { ROOT } from './lib/paths.ts'
+import { bold, die, dim, green, sleep, yellow } from './lib/cli.ts'
 
 interface Mode {
   name: string
@@ -37,8 +38,8 @@ interface Mode {
   port: number
   env: Record<string, string>
 }
-const FULL: Mode = { name: '完整版', basePort: 5173, port: 5173, env: {} }
-const PUBLIC: Mode = { name: '公开版', basePort: 5174, port: 5174, env: { VITE_PUBLIC: '1' } }
+const FULL: Mode = { name: '完整版', basePort: DEV_PORT, port: DEV_PORT, env: {} }
+const PUBLIC: Mode = { name: '公开版', basePort: PUBLIC_DEV_PORT, port: PUBLIC_DEV_PORT, env: { ...PUBLIC_DEV_ENV } }
 
 const args = process.argv.slice(2)
 const flag = (f: string): boolean => args.includes(f)
@@ -52,8 +53,15 @@ const opt = (f: string): string | undefined => {
 const modes = flag('--both') ? [FULL, PUBLIC] : flag('--public') ? [PUBLIC] : [FULL]
 /** 缺省只开首页 —— 行程自己点进去；--page 才多开视图 */
 const views = (opt('--page') ?? '').split(',').filter(Boolean)
-/** 数据目录里入册的第一份行程 —— 没有 manifest 就只开首页 */
-const trip = views.length > 0 ? (opt('--trip') ?? readManifestIds(dataDir())[0] ?? null) : null
+/**
+ * 缺省开哪份行程：扫目录现算的清单里第一份 —— 开着公开版时只从公开的里挑（私有行程在公开版里本来就打不开）
+ */
+function firstTrip(): string | null {
+  const entries = scanEntries(dataDir())
+  const listed = modes.includes(PUBLIC) ? publicEntries(entries) : buildManifest(entries).trips
+  return listed[0]?.id ?? null
+}
+const trip = views.length > 0 ? (opt('--trip') ?? firstTrip()) : null
 const open = !flag('--no-open')
 
 const routes = ['#/', ...(trip ? views.map((v) => `#/trip/${trip}/${v}`) : [])]
@@ -72,14 +80,14 @@ for (const m of modes) {
 }
 
 // 直接起 vite 而不经 pnpm exec：日志干净，Ctrl+C 也少一层转发
-const vite = join(ROOT, 'apps/web/node_modules/.bin/vite')
+const vite = join(TOOL_ROOT, 'apps/web/node_modules/.bin/vite')
 if (!existsSync(vite)) die('找不到 apps/web 的 vite —— 先 pnpm install')
 
 const children = new Map<Mode, ChildProcess>()
 for (const m of modes) {
   console.log(`${dim('起')} ${bold(m.name)} ${dim(`:${m.port}${Object.keys(m.env).length ? ` ${Object.entries(m.env).map(([k, v]) => `${k}=${v}`).join(' ')}` : ''}`)}`)
   const child = spawn(vite, ['--port', String(m.port), '--strictPort'], {
-    cwd: join(ROOT, 'apps/web'),
+    cwd: join(TOOL_ROOT, 'apps/web'),
     stdio: 'inherit',
     env: { ...process.env, ...m.env },
   })
@@ -119,13 +127,13 @@ for (const m of modes) {
 /** 仓库生效的提交者邮箱（repo-local 覆盖 global —— 个人仓库与工作仓库账号不同就靠这个） */
 function gitEmail(): string | undefined {
   try {
-    return execSync('git config user.email', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || undefined
+    return execSync('git config user.email', { cwd: TOOL_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || undefined
   } catch {
     return undefined
   }
 }
 
-/** 从 base 起每隔 2 找一个空端口 —— 像 vite 那样真去 listen 一下（host: true 监听所有地址，探默认地址就够） */
+/** 从 base 起每隔 2 找一个空端口 —— 在 vite 将要监听的同一个地址上真去 listen 一下 */
 async function freePort(base: number): Promise<number> {
   for (let p = base; p < base + 40; p += 2) if (await portFree(p)) return p
   die(`:${base} 往上 20 个端口全被占了`)
@@ -136,7 +144,7 @@ function portFree(port: number): Promise<boolean> {
     const probe = createServer()
     probe.once('error', () => resolve(false))
     probe.once('listening', () => probe.close(() => resolve(true)))
-    probe.listen(port)
+    probe.listen(port, devHost())
   })
 }
 
@@ -146,12 +154,13 @@ async function waitFor(m: Mode, ms = 20_000): Promise<boolean> {
   while (Date.now() < until) {
     if (!children.has(m)) return false
     try {
-      const res = await fetch(`http://localhost:${m.port}/`)
+      // 探活走 127.0.0.1：dev 服务器默认只听它，而 localhost 在有的机器上先解析成 ::1
+      const res = await fetch(`http://127.0.0.1:${m.port}/`)
       if (res.ok) return true
     } catch {
       // 还没监听，继续等
     }
-    await new Promise((r) => setTimeout(r, 250))
+    await sleep(250)
   }
   return false
 }
