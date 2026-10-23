@@ -1,5 +1,10 @@
-# 推 main → 校验 TripMD → 构建 → 发布到 GitHub Pages。
+# 推 main → 校验 → 构建公开版 → 发布到 GitHub Pages（工具演示站）。
 # 首次使用需在仓库 Settings → Pages 把 Source 设为 "GitHub Actions"。
+#
+# 两个 job，写权限只给发布（同 GitHub 官方模板的拆法）：
+#   build   只读：装依赖、类型检查、测试、构建、验产物，以上传 Pages 产物结束 —— 仓库里的代码只在这里跑
+#   deploy  pages: write + id-token: write，只做发布，不跑仓库里的任何代码
+# 第三方 action 钉 commit SHA（行尾注释是版本）；checkout 不把令牌留在 .git/config 里。
 name: Deploy to GitHub Pages
 
 on:
@@ -9,8 +14,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # 同一时间只跑一个部署，后来的顶掉排队中的
 concurrency:
@@ -18,20 +21,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v4 # 版本读 package.json 的 packageManager
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0 · pnpm 版本读 package.json 的 packageManager
 
-      # Node ≥ 22.18：vite.config.ts 引用 workspace 包的 .ts 入口，靠 Node 原生剥类型执行；20 上会 ERR_UNKNOWN_FILE_EXTENSION
+      # Node 版本只认 .nvmrc：vite.config.ts 引用 workspace 包的 .ts 入口，靠 Node 原生剥类型执行
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -46,22 +48,34 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      # 地图 worker 的两层历史坑要在两种产物上都重放；CI 没有 Chromium，浏览器层明确报跳过
-      - name: Built-map gate, full and public
-        run: pnpm check:built && pnpm check:built --public
-
       # 这个仓库的 Pages 是工具演示站，发的是**公开版**产物：示范行程本身就是抹过的公开版，
       # 用完整版界面画它会满屏「待填」、带着待办与日历订阅 —— 那是给作者的界面。
-      # build:public 只收 visibility: public、不带 `_` 的行程，示范目录天然不进产物。
       # 项目页挂在 https://<user>.github.io/<repo>/ 下
       - name: Public build
         run: pnpm build:public --base=/${{ github.event.repository.name }}/
 
-      - uses: actions/configure-pages@v5
+      # 地图 worker 的两层历史坑要在两种产物上都重放：完整版另构建一份来验，公开版直接验上面那份要上传的产物。
+      # CI 没有 Chromium，浏览器层明确报跳过
+      - name: Built-map gate
+        run: |
+          pnpm check:built --base=/${{ github.event.repository.name }}/
+          pnpm check:built --public --dir=apps/web/dist-public --base=/${{ github.event.repository.name }}/
 
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/web/dist-public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
 
       - id: deployment
         uses: actions/deploy-pages@v4
