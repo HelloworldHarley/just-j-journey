@@ -1,19 +1,7 @@
-import {
-  PERIOD_ALIASES,
-  PERIOD_KEYS,
-  PERIOD_WINDOWS,
-  type PeriodKey,
-  type TimeKind,
-} from '@jjj/schema'
+import { PERIOD_WINDOWS, type PeriodKey, type TimeKind } from '@jjj/schema'
+import { normalizeText } from './text.ts'
+import { resolvePeriod } from './vocab.ts'
 
-/** 全角 → 半角，顺带收敛空白。LLM 中英混排时全角符号很常见。 */
-export function normalizeText(s: string): string {
-  return s
-    .replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
-    .replace(/　/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
 
 /** 地点名匹配键：归一化 + 小写 + 去掉分隔符差异 */
 export function placeKey(name: string): string {
@@ -43,21 +31,13 @@ export function placeId(name: string, nameEn?: string): string {
 // ── 时间 ────────────────────────────────────────────────────────
 // 归一化与格式化住在这里而非 schema —— schema 只描述形状、不做决定。
 
-/** 时段关键字 / 别名 → PeriodKey。认不出返回 null。 */
-export function resolvePeriod(raw: string): PeriodKey | null {
-  const k = raw.trim().toLowerCase()
-  if ((PERIOD_KEYS as readonly string[]).includes(k)) return k as PeriodKey
-  return PERIOD_ALIASES[k] ?? null
-}
-
-/** "18:25" → 1105（容忍全角冒号与空格）。不合法返回 null。 */
+/** "18:25" → 1105（容忍全角冒号与空格）。最晚到 `24:00`（一天的终点）；不合法返回 null。 */
 export function parseClock(raw: string): number | null {
   const m = /^(\d{1,2})\s*[:：]\s*(\d{2})$/.exec(raw.trim())
   if (!m) return null
   const h = Number(m[1])
   const mi = Number(m[2])
-  if (!Number.isFinite(h) || !Number.isFinite(mi)) return null
-  if (h > 24 || mi > 59) return null
+  if (h > 24 || mi > 59 || (h === 24 && mi !== 0)) return null
   return h * 60 + mi
 }
 
@@ -127,39 +107,32 @@ export function parseTimeSpec(rawInput: string): TimeParse {
   }
 }
 
+/** 时长里认的写法：小时在前、分钟在后，分钟的单位可省（「1h30」的 30 就是分钟） */
+const DURATION_RE = /^(?:(\d+(?:\.\d+)?)(?:h|hr|hrs|hour|hours|小时|个小时|時間|时))?(?:(\d+)(?:m|min|mins|minute|minutes|分钟|分)?)?$/
+
 /**
- * 时长 → 分钟。接受 "11h55m" / "2h" / "45m" / "11小时55分" / "2 小时" / "130 分钟" / 纯数字(分钟)。
- * 解析不了返回 null —— 航班时长是「待填」字段，空着合法。
+ * 时长 → 分钟。接受 "11h55m" / "2h" / "45m" / "1h30" / "11小时55分" / "11小时55" / "2 小时" / "130 分钟" /
+ * "11:55"（票面常见）/ 纯数字（分钟）。**整串都得认得出来**：「20 min 4 km」「1:30h」「0:00」返回 null，
+ * 由调用方报出来 —— 不再只抠出认得的那一段、悄悄丢掉剩下的。
+ * 不是正数也返回 null：时长为 0 的路不存在。
  */
 export function parseDurationMin(raw: unknown): number | null {
-  if (raw === undefined || raw === null || raw === '') return null
   if (typeof raw === 'number') return Number.isFinite(raw) && raw > 0 ? Math.round(raw) : null
-
-  const s = normalizeText(String(raw)).toLowerCase()
+  if (typeof raw !== 'string') return null
+  const s = normalizeText(raw).toLowerCase().replace(/\s+/g, '')
   if (!s) return null
 
-  // "11:55" 形式的时长（Expedia 等票面常见）
-  const clock = /^(\d{1,2})[:：](\d{2})$/.exec(s)
-  if (clock) return Number(clock[1]) * 60 + Number(clock[2])
-
-  let total = 0
-  let matched = false
-  const h = /(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours|小时|时)/.exec(s)
-  if (h) {
-    total += Math.round(Number(h[1]) * 60)
-    matched = true
+  const clock = /^(\d{1,2}):(\d{2})$/.exec(s)
+  if (clock) {
+    const total = Number(clock[1]) * 60 + Number(clock[2])
+    return Number(clock[2]) < 60 && total > 0 ? total : null
   }
-  const m = /(\d+)\s*(?:m|min|mins|minutes|分钟|分)(?!\S*小时)/.exec(s)
-  if (m) {
-    total += Number(m[1])
-    matched = true
-  }
-  if (matched) return total > 0 ? total : null
+  if (/^\d+$/.test(s)) return Number(s) > 0 ? Number(s) : null
 
-  // 纯数字当分钟
-  const n = /^(\d+)$/.exec(s)
-  if (n) return Number(n[1]) > 0 ? Number(n[1]) : null
-  return null
+  const m = DURATION_RE.exec(s)
+  if (!m || (m[1] === undefined && m[2] === undefined)) return null
+  const total = Math.round(Number(m[1] ?? 0) * 60) + Number(m[2] ?? 0)
+  return total > 0 ? total : null
 }
 
 /**
@@ -175,38 +148,63 @@ export function formatDurationCompact(min: number): string {
 
 // ── 坐标 ────────────────────────────────────────────────────────
 
-/** 作者格式写 lat, lng（和地图 App 一致）；返回也是 [lat, lng]，转 GeoJSON 顺序在调用处做。 */
+/**
+ * 作者格式写 lat, lng（和地图 App 一致）；返回也是 [lat, lng]，转 GeoJSON 顺序在调用处做。
+ * 接受十进制（`47.6205, -122.3493`，可带 °N / W）和度分秒（`47°36'22.3"N 122°19'55.6"W`、`47° 36.371' N`）。
+ * **必须恰好两个数**：多一个数（「…附近 3 号门」）返回 null 由调用方报错，而不是取前两个凑合 ——
+ * 度分秒被当成十进制读的老毛病（47°36' → [47, 36]，俄罗斯）就出在「取前两个」上
+ */
 export function parseLatLng(v: unknown): [number, number] | null {
   let nums: number[] | null = null
+  // 半球字母：既定正负，也定哪个是纬度 —— `2.3376° E, 48.8606° N` 先写的是经度
+  let dirs: (string | undefined)[] = []
 
   if (Array.isArray(v) && v.length === 2) {
-    nums = v.map(Number)
+    nums = v.map(coordNumber)
   } else if (typeof v === 'string') {
-    // 数字后面可以跟方向字母：`47.6062°N, 122.3321°W`。**必须应用符号** ——
-    // 只把字母当噪声剥掉的话，西经会变成东经，把西雅图画到中国境内，
-    // 而且整份文件一致地错时坐标离群检测也抓不到（大家一起偏移，中位数跟着走）
-    const cleaned = v.replace(/[[\]()（）]/g, ' ')
-    const found = [...cleaned.matchAll(/(-?\d+(?:\.\d+)?)\s*°?\s*([NSEWnsew])?/g)]
-    if (found.length >= 2) {
-      const signed = (m: RegExpMatchArray): number => {
-        const n = Number(m[1])
-        const dir = m[2]?.toUpperCase()
-        return dir === 'S' || dir === 'W' ? -Math.abs(n) : n
+    const s = normalizeText(v).replace(/[[\]()（）]/g, ' ')
+    // 半球字母决定正负：只把字母当噪声剥掉的话，西经会变成东经，把西雅图画到中国境内
+    const signed = (n: number, dir: string | undefined): number =>
+      dir === 'S' || dir === 'W' ? -Math.abs(n) : n
+    if (/['′"″]/.test(s)) {
+      const found = [...s.matchAll(/(-?\d+(?:\.\d+)?)\s*°\s*(?:(\d+(?:\.\d+)?)\s*['′]\s*)?(?:(\d+(?:\.\d+)?)\s*["″]\s*)?([NSEWnsew])?/g)]
+      if (found.length === 2) {
+        dirs = found.map((m) => m[4]?.toUpperCase())
+        nums = found.map((m) => {
+          const deg = Number(m[1])
+          const abs = Math.abs(deg) + Number(m[2] ?? 0) / 60 + Number(m[3] ?? 0) / 3600
+          return signed(deg < 0 ? -abs : abs, m[4]?.toUpperCase())
+        })
       }
-      nums = [signed(found[0]!), signed(found[1]!)]
+    } else {
+      const found = [...s.matchAll(/(-?\d+(?:\.\d+)?)\s*°?\s*([NSEWnsew])?/g)]
+      if (found.length === 2) {
+        dirs = found.map((m) => m[2]?.toUpperCase())
+        nums = found.map((m) => signed(Number(m[1]), m[2]?.toUpperCase()))
+      }
     }
   } else if (typeof v === 'object' && v !== null) {
     const o = v as Record<string, unknown>
     const lat = o['lat'] ?? o['latitude']
     const lng = o['lng'] ?? o['lon'] ?? o['longitude']
-    if (lat !== undefined && lng !== undefined) nums = [Number(lat), Number(lng)]
+    if (lat !== undefined && lng !== undefined) nums = [coordNumber(lat), coordNumber(lng)]
   }
 
   if (!nums || nums.length !== 2) return null
+  const axisOf = (d: string | undefined): 'lat' | 'lng' | null => (d === 'N' || d === 'S' ? 'lat' : d === 'E' || d === 'W' ? 'lng' : null)
+  const [first, second] = [axisOf(dirs[0]), axisOf(dirs[1])]
+  if (first !== null && first === second) return null // 「47 N, 122 N」：两个都是纬度
+  if (first === 'lng' || second === 'lat') nums = [nums[1]!, nums[0]!]
   const [lat, lng] = nums as [number, number]
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null
   return [lat, lng]
+}
+
+/** 坐标里的一个数：数字或写着数字的文字；空着（`~`、`''`）不是 0 */
+function coordNumber(x: unknown): number {
+  if (typeof x === 'number') return x
+  return typeof x === 'string' && x.trim() ? Number(normalizeText(x)) : NaN
 }
 
 /**
@@ -221,8 +219,11 @@ export function formatLatLng(coord: readonly [number, number], sep = ', '): stri
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'] as const
 
+/** 真实存在的 YYYY-MM-DD：`2026-02-30` 不算（Date 会把它滚成 3 月 2 日，按日期查找全部落空） */
 export function isIsoDate(s: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`))
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false
+  const d = new Date(`${s}T00:00:00Z`)
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s
 }
 
 export function weekdayOf(iso: string): string {
@@ -251,11 +252,21 @@ export function daysBetween(a: string, b: string): number {
   return Math.round(ms / 86_400_000)
 }
 
-/** 从标题里抓 ISO 日期，如 "Day 1 · 2026-10-01" */
-export function extractDate(text: string): string | null {
-  const m = /(\d{4}-\d{2}-\d{2})/.exec(text)
-  return m && isIsoDate(m[1] ?? '') ? (m[1] ?? null) : null
+/**
+ * 标题里写的日期，如 "Day 1 · 2026-10-01"。没写返回 null；
+ * 写了但不是真实存在的 YYYY-MM-DD（`2026-10-32`、没补零的 `2026-10-2`）返回 `{ written, iso: null }` —— 那是写错，不是没写
+ */
+export function headingDate(text: string): { written: string; iso: string | null } | null {
+  const m = /(?<!\d)\d{4}-\d{1,2}-\d{1,2}(?!\d)/.exec(text)
+  return m ? { written: m[0], iso: isIsoDate(m[0]) ? m[0] : null } : null
 }
+
+/**
+ * 作者只写日期不写时刻时补的时刻：住宿按行业惯例入住 18:00、退房 10:00，其余（租车、硬约束）按 0 点。
+ * 保底在**解析时**就填进 `minute`，导出仍按作者写的 `raw` 原样写回 —— 往返幂等不受影响，
+ * 下游拿到的区间两端永远有确定值
+ */
+export const DEFAULT_MINUTE = { checkIn: 18 * 60, checkOut: 10 * 60, other: 0 } as const
 
 /** "2026-10-05 11:20" → { date, minute } */
 export function parseDateTime(

@@ -50,7 +50,7 @@ const KIND_ROWS: ColorRow[] = [
 
 /** 两个界面语义色 —— 单独一组，和行程色留出呼吸缝 */
 const SEMANTIC_ROWS: ColorRow[] = [
-  { token: 'tight', label: '注意', hint: '警示角标 · 时间冲突 · 跨天 +n' },
+  { token: 'tight', label: '注意', hint: '注意条目 · 时间冲突 · 跨天 +n · 今天' },
   { token: 'faved', label: '收藏', hint: '收藏星与预算数字' },
 ]
 

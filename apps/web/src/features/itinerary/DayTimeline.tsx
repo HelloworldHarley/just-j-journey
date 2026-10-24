@@ -25,7 +25,7 @@ import { Markdown } from '../../components/Markdown.tsx'
 import { PUBLIC_BUILD } from '../../lib/public.ts'
 
 /** flight 事件没写 transport 块时的空骨架 —— 所有槽位都显示「待填」（公开版不画：整张都是给作者的提醒） */
-const EMPTY_TRANSPORT: Transport = { mode: 'flight', hide: [], arrDayOffset: 0, durationMin: null, stops: [], legs: [] }
+const EMPTY_TRANSPORT: Transport = { mode: 'flight', hide: [], arrDayOffset: null, durationMin: null, stops: [], legs: [] }
 
 /** 时间列宽度。卡片内外共用，保证通勤条的竖线对得上卡片里的时间列。 */
 const TIME_COL = '3.5rem'

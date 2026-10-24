@@ -223,7 +223,7 @@ function transportValue(t: Transport): string {
     ['dep_time', t.depTime],
     ['arr_time', t.arrTime],
     ['arr_date', t.arrDate],
-    ['arr_day_offset', t.arrDayOffset !== 0 ? t.arrDayOffset : undefined],
+    ['arr_day_offset', t.arrDayOffset ?? undefined],
     ['duration', t.durationMin !== null ? formatDurationCompact(t.durationMin) : undefined],
     ['cabin', t.cabin],
     ['seat', t.seat],

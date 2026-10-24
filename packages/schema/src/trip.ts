@@ -75,9 +75,9 @@ export const TransportStopSchema = z.object({
   /** 从该中转点再出发的当地时间 "16:35" */
   depTime: z.string().optional(),
   /** 到达该中转点的日期。缺省按时刻回卷从出发日推算；跨日期变更线时显式写 */
-  arrDate: z.string().optional(),
+  arrDate: z.string().regex(iso).optional(),
   /** 从该中转点再出发的日期。缺省同上 */
-  depDate: z.string().optional(),
+  depDate: z.string().regex(iso).optional(),
   /**
    * 到达此中转点的**前一段行进**时长（分钟）。跨时区没法从两端当地时间
    * 算出来，作者可提供；null = 未填，按全程减停留后均分
@@ -138,15 +138,18 @@ export const TransportSchema = z.object({
    * 出发日期 "YYYY-MM-DD"。缺省按事件当天推算 ——
    * 抵达型事件的航班其实前一天起飞时（西行跨日期变更线）才需要显式写
    */
-  depDate: z.string().optional(),
+  depDate: z.string().regex(iso).optional(),
   /** 出发当地时间 "10:15" */
   depTime: z.string().optional(),
   /** 到达当地时间 "13:11" */
   arrTime: z.string().optional(),
   /** 到达日期 "YYYY-MM-DD"。缺省 = 出发日期 + arr_day_offset */
-  arrDate: z.string().optional(),
-  /** 到达在第几天后：0 当天，1 次日（+1）。跨太平洋航线常见 */
-  arrDayOffset: z.number().int().default(0),
+  arrDate: z.string().regex(iso).optional(),
+  /**
+   * 到达在第几天后：0 当天，1 次日（+1）。跨太平洋航线常见。
+   * null = 没写，按钟点回卷推；写了 0 就是当天到 —— 东行跨日期变更线时钟点看着回卷了，日子却没变
+   */
+  arrDayOffset: z.number().int().nullable().default(null),
   /** 票价，自由文本如 "$189"。null 渲染「待填」预算槽位 */
   price: z.string().optional(),
   /**
@@ -327,16 +330,6 @@ export const RentalSchema = ReservationBase.extend({
   pickupPlaceId: z.string().nullable(),
   dropoffPlaceId: z.string().nullable(),
 })
-
-/**
- * 作者只写日期不写时刻时的保底 —— 入住 18:00、退房 10:00，行业惯例。
- *
- * 保底在**解析时**就填进 `minute`，导出仍按作者写的 `raw` 原样写回，
- * 所以往返幂等不受影响，而下游拿到的区间**两端永远有确定值**，
- * 不存在「这条带该画到哪」的悬空情形。
- */
-export const DEFAULT_CHECK_IN = 18 * 60
-export const DEFAULT_CHECK_OUT = 10 * 60
 
 /**
  * 长途 —— 一段带票面明细的跨城移动：去程航班、新干线、跨城巴士、轮渡。

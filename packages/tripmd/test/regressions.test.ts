@@ -1,13 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_CHECK_OUT, dayColor } from '@jjj/schema'
+import { dayColor } from '@jjj/schema'
 import { parse } from '../src/parse.ts'
 import { summarize } from '../src/summary.ts'
 import { serialize } from '../src/serialize.ts'
 import { applyPatch } from '../src/patch.ts'
 import { resolveDetails } from '../src/resolve.ts'
-import { parseLatLng } from '../src/values.ts'
+import { DEFAULT_MINUTE, parseLatLng } from '../src/values.ts'
 
 /**
  * 静默错误的回归测试。
@@ -94,7 +94,7 @@ describe('booking.status 拼错必须报错', () => {
     const { trip, diagnostics } = parse(md)
     expect(trip).toBeNull()
     const err = diagnostics.find((d) => d.severity === 'error')
-    expect(err?.message).toContain('booking status')
+    expect(err?.message).toContain('`status` 写的是 "bookd"')
     expect(err?.hint).toContain('booked') // 给出「是否想写」建议
   })
 
@@ -210,7 +210,7 @@ ${event('入住', '"16:00"')}`
   it('只写日期时按保底时刻算，但写回仍是日期，往返不长出时刻', () => {
     const once = parse(md).trip!
     const last = once.stays[2]!
-    expect(last.to.minute).toBe(DEFAULT_CHECK_OUT)
+    expect(last.to.minute).toBe(DEFAULT_MINUTE.checkOut)
     expect(last.to.raw).toBe('2026-10-05')
 
     const md2 = serialize(once)
@@ -358,7 +358,7 @@ ${event('派克市场', '08:45–11:10')}`
         event('派克市场', '08:45–11:10', 'place: 派克市场'),
     )
     const err = parse(md).diagnostics.find((d) => d.severity === 'error')
-    expect(err?.message).toContain('`from_stay` 的 mode "wlak" 无效')
+    expect(err?.message).toContain('from_stay：`mode` 写的是 "wlak"')
     expect(err?.hint).toContain('walk')
   })
 })
@@ -503,7 +503,9 @@ describe('前置声明与 detail 引用', () => {
 
 describe('未知字段警告覆盖所有块（不只前置三块）', () => {
   // 曾经：checkKeys 只挂在 trip-transports / trip-stays / trip-rentals 上，
-  // 事件里写 `flgs:` 会被静默吞掉 —— 卡片少个徽标，作者以为自己标了
+  // 事件里写 `flgs:` 会被静默吞掉 —— 卡片少个徽标，作者以为自己标了。
+  // 级别跟着「最像的那个字段」：它是显示字段（flags、sunrise）就提醒；是时间、日期、坐标、结构字段就是错误 ——
+  // 拼错的键等于那个值写了却没读到
 
   const diag = (md: string) => parse(md).diagnostics
 
@@ -531,7 +533,7 @@ describe('未知字段警告覆盖所有块（不只前置三块）', () => {
         event('逛', '"10:00"', 'place: 樱桃街'),
     )
     const w = diag(md).find((d) => d.message.includes('`cord`'))
-    expect(w?.severity).toBe('warning')
+    expect(w?.severity).toBe('error')
     expect(w?.hint).toContain('coord')
   })
 
@@ -541,7 +543,7 @@ describe('未知字段警告覆盖所有块（不只前置三块）', () => {
         event('逛', '"10:00"'),
     )
     const w = diag(md).find((d) => d.message.includes('`lable`'))
-    expect(w?.severity).toBe('warning')
+    expect(w?.severity).toBe('error')
     expect(w?.hint).toContain('label')
   })
 
@@ -550,7 +552,7 @@ describe('未知字段警告覆盖所有块（不只前置三块）', () => {
       '## Day 1 · 2026-10-01\n### 门票\n```trip-event\ntime: "10:00"\ncategory: sight\nbooking: {status: required, deadlin: 2026-09-20}\n```\n',
     )
     const w = diag(md).find((d) => d.message.includes('`deadlin`'))
-    expect(w?.severity).toBe('warning')
+    expect(w?.severity).toBe('error')
     expect(w?.hint).toContain('deadline')
   })
 
@@ -560,7 +562,7 @@ describe('未知字段警告覆盖所有块（不只前置三块）', () => {
         event('B', '"11:00"'),
     )
     const w = diag(md).find((d) => d.message.includes('`mins`'))
-    expect(w?.severity).toBe('warning')
+    expect(w?.severity).toBe('error')
     expect(w?.hint).toBeTruthy()
   })
 
@@ -570,7 +572,7 @@ describe('未知字段警告覆盖所有块（不只前置三块）', () => {
         ['### 航班', '```trip-event', 'time: "09:00"', 'category: flight', 'detail: 去程', '```', ''].join('\n'),
     )
     const w = diag(md).find((d) => d.message.includes('`dep_tme`'))
-    expect(w?.severity).toBe('warning')
+    expect(w?.severity).toBe('error')
     expect(w?.hint).toContain('dep_time')
   })
 
@@ -588,19 +590,21 @@ describe('_broken 示范：每种写错都被报出', () => {
   // data:check 只要求它「至少报一个错」—— 某一类诊断退化成静默，那条检查照样绿。
   // 这里逐条锁住：顺序、级别、行号、能认出是哪一条的关键词，以及给得出的修复建议。
   const md = readFileSync(join(import.meta.dirname, '../../../apps/web/public/data/_broken/plan.md'), 'utf8')
+  // 行号指到具体那一项、那个字段：坐标离群报在那个地点，拼错的值报在它自己那一行，缺必填报在块的第一行
   const expected: [severity: string, line: number, inMessage: string, inHint: string | null][] = [
-    ['error', 14, 'Kerry Park', '-122.3599'],
-    ['error', 35, '`category`', 'sight /'],
-    ['error', 44, 'sightseing', '`sight`'],
-    ['error', 54, '下午三点半', '18:25'],
-    ['warning', 64, '`flgs`', '`flags`'],
-    ['warning', 75, 'Kery Park', 'Kerry Park'],
+    ['error', 21, 'Kerry Park', '-122.3599'],
+    ['error', 38, '`category`', 'sight /'],
+    ['error', 48, 'sightseing', '`sight`'],
+    ['error', 57, '下午三点半', '18:25'],
+    ['warning', 70, '`flgs`', '`flags`'],
+    ['warning', 80, 'Kery Park', 'Kerry Park'],
+    ['warning', 85, '应是 2026-10-04', '标题上的日期'],
     ['error', 85, '2026-10-09', null],
-    ['error', 91, 'teleport', 'walk /'],
-    ['warning', 91, '没有去处', 'to_next'],
+    ['error', 97, 'teleport', 'walk /'],
+    ['warning', 97, '没有去处', 'to_next'],
   ]
 
-  it('9 条诊断一条不少、一条不多，行程整体判失败', () => {
+  it('10 条诊断一条不少、一条不多，行程整体判失败', () => {
     const { trip, diagnostics } = parse(md)
     expect(trip).toBeNull()
     expect(diagnostics.map((d) => [d.severity, d.line])).toEqual(expected.map(([s, l]) => [s, l]))

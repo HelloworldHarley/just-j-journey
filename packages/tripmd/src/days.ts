@@ -1,32 +1,29 @@
+import { dayColor, type Day, type Leg, type Stay, type TripEvent } from '@jjj/schema'
+import { suggest } from './diagnostics.ts'
 import {
-  TRANSPORT_ALIASES,
-  TRANSPORT_MODES,
-  dayColor,
-  resolveTransport,
-  type Day,
-  type Leg,
-  type Stay,
-  type TransportMode,
-  type TripEvent,
-} from '@jjj/schema'
-import { suggest, suggestEnum } from './diagnostics.ts'
-import {
-  BOOKING_KEYS,
-  EVENT_KEYS,
-  DAY_KEYS,
-  TO_NEXT_KEYS,
-  asRecord,
-  checkKeys,
-  num,
-  readCategory,
-  readFlags,
-  str,
+  clock,
+  display,
+  duration,
+  isoDate,
+  listOf,
+  nested,
+  noteText,
+  oneOf,
+  oneRecord,
+  positive,
+  readRecord,
+  text,
+  timeSpec,
+  type Fields,
+  type RecordSpec,
+  type Values,
 } from './read.ts'
 import { parseCost, splitBody } from './cost.ts'
 import type { ParseCtx, PlaceResolver } from './blocks.ts'
 import type { RawDay } from './sections.ts'
 import { stayOfMorning } from './resolve.ts'
-import { addDays, daysBetween, isIsoDate, parseTimeSpec, stableId, weekdayOf } from './values.ts'
+import { addDays, daysBetween, isIsoDate, stableId, weekdayOf } from './values.ts'
+import { BOOKING_STATUS, CATEGORY, FLAG, TRANSPORT_MODE } from './vocab.ts'
 
 /**
  * 天 / 事件 / 通勤段的构建。
@@ -36,39 +33,74 @@ import { addDays, daysBetween, isIsoDate, parseTimeSpec, stableId, weekdayOf } f
  * 检查规则从此可以单独测试、单独扩充，不用再在构建循环里见缝插针。
  */
 
-const BOOKING_STATUSES = ['required', 'booked', 'none'] as const
+// ── 字段表 ──────────────────────────────────────────────────────
 
-/**
- * 通勤记录（`to_next` / `from_stay`）的 mode。两处形状完全相同，
- * 连诊断都该一模一样 —— 只有报错文案里的字段名不同。
- */
-function readMode(
-  ctx: ParseCtx,
-  rec: Record<string, unknown>,
-  line: number,
-  field: 'to_next' | 'from_stay',
-): TransportMode | null {
-  const raw = str(rec['mode']) ?? ''
-  const mode = resolveTransport(raw)
-  if (!mode) {
-    const guess = suggestEnum(raw, TRANSPORT_MODES, TRANSPORT_ALIASES)
-    ctx.bag.error(
-      line,
-      `\`${field}\` 的 mode "${raw}" 无效`,
-      guess ? `是否想写 \`${guess}\`？` : `可选值：${TRANSPORT_MODES.join(' / ')}`,
-    )
-  }
-  return mode
-}
+const EVENT = {
+  block: 'trip-event',
+  fields: {
+    time: { read: timeSpec, required: '如 `time: 18:25–18:55`' },
+    category: { read: oneOf(CATEGORY), required: `可选值：${CATEGORY.keys.join(' / ')}` },
+    place: { read: text },
+    flags: { read: listOf(oneOf(FLAG), { split: /[,，]/ }), level: 'warning' },
+    cost: { read: text },
+    booking: { read: nested },
+    // detail: 引用前置块（长途 / 住宿 / 长租），事件只留一根指针专注行程本身
+    detail: { read: text },
+    notes: { read: listOf(noteText), aliases: ['warnings'], level: 'warning' },
+    to_next: { read: nested, aliases: ['toNext'] },
+  },
+  // 换乘与住宿明细都搬到了顶层前置块；留在事件上会静默丢失，必须拦住
+  retired: {
+    stay: ['`stay:` 已不再写在事件上', '改写进顶层 `trip-stays` 块（带 from/to 的一条区间记录），事件里写 `detail: 名字` 引用'],
+    transport: ['`transport:` 已不再写在事件上', '明细写进顶层 `trip-transports` 块，事件里写 `detail: 名字` 引用'],
+    transports: ['`transports:` 已不再写在事件上', '明细写进顶层 `trip-transports` 块，事件里写 `detail: 名字` 引用'],
+  },
+} satisfies RecordSpec<Fields>
 
-/** 通勤记录里除 mode 外的那几个值 —— 同上，两处共用一份读法 */
-function flowValues(rec: Record<string, unknown>): Pick<Leg, 'durationMin' | 'distanceKm' | 'label' | 'note'> {
+const BOOKING = {
+  block: 'booking',
+  fields: {
+    // 拼错必须报错，不能静默兜底成 required —— 那会把「已订」读成「待订」，语义正好反过来
+    status: { read: oneOf(BOOKING_STATUS) },
+    deadline: { read: isoDate },
+    note: display,
+  },
+} satisfies RecordSpec<Fields>
+
+/** 通勤记录（`to_next` / `from_stay`）两处形状完全相同，连诊断都该一模一样 —— 只有块名不同 */
+function flowSpec(block: 'to_next' | 'from_stay') {
   return {
-    durationMin: num(rec['minutes']) ?? num(rec['min']) ?? null,
-    distanceKm: num(rec['km']) ?? null,
-    label: str(rec['label']),
-    note: str(rec['note']),
-  }
+    block,
+    fields: {
+      mode: { read: oneOf(TRANSPORT_MODE), required: `如 \`mode: walk\`；可选值：${TRANSPORT_MODE.keys.join(' / ')}` },
+      minutes: { read: duration, aliases: ['min'] },
+      km: { read: positive },
+      label: display,
+      note: display,
+    },
+  } satisfies RecordSpec<Fields>
+}
+const TO_NEXT = flowSpec('to_next')
+const FROM_STAY = flowSpec('from_stay')
+type Flow = Values<typeof TO_NEXT.fields>
+
+const DAY = {
+  block: 'trip-day',
+  fields: {
+    theme: display,
+    sunrise: { read: clock, level: 'warning' },
+    sunset: { read: clock, level: 'warning' },
+    from_stay: { read: nested, aliases: ['fromStay'] },
+  },
+  retired: {
+    lodging: ['`trip-day` 的 `lodging` 已不再使用', '改写进顶层 `trip-stays` 块：一次写清 from/to，不用每天重复'],
+    lodging_note: ['`trip-day` 的 `lodging_note` 已不再使用', '写进顶层 `trip-stays` 那条住宿的 `note`'],
+  },
+} satisfies RecordSpec<Fields>
+
+/** 通勤记录里除 mode 外的那几个值 */
+function flowValues(f: Flow): Pick<Leg, 'durationMin' | 'distanceKm' | 'label' | 'note'> {
+  return { durationMin: f.minutes ?? null, distanceKm: f.km ?? null, label: f.label, note: f.note }
 }
 
 /** lint 的输入：一天的事件流 + 谁写了 to_next（含 mode 无效的，口径与旧实现一致） */
@@ -104,127 +136,90 @@ export function buildDays(ctx: ParseCtx, rawDays: RawDay[], front: DayContext): 
   const { start, end } = front.dates
   const days: Day[] = []
   const flows: DayFlow[] = []
-  const seenIndex = new Set<number>()
+  const seenIndex = new Map<number, number>()
+  const seenDate = new Map<string, number>()
 
   rawDays.forEach((rd) => {
-    if (seenIndex.has(rd.index)) {
-      bag.error(rd.line, `Day ${rd.index} 重复出现`)
+    if (rd.index < 1) {
+      bag.error(rd.line, `Day ${rd.index} 的天号不对，从 1 开始数`, '第一天写 `## Day 1 · 2026-10-01`')
+      return
     }
-    seenIndex.add(rd.index)
+    const sameIndex = seenIndex.get(rd.index)
+    if (sameIndex !== undefined) bag.error(rd.line, `Day ${rd.index} 重复出现（第一次在第 ${sameIndex} 行）`)
+    seenIndex.set(rd.index, rd.line)
 
-    const date = rd.dateHint ?? (isIsoDate(start) ? addDays(start, rd.index - 1) : null)
+    if (rd.date && !rd.date.iso) {
+      bag.error(rd.line, `Day ${rd.index} 标题上的日期「${rd.date.written}」不是真实存在的日期`, '写成 YYYY-MM-DD，月和日补零，如 `## Day 1 · 2026-10-01`')
+      return
+    }
+    const written = rd.date?.iso ?? null
+    const byIndex = isIsoDate(start) ? addDays(start, rd.index - 1) : null
+    const date = written ?? byIndex
     if (!date) {
       bag.error(rd.line, `Day ${rd.index} 无法确定日期`, '在标题里写 `## Day 1 · 2026-10-01`，或修好 frontmatter 的 start')
       return
     }
-    if (!rd.dateHint) {
+    if (!written) {
       bag.warn(rd.line, `Day ${rd.index} 标题没有日期，已按 start 推算为 ${date}`, '建议写成 `## Day ' + rd.index + ' · ' + date + '`')
+    } else if (byIndex && byIndex !== written) {
+      bag.warn(
+        rd.line,
+        `Day ${rd.index} 标题上的日期是 ${written}，按 start（${start}）推算 Day ${rd.index} 应是 ${byIndex}`,
+        '以标题上的日期为准；天号或日期改对其中一个',
+      )
     }
+    const sameDate = seenDate.get(date)
+    if (sameDate !== undefined) {
+      bag.error(rd.line, `Day ${rd.index} 的日期 ${date} 与第 ${sameDate} 行那一天重复`, '一个日期只能有一个 Day 分区')
+    }
+    seenDate.set(date, rd.line)
     if (isIsoDate(start) && isIsoDate(end) && (daysBetween(start, date) < 0 || daysBetween(date, end) < 0)) {
       bag.error(rd.line, `Day ${rd.index} 的日期 ${date} 不在行程区间 ${start} ~ ${end} 内`)
     }
 
-    const dmeta = rd.meta
-    checkKeys(bag, dmeta, DAY_KEYS, rd.line, 'trip-day')
+    const dv: Values<typeof DAY.fields> = rd.meta && !rd.meta.broken ? readRecord(bag, rd.meta.at, rd.meta.rec, DAY, `Day ${rd.index}`) : {}
     const events: TripEvent[] = []
     const legs: Leg[] = []
 
     // 先建事件，再串 leg —— to_next 需要知道下一个事件的地点
-    const pending: { evIndex: number; line: number; rec: Record<string, unknown> }[] = []
+    const pending: { evIndex: number; line: number; flow: Flow }[] = []
 
     rd.events.forEach((re, i) => {
-      const m = re.meta
-      if (Object.keys(m).length === 0) {
+      if (!re.meta) {
         bag.error(re.line, `事件「${re.title}」缺少 \`\`\`trip-event 块`, '至少要有 `time` 和 `category`')
         return
       }
-      checkKeys(bag, m, EVENT_KEYS, re.line, 'trip-event')
+      if (re.meta.broken) return // YAML 错误已报；再按字段表读只会多出一串「缺少必需字段」
+      const where = `事件「${re.title}」`
+      const { at } = re.meta
+      const v = readRecord(bag, at, re.meta.rec, EVENT, where)
+      if (!v.category || !v.time) return
 
-      const category = readCategory(bag, re.line, m['category'], `事件「${re.title}」`)
-      const timeRaw = str(m['time'])
-      if (!timeRaw) {
-        bag.error(re.line, `事件「${re.title}」缺少必需字段 \`time\``, '如 `time: 18:25–18:55`')
-      }
-      const parsedTime = timeRaw ? parseTimeSpec(timeRaw) : null
-      if (parsedTime && !parsedTime.ok) {
-        bag.error(re.line, `事件「${re.title}」的 ${parsedTime.message}`, parsedTime.hint)
-      }
-      if (!category || !parsedTime || !parsedTime.ok) return
-
-      const placeName = str(m['place'])
-      const pid = placeName ? resolvePlaceRef(placeName, re.line, category) : null
-
-      // 住宿信息从事件搬到了顶层 trip-stays。留在这里的 `stay:` 会静默丢失，必须拦住
-      if (m['stay'] !== undefined) {
-        bag.error(
-          re.line,
-          '`stay:` 已不再写在事件上',
-          '改写进顶层 `trip-stays` 块（带 from/to 的一条区间记录）',
-        )
-      }
+      const pid = v.place ? resolvePlaceRef(v.place, at.lineOf('place'), v.category) : null
 
       let booking: TripEvent['booking']
-      const brec = asRecord(m['booking'])
-      if (brec) {
-        checkKeys(bag, brec, BOOKING_KEYS, re.line, 'booking')
-        const s = str(brec['status']) ?? 'required'
-        // 拼错必须报错，不能静默兜底成 required —— 那会把「已订」读成「待订」，
-        // 语义正好反过来，行前清单上还会多出一项根本不存在的待办
-        let status: 'required' | 'booked' | 'none' = 'required'
-        if ((BOOKING_STATUSES as readonly string[]).includes(s)) {
-          status = s as 'required' | 'booked' | 'none'
-        } else {
-          const guess = suggest(s, BOOKING_STATUSES)
-          bag.error(
-            re.line,
-            `事件「${re.title}」的 booking status "${s}" 无效`,
-            guess ? `是否想写 \`${guess}\`？` : `可选值：${BOOKING_STATUSES.join(' / ')}`,
-          )
-        }
-        booking = {
-          status,
-          deadline: str(brec['deadline']),
-          note: str(brec['note']),
-        }
+      const b = oneRecord(bag, v.booking, `${where}的 \`booking\` `)
+      if (b) {
+        const bv = readRecord(bag, b.at, b.rec, BOOKING, `${where}的预订`)
+        booking = { status: bv.status ?? 'required', deadline: bv.deadline, note: bv.note }
       }
 
-      // 换乘明细不再写在事件上 —— 全部住在顶层 trip-transports，事件用 detail: 引用
-      if (m['transport'] !== undefined || m['transports'] !== undefined) {
-        bag.error(
-          re.line,
-          '`transport:` 已不再写在事件上',
-          '明细写进顶层 `trip-transports` 块，事件里写 `detail: 名字` 引用',
-        )
-      }
-
-      // detail: 引用前置块（长途 / 住宿 / 长租），事件只留一根指针专注行程本身。
       // 明细的灌入（长途时间轴）在天排序之后做 —— 「首次引用」按日期序判定
       let detailRef: string | undefined
-      const detailRaw = m['detail']
-      if (detailRaw !== undefined) {
-        const name = str(detailRaw)
-        if (!name) {
-          bag.error(re.line, `事件「${re.title}」的 \`detail\` 是空的`, '写前置记录的名字，如 `detail: Astra Hotel`')
-        } else if (!detailNames.has(name)) {
-          const guess = suggest(name, [...detailNames.keys()])
+      if (v.detail !== undefined) {
+        if (detailNames.has(v.detail)) {
+          detailRef = v.detail
+        } else {
+          const guess = suggest(v.detail, [...detailNames.keys()])
           bag.error(
-            re.line,
-            `事件「${re.title}」引用的「${name}」不在任何前置块里`,
+            at.lineOf('detail'),
+            `${where}引用的「${v.detail}」不在任何前置块里`,
             guess ? `是否指「${guess}」？` : '先在顶层 trip-transports / trip-stays / trip-rentals 里声明',
           )
-        } else {
-          detailRef = name
         }
       }
 
-      const costRaw = str(m['cost'])
       const { summary, detail } = splitBody(re.body)
-
-      // 注意条目：`notes:` 字符串列表（单条字符串也接受）。别名 warnings。
-      const notesRaw = m['notes'] ?? m['warnings']
-      const notes = (Array.isArray(notesRaw) ? notesRaw : notesRaw !== undefined ? [notesRaw] : [])
-        .map((x) => str(x))
-        .filter((s): s is string => s !== undefined)
 
       // id 不含标题 —— 编辑功能里「改名」是常规操作，改名不该换 id
       // （换 id 会丢收藏、断开草稿 ops 的引用）。天号+位置足够稳定。
@@ -232,58 +227,58 @@ export function buildDays(ctx: ParseCtx, rawDays: RawDay[], front: DayContext): 
       events.push({
         id: evId,
         title: re.title,
-        category,
-        startMin: parsedTime.value.startMin,
-        endMin: parsedTime.value.endMin,
-        timeKind: parsedTime.value.kind,
-        timeRaw: timeRaw ?? '',
+        category: v.category,
+        startMin: v.time.startMin,
+        endMin: v.time.endMin,
+        timeKind: v.time.kind,
+        timeRaw: v.time.raw,
         placeId: pid,
-        flags: readFlags(bag, re.line, m['flags']),
-        cost: costRaw ? parseCost(costRaw, ctx.travelers, ctx.currency) : undefined,
+        flags: [...new Set(v.flags ?? [])],
+        cost: v.cost ? parseCost(v.cost, ctx.travelers, ctx.currency) : undefined,
         booking,
         detailRef,
         summary,
         detail,
-        notes,
+        notes: v.notes ?? [],
         variants: re.variants,
       })
 
-      const toNext = asRecord(m['to_next']) ?? asRecord(m['toNext'])
+      const toNext = oneRecord(bag, v.to_next, `${where}的 \`to_next\` `)
       if (toNext) {
-        checkKeys(bag, toNext, TO_NEXT_KEYS, re.line, 'to_next')
-        pending.push({ evIndex: events.length - 1, line: re.line, rec: toNext })
+        const flow = readRecord(bag, toNext.at, toNext.rec, TO_NEXT, `${where}的 to_next`)
+        pending.push({ evIndex: events.length - 1, line: toNext.at.line, flow })
       }
     })
 
     // ── 开场通勤：昨晚住处 → 今天第一站。它排在所有 to_next 之前 ──
     const stay = stayOfMorning(stays, date)
-    const fromStay = asRecord(dmeta['from_stay'])
+    const fromStay = oneRecord(bag, dv.from_stay, `Day ${rd.index} 的 \`from_stay\` `)
     if (fromStay) {
-      checkKeys(bag, fromStay, TO_NEXT_KEYS, rd.line, 'from_stay')
-      const mode = readMode(ctx, fromStay, rd.line, 'from_stay')
+      const flow = readRecord(bag, fromStay.at, fromStay.rec, FROM_STAY, `Day ${rd.index} 的 from_stay`)
+      const line = fromStay.at.line
       const first = events[0]
       if (!first) {
-        bag.warn(rd.line, `Day ${rd.index} 没有任何事件，\`from_stay\` 没有去处`, '删掉 from_stay，或补上事件')
+        bag.warn(line, `Day ${rd.index} 没有任何事件，\`from_stay\` 没有去处`, '删掉 from_stay，或补上事件')
       } else if (!stay) {
         bag.error(
-          rd.line,
+          line,
           `Day ${rd.index} 写了 \`from_stay\`，但当天早上没有住宿区间覆盖`,
           '落地当天本来就不从住处出发；否则检查 `trip-stays` 的 from/to 是否漏了这一晚',
         )
       } else if (stay.placeId && stay.placeId === first.placeId) {
         bag.error(
-          rd.line,
+          line,
           `Day ${rd.index} 的第一个事件「${first.title}」就在住处「${stay.what}」`,
           '这段路不存在，删掉 `from_stay`',
         )
-      } else if (mode) {
+      } else if (flow.mode) {
         legs.push({
           id: stableId(`d${rd.index}l`, `stay|${first.id}`),
           afterEventId: null,
           from: stay.placeId,
           to: first.placeId,
-          mode,
-          ...flowValues(fromStay),
+          mode: flow.mode,
+          ...flowValues(flow),
           geometry: null,
         })
       }
@@ -293,9 +288,6 @@ export function buildDays(ctx: ParseCtx, rawDays: RawDay[], front: DayContext): 
       const from = events[p.evIndex]
       const to = events[p.evIndex + 1]
       if (!from) continue
-
-      // 先校验 mode 再判断有没有去处 —— 两个问题都报出来，比只报一个更省一轮修改
-      const mode = readMode(ctx, p.rec, p.line, 'to_next')
       if (!to) {
         bag.warn(
           p.line,
@@ -304,37 +296,29 @@ export function buildDays(ctx: ParseCtx, rawDays: RawDay[], front: DayContext): 
         )
         continue
       }
-      if (!mode) continue
+      if (!p.flow.mode) continue
 
       legs.push({
         id: stableId(`d${rd.index}l`, `${from.id}|${to.id}`),
         afterEventId: from.id,
         from: from.placeId,
         to: to.placeId,
-        mode,
-        ...flowValues(p.rec),
+        mode: p.flow.mode,
+        ...flowValues(p.flow),
         geometry: null,
       })
     }
 
-    // lodging 已升格为顶层 trip-stays 的区间记录，留在这里会静默丢失
-    if (dmeta['lodging'] !== undefined || dmeta['lodging_note'] !== undefined) {
-      bag.error(
-        rd.line,
-        '`trip-day` 的 `lodging` 已不再使用',
-        '改写进顶层 `trip-stays` 块：一次写清 from/to，不用每天重复',
-      )
-    }
     days.push({
       index: rd.index,
       date,
       weekday: weekdayOf(date),
-      theme: str(dmeta['theme']),
+      theme: dv.theme,
       // 用 day.index 而非书写顺序 —— serialize 总按日期排序输出，
       // 若源文件里 Day 2 写在 Day 1 前面，取书写顺序会让往返前后颜色互换，破坏语义幂等
       color: dayColor(rd.index),
-      sunrise: str(dmeta['sunrise']),
-      sunset: str(dmeta['sunset']),
+      sunrise: dv.sunrise,
+      sunset: dv.sunset,
       intro: rd.intro,
       events,
       legs,

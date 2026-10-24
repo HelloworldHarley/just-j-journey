@@ -82,8 +82,8 @@ export function timelineDates(t: Transport, eventDate?: string): TimelineDates {
   let arr: string | undefined
   if (t.arrDate) {
     arr = t.arrDate
-  } else if (t.arrDayOffset !== 0 && dep) {
-    // 规范里 arr_day_offset 是「相对出发日第几天」
+  } else if (t.arrDayOffset !== null && dep) {
+    // 规范里 arr_day_offset 是「相对出发日第几天」；写了 0 也算数（东行跨日期变更线：钟点回卷了，日子没变）
     arr = addDays(dep, t.arrDayOffset)
   } else {
     arr = step(undefined, t.arrTime, null)

@@ -2,7 +2,20 @@ import { SpaceSchema, type Space } from '@jjj/schema'
 import { SPACE_FILE } from './layout.ts'
 import { DiagnosticBag, type Diagnostic } from './diagnostics.ts'
 import { lex, proseOf } from './lexer.ts'
-import { asRecord, checkKeys, str, yamlOf } from './read.ts'
+import {
+  asRecord,
+  display,
+  eachRecord,
+  isWritten,
+  nested,
+  readRecord,
+  schemaGate,
+  text,
+  yamlOf,
+  type Fields,
+  type RecordSpec,
+  type Values,
+} from './read.ts'
 import { flowMap, scalar } from './serialize.ts'
 
 /**
@@ -10,7 +23,35 @@ import { flowMap, scalar } from './serialize.ts'
  * 同一条规矩：拼错的键要报，残缺的项要报，解析器是唯一校验器。
  */
 
-export const SPACE_KEYS = ['name', 'handle', 'avatar', 'bio', 'links', 'tips'] as const
+const SPACE = {
+  block: SPACE_FILE,
+  fields: {
+    name: { read: text, required: '名片上的名字，如 `name: 小明`' },
+    handle: display,
+    avatar: display,
+    bio: display,
+    links: { read: nested },
+    tips: { read: nested },
+  },
+} satisfies RecordSpec<Fields>
+
+// 名片上的链接与打赏都只影响显示：残缺的那一项提醒并跳过，不拦整张名片
+const LINK = {
+  block: 'links',
+  fields: {
+    label: { read: text, level: 'warning', required: '写成 `{label: GitHub, url: https://…}`' },
+    url: { read: text, level: 'warning', required: '写成 `{label: GitHub, url: https://…}`' },
+  },
+} satisfies RecordSpec<Fields>
+
+const TIP = {
+  block: 'tips',
+  fields: {
+    label: { read: text, level: 'warning', required: '写成 `{label: 微信, image: tips/wechat.png}`' },
+    image: display,
+    url: display,
+  },
+} satisfies RecordSpec<Fields>
 
 export interface SpaceParseResult {
   space: Space | null
@@ -25,66 +66,51 @@ export function parseSpace(src: string): SpaceParseResult {
     bag.error(1, '缺少 frontmatter', 'space.md 必须以 --- 开头，至少声明 name')
     return { space: null, diagnostics: bag.sorted() }
   }
-  const meta = asRecord(yamlOf(bag, 0, fm.yaml, 'frontmatter')) ?? {}
-  checkKeys(bag, meta, SPACE_KEYS, fm.line, SPACE_FILE)
-
-  const name = str(meta['name'])
-  if (!name) bag.error(fm.line, 'space.md 缺少必需字段 `name`')
+  // frontmatter 从第 2 行开始（第 1 行是 `---`），YAML 的行号要平移这么多
+  const head = yamlOf(bag, fm.line - 1, fm.yaml, 'frontmatter')
+  const meta = asRecord(head.value)
+  if (head.value !== null && !meta) bag.error(fm.line, 'frontmatter 应为键值对', '每行写成 `键: 值`')
+  const v: Values<typeof SPACE.fields> = head.broken ? {} : readRecord(bag, head.cursor, meta ?? {}, SPACE, SPACE_FILE)
 
   const links: Space['links'] = []
-  const linksRaw = meta['links']
-  for (const item of Array.isArray(linksRaw) ? linksRaw : linksRaw ? [linksRaw] : []) {
-    const rec = asRecord(item)
-    const label = rec ? str(rec['label']) : undefined
-    const url = rec ? str(rec['url']) : undefined
-    if (!label || !url) {
-      bag.warn(fm.line, 'links 里有一项缺少 label 或 url，已忽略', '写成 `{label: GitHub, url: https://…}`')
-      continue
-    }
-    links.push({ label, url })
-  }
+  eachRecord(bag, v.links, 'links ', (rec, at, i) => {
+    const l = readRecord(bag, at, rec, LINK, `links 第 ${i + 1} 项`)
+    if (l.label && l.url) links.push({ label: l.label, url: l.url })
+  }, 'warning')
 
   // 打赏项：label 必填，image / url 二选一 —— 两者都没有就没东西可展示，两者都有就不知道该画哪个
   const tips: Space['tips'] = []
-  const tipsRaw = meta['tips']
-  for (const item of Array.isArray(tipsRaw) ? tipsRaw : tipsRaw ? [tipsRaw] : []) {
-    const rec = asRecord(item)
-    const label = rec ? str(rec['label']) : undefined
-    const image = rec ? str(rec['image']) : undefined
-    const url = rec ? str(rec['url']) : undefined
-    if (!label) {
-      bag.warn(fm.line, 'tips 里有一项缺少 label，已忽略', '写成 `{label: 微信, image: tips/wechat.png}`')
-      continue
+  eachRecord(bag, v.tips, 'tips ', (rec, at, i) => {
+    const t = readRecord(bag, at, rec, TIP, `tips 第 ${i + 1} 项`)
+    if (!t.label) return
+    // image / url 写了却读不出来的已经报过，不再叠一条「二选一」
+    const unreadable = (t.image === undefined && isWritten(rec['image'])) || (t.url === undefined && isWritten(rec['url']))
+    if (unreadable) return
+    if ((t.image === undefined) === (t.url === undefined)) {
+      bag.warn(at.line, `tips「${t.label}」要么给 image（二维码图片）要么给 url（链接），二选一，已忽略`)
+      return
     }
-    if ((image === undefined) === (url === undefined)) {
-      bag.warn(fm.line, `tips「${label}」要么给 image（二维码图片）要么给 url（链接），二选一，已忽略`)
-      continue
+    if (t.url !== undefined) {
+      tips.push({ label: t.label, url: t.url })
+      return
     }
-    const localImage = image === undefined ? undefined : assetPath(bag, fm.line, image, `tips「${label}」的 image`)
-    if (image !== undefined && localImage === null) continue
-    tips.push(localImage ? { label, image: localImage } : { label, url })
-  }
-  const avatarRaw = str(meta['avatar'])
-  const avatar = avatarRaw === undefined ? undefined : (assetPath(bag, fm.line, avatarRaw, 'avatar') ?? undefined)
+    const image = assetPath(bag, at.lineOf('image'), t.image!, `tips「${t.label}」的 image`)
+    if (image !== null) tips.push({ label: t.label, image })
+  }, 'warning')
+  const avatar = v.avatar === undefined ? undefined : (assetPath(bag, head.cursor.lineOf('avatar'), v.avatar, 'avatar') ?? undefined)
 
   if (bag.hasErrors) return { space: null, diagnostics: bag.sorted() }
 
-  const checked = SpaceSchema.safeParse({
-    name,
-    handle: str(meta['handle']),
+  const space = schemaGate(bag, fm.line, SpaceSchema, {
+    name: v.name,
+    handle: v.handle,
     avatar,
-    bio: str(meta['bio']),
+    bio: v.bio,
     links,
     tips,
     markdown: proseOf(tokens.filter((t) => t.kind !== 'frontmatter')),
   })
-  if (!checked.success) {
-    for (const issue of checked.error.issues) {
-      bag.error(fm.line, `schema 校验失败 @ ${issue.path.join('.')}：${issue.message}`)
-    }
-    return { space: null, diagnostics: bag.sorted() }
-  }
-  return { space: checked.data, diagnostics: bag.sorted() }
+  return { space, diagnostics: bag.sorted() }
 }
 
 /**

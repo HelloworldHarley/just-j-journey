@@ -170,9 +170,9 @@ function eventBlock(
   }
   push(L, 'TRANSP', 'OPAQUE')
 
-  // 提醒给「待订」和「注意」类事件。收藏是用户在界面上标的，
+  // 提醒给「待订」的事件。收藏是用户在界面上标的，
   // .ics 是构建期产物读不到，Phase 6 有后端后再按收藏加提醒。
-  if (ctx.reminder > 0 && (ev.flags.includes('needs-booking') || ev.flags.includes('warning'))) {
+  if (ctx.reminder > 0 && ev.flags.includes('needs-booking')) {
     L.push('BEGIN:VALARM')
     push(L, 'ACTION', 'DISPLAY')
     push(L, 'TRIGGER', `-PT${ctx.reminder}M`)
@@ -197,7 +197,6 @@ function describeEvent(
   const parts: string[] = []
 
   const marks: string[] = []
-  if (ev.flags.includes('warning')) marks.push('⚠ 注意')
   if (ev.flags.includes('tentative')) marks.push('待定')
   if (ev.flags.includes('optional')) marks.push('可选，赶不上可砍')
   if (ev.flags.includes('needs-booking')) marks.push('待预订')

@@ -77,24 +77,6 @@ export function suggest(input: string, candidates: readonly string[]): string | 
   return best !== null && bestD <= limit ? best : null
 }
 
-/**
- * 枚举值建议 —— 把别名也纳入候选，再映射回规范值。
- *
- * 没有这一步的话，"sightseing" 找不到 "sight"（编辑距离 5，超阈值），
- * 但它离别名 "sightseeing" 只有 1。别名表本来就是为了接住 LLM 的习惯写法，
- * 让它同时服务于纠错才算物尽其用。
- */
-export function suggestEnum<T extends string>(
-  input: string,
-  canonical: readonly T[],
-  aliases: Record<string, T>,
-): T | null {
-  const direct = suggest(input, canonical)
-  if (direct) return direct as T
-  const aliasHit = suggest(input, Object.keys(aliases))
-  return aliasHit ? (aliases[aliasHit] ?? null) : null
-}
-
 /** 把诊断渲染成终端可读的多行文本。 */
 export function formatDiagnostics(file: string, diags: Diagnostic[]): string {
   if (diags.length === 0) return ''

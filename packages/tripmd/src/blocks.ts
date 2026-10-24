@@ -1,50 +1,44 @@
 import {
-  CONSTRAINT_KINDS,
-  DEFAULT_CHECK_IN,
-  DEFAULT_CHECK_OUT,
-  TRANSPORT_ALIASES,
   TRANSPORT_ENDS,
-  TRANSPORT_MODES,
-  resolveTransport,
   type CategoryKey,
   type Constraint,
-  type ConstraintKind,
   type Place,
   type Transport,
-  type TransportEnd,
   type Trip,
 } from '@jjj/schema'
-import { DiagnosticBag, suggest, suggestEnum } from './diagnostics.ts'
+import { DiagnosticBag, suggest } from './diagnostics.ts'
 import {
-  CONSTRAINT_KEYS,
-  JOURNEY_KEYS,
-  PLACE_KEYS,
-  RENTAL_KEYS,
-  STAY_KEYS,
-  LEG_KEYS,
-  STOP_KEYS,
-  TRANSPORT_KEYS,
-  asRecord,
-  checkKeys,
-  num,
-  readCategory,
-  str,
+  clock,
+  count,
+  dateTime,
+  display,
+  duration,
+  eachRecord,
+  integer,
+  isoDate,
+  latLng,
+  listOf,
+  nested,
+  oneOf,
+  readRecord,
+  text,
+  yesNo,
+  type Cursor,
+  type Fields,
   type Rec,
+  type RecordSpec,
+  type Values,
 } from './read.ts'
 import { parseCost } from './cost.ts'
 import type { Fence } from './sections.ts'
-import {
-  parseDateTime,
-  parseDurationMin,
-  parseLatLng,
-  placeId as makePlaceId,
-  placeKey,
-} from './values.ts'
+import { CATEGORY, CONSTRAINT_KIND, TRANSPORT_END, TRANSPORT_MODE } from './vocab.ts'
+import { DEFAULT_MINUTE, placeId as makePlaceId, placeKey } from './values.ts'
 
 /**
  * 前置块的语义解析 —— 地点表 / 硬约束 / 长途 / 住宿 / 长租。
  *
- * 输入是 sections 扫出来的围栏值，输出是 Trip 的对应数组。
+ * 输入是 sections 扫出来的围栏值，输出是 Trip 的对应数组。每种记录一张字段表（read.ts 的 readRecord），
+ * 允许的键、别名、读法、报错级别都只写在表里。
  * 除了 places 这张会被事件引用继续长大的表，这里没有跨块状态。
  */
 
@@ -55,6 +49,155 @@ export interface ParseCtx {
   currency: string | undefined
 }
 
+// ── 字段表 ──────────────────────────────────────────────────────
+
+const PLACE = {
+  block: 'trip-places',
+  fields: {
+    name: { read: text, required: '每个地点以 `- name: ...` 开头' },
+    // 地点 id 从英文名派生，它读歪了 id 就跟着变 —— 是结构字段，不是显示字段
+    en: { read: text, aliases: ['nameEn'] },
+    coord: { read: latLng },
+    category: { read: oneOf(CATEGORY) },
+    tentative: { read: yesNo, level: 'warning' },
+    gmaps_place_id: { ...display, aliases: ['gmapsPlaceId'] },
+    url: display,
+    note: display,
+  },
+} satisfies RecordSpec<Fields>
+
+const CONSTRAINT = {
+  block: 'trip-constraints',
+  fields: {
+    kind: { read: oneOf(CONSTRAINT_KIND), required: `可选值：${CONSTRAINT_KIND.keys.join(' / ')}` },
+    at: { read: dateTime(DEFAULT_MINUTE.other), required: '格式为 `2026-10-05 11:20`' },
+    label: { read: text, required: '这条约束叫什么，如 `label: 落地`' },
+    note: display,
+  },
+} satisfies RecordSpec<Fields>
+
+/** 三个前置块的名字字段：事件的 `detail:` 按它引用 */
+const WHAT = { read: text, aliases: ['item', 'name'], required: '写成 `- what: 名字`，事件用 `detail: 名字` 引用它' } as const
+const WHAT_KEYS = ['what', ...WHAT.aliases]
+
+// 长途换乘段 —— 所有字段都可空：票常常晚于行程定下来，UI 会为缺的字段留「待填」空位
+const TRANSPORT = {
+  block: 'transport',
+  fields: {
+    traveler: { ...display, aliases: ['who'] },
+    mode: { read: oneOf(TRANSPORT_MODE), level: 'warning', otherwise: '按 flight 处理' },
+    carrier: { ...display, aliases: ['airline'] },
+    number: { ...display, aliases: ['flight_no', 'flightNo', 'no'] },
+    from: { read: text },
+    to: { read: text },
+    // 写错是错误不是提醒：认不出的值若当没写，这一端就按「两端公开」发出去了 —— 正是作者想藏的那端
+    hide: { read: listOf(oneOf(TRANSPORT_END), { split: /[,，]/ }) },
+    dep_date: { read: isoDate, aliases: ['depDate'] },
+    dep_time: { read: clock, aliases: ['depTime', 'dep'] },
+    arr_time: { read: clock, aliases: ['arrTime', 'arr'] },
+    arr_date: { read: isoDate, aliases: ['arrDate'] },
+    arr_day_offset: { read: integer, aliases: ['arrDayOffset'] },
+    price: { ...display, aliases: ['fare'] },
+    duration: { read: duration },
+    cabin: { ...display, aliases: ['class'] },
+    seat: display,
+    baggage: display,
+    refund: { ...display, aliases: ['change_policy', 'change'] },
+    stops: { read: nested },
+    legs: { read: nested },
+    note: display,
+  },
+} satisfies RecordSpec<Fields>
+
+const STOP = {
+  block: 'stops',
+  fields: {
+    airport: { read: text, aliases: ['station', 'place'] },
+    dep_airport: { read: text, aliases: ['dep_station', 'dep_place', 'depAirport'] },
+    arr_time: { read: clock, aliases: ['arr', 'arrTime'] },
+    dep_time: { read: clock, aliases: ['dep', 'depTime'] },
+    arr_date: { read: isoDate, aliases: ['arrDate'] },
+    dep_date: { read: isoDate, aliases: ['depDate'] },
+    leg: { read: duration },
+    wait: { read: duration },
+  },
+} satisfies RecordSpec<Fields>
+
+const LEG = {
+  block: 'legs',
+  fields: {
+    number: { ...display, aliases: ['flight_no', 'flightNo', 'no'] },
+    cabin: { ...display, aliases: ['class'] },
+    seat: display,
+  },
+} satisfies RecordSpec<Fields>
+
+const JOURNEY = {
+  block: 'trip-transports',
+  fields: {
+    what: WHAT,
+    cost: { read: text },
+    transport: { read: nested, aliases: ['transports'] },
+  },
+} satisfies RecordSpec<Fields>
+
+// 住宿与长租是同一种东西：有起止时刻的资产占用。骨架共用一份字段，各自只加自己特有的
+function reservationFields(defaultFrom: number, defaultTo: number) {
+  const when = '格式为 `2026-10-02 11:30`，只写 `2026-10-02` 则按保底时刻算'
+  return {
+    what: WHAT,
+    platform: { ...display, aliases: ['brand', 'company'] },
+    from: { read: dateTime(defaultFrom), required: when },
+    to: { read: dateTime(defaultTo), required: when },
+    cost: { read: text },
+    refund: { ...display, aliases: ['cancellation'] },
+    note: display,
+  } satisfies Fields
+}
+
+const STAY = {
+  block: 'trip-stays',
+  fields: {
+    ...reservationFields(DEFAULT_MINUTE.checkIn, DEFAULT_MINUTE.checkOut),
+    place: { read: text },
+    stars: { read: count, aliases: ['star'], level: 'warning' },
+    room: display,
+    parking: display,
+    breakfast: display,
+  },
+} satisfies RecordSpec<Fields>
+
+const RENTAL = {
+  block: 'trip-rentals',
+  fields: {
+    ...reservationFields(DEFAULT_MINUTE.other, DEFAULT_MINUTE.other),
+    pickup: { read: text },
+    dropoff: { read: text },
+    mileage: { ...display, aliases: ['miles'] },
+    insurance: display,
+  },
+} satisfies RecordSpec<Fields>
+
+// ── 读取 ────────────────────────────────────────────────────────
+
+/** 报错里怎么称呼一条记录：有名字用名字，没有就说是第几项 */
+function whereOf(noun: string, rec: Rec, keys: readonly string[], index: number): string {
+  const name = keys.map((k) => rec[k]).find((v) => typeof v === 'string' || typeof v === 'number')
+  return name !== undefined && String(name).trim() ? `${noun}「${String(name).trim()}」` : `${noun}第 ${index + 1} 项`
+}
+
+/** 每个前置块都是「- 开头的一串记录」，列表形状校验只写一遍 */
+function eachItem(bag: DiagnosticBag, fences: Fence[], block: string, fn: (rec: Rec, at: Cursor, index: number) => void): void {
+  for (const fence of fences) {
+    if (fence.value === null) continue
+    if (!Array.isArray(fence.value)) {
+      bag.error(fence.line, `\`${block}\` 必须是一个列表`, '每项以 `- ` 开头')
+      continue
+    }
+    eachRecord(bag, fence, `\`${block}\` `, fn)
+  }
+}
+
 export function readPlaces(
   bag: DiagnosticBag,
   placeFences: Fence[],
@@ -62,61 +205,34 @@ export function readPlaces(
   const places = new Map<string, Place>()
   const placeLines = new Map<string, number>()
 
-  for (const fence of placeFences) {
-    const list = fence.value
-    if (list === null) continue
-    if (!Array.isArray(list)) {
-      bag.error(fence.line, '`trip-places` 必须是一个列表', '每个地点以 `- name: ...` 开头')
-      continue
+  eachItem(bag, placeFences, 'trip-places', (rec, at, i) => {
+    const v = readRecord(bag, at, rec, PLACE, whereOf('地点', rec, ['name'], i))
+    if (!v.name) return
+    const key = placeKey(v.name)
+    const first = placeLines.get(key)
+    if (first !== undefined) {
+      bag.warn(at.line, `地点「${v.name}」重复声明（第一次在第 ${first} 行），后一条已忽略`)
+      return
     }
-    for (const item of list) {
-      const rec = asRecord(item)
-      if (!rec) {
-        bag.error(fence.line, '`trip-places` 里有一项不是对象')
-        continue
-      }
-      const name = str(rec['name'])
-      if (!name) {
-        bag.error(fence.line, '`trip-places` 里有一项缺少 `name`')
-        continue
-      }
-      checkKeys(bag, rec, PLACE_KEYS, fence.line, 'trip-places')
-      const key = placeKey(name)
-      if (places.has(key)) {
-        bag.warn(fence.line, `地点 "${name}" 重复声明，后一条已忽略`)
-        continue
-      }
-      const nameEn = str(rec['en']) ?? str(rec['nameEn'])
-      let coord: [number, number] | null = null
-      if (rec['coord'] !== undefined && rec['coord'] !== null) {
-        const ll = parseLatLng(rec['coord'])
-        if (ll) coord = [ll[1], ll[0]] // → [lng, lat]
-        else
-          bag.error(
-            fence.line,
-            `地点 "${name}" 的 coord 无法解析：${JSON.stringify(rec['coord'])}`,
-            '写成 `coord: 47.6205, -122.3400`（纬度在前，经度在后）',
-          )
-      }
-      places.set(key, {
-        id: makePlaceId(name, nameEn),
-        name,
-        nameEn,
-        coord,
-        category: readCategory(bag, fence.line, rec['category'], `地点 "${name}"`, 'sight') ?? 'sight',
-        tentative: rec['tentative'] === true,
-        gmapsPlaceId: str(rec['gmaps_place_id']) ?? str(rec['gmapsPlaceId']),
-        url: str(rec['url']),
-        note: str(rec['note']),
-        geo: {
-          source: coord ? 'authored' : 'none',
-          confidence: coord ? 'high' : 'unknown',
-          query: nameEn ?? name,
-        },
-      })
-      placeLines.set(key, fence.line)
-    }
-  }
+    const coord = v.coord ?? null
+    places.set(key, {
+      id: makePlaceId(v.name, v.en),
+      name: v.name,
+      nameEn: v.en,
+      coord,
+      category: v.category ?? 'sight',
+      tentative: v.tentative ?? false,
+      gmapsPlaceId: v.gmaps_place_id,
+      url: v.url,
+      note: v.note,
+      geo: {
+        source: coord ? 'authored' : 'none',
+        confidence: coord ? 'high' : 'unknown',
+        query: v.en ?? v.name,
+      },
+    })
+    placeLines.set(key, at.line)
+  })
   return { places, placeLines }
 }
 
@@ -149,181 +265,69 @@ export function makePlaceResolver(bag: DiagnosticBag, places: Map<string, Place>
 
 export function readConstraints(bag: DiagnosticBag, constraintFences: Fence[]): Constraint[] {
   const constraints: Constraint[] = []
-  for (const fence of constraintFences) {
-    const list = fence.value
-    if (list === null) continue
-    if (!Array.isArray(list)) {
-      bag.error(fence.line, '`trip-constraints` 必须是一个列表', '每条以 `- kind: ...` 开头')
-      continue
-    }
-    for (const item of list) {
-      const rec = asRecord(item)
-      if (!rec) continue
-      checkKeys(bag, rec, CONSTRAINT_KEYS, fence.line, 'trip-constraints')
-      let kindRaw = str(rec['kind']) ?? ''
-      // 中文容错
-      if (kindRaw === '抵达') kindRaw = 'arrive'
-      if (kindRaw === '离开') kindRaw = 'depart'
-      const kind = (CONSTRAINT_KINDS as readonly string[]).includes(kindRaw)
-        ? (kindRaw as ConstraintKind)
-        : null
-      if (!kind) {
-        const guess = suggest(kindRaw, CONSTRAINT_KINDS)
-        bag.error(
-          fence.line,
-          `约束 kind "${kindRaw}" 无效`,
-          guess ? `是否想写 \`${guess}\`？` : `可选值：${CONSTRAINT_KINDS.join(' / ')}`,
-        )
-        continue
-      }
-      const label = str(rec['label'])
-      if (!label) {
-        bag.error(fence.line, `\`${kind}\` 约束缺少 \`label\``)
-        continue
-      }
-      const atRaw = str(rec['at']) ?? ''
-      const dt = parseDateTime(atRaw)
-      if (!dt) {
-        bag.error(fence.line, `约束 "${label}" 的 \`at\` "${atRaw}" 无法解析`, '格式为 `2026-10-05 11:20`')
-        continue
-      }
-      constraints.push({ kind, at: atRaw, date: dt.date, minute: dt.minute, label, note: str(rec['note']) })
-    }
-  }
+  eachItem(bag, constraintFences, 'trip-constraints', (rec, at, i) => {
+    const v = readRecord(bag, at, rec, CONSTRAINT, whereOf('约束', rec, ['label'], i))
+    if (!v.kind || !v.at || !v.label) return
+    constraints.push({ kind: v.kind, at: v.at.raw, date: v.at.date, minute: v.at.minute, label: v.label, note: v.note })
+  })
   return constraints
 }
 
-/**
- * `hide:` —— 公开版里藏起哪一端。接受 `from` / `to` / `[from, to]`（或逗号分隔），按 from、to 的顺序收好。
- * 写错是**错误**不是警告：认不出的值若当没写，这一端就按「两端公开」发出去了 —— 正是作者想藏的那端。
- */
-function readHide(bag: DiagnosticBag, line: number, raw: unknown): TransportEnd[] {
-  const items = Array.isArray(raw) ? raw : typeof raw === 'string' ? raw.split(/[,，]/) : raw == null ? [] : [raw]
-  const seen = new Set<TransportEnd>()
-  for (const item of items) {
-    const s = str(item)
-    if (!s) continue
-    const end = TRANSPORT_ENDS.find((e) => e === s.toLowerCase())
-    if (end) {
-      seen.add(end)
-      continue
-    }
-    const guess = suggest(s, TRANSPORT_ENDS)
-    bag.error(
-      line,
-      `transport 的 hide "${s}" 无效 —— 认不出的值不能当没写，否则这一端会进公开版`,
-      guess ? `是否想写 \`${guess}\`？` : '可选值：from / to，两端都藏写 [from, to]',
-    )
-  }
-  return TRANSPORT_ENDS.filter((e) => seen.has(e))
-}
-
-// 长途换乘段的字段读取 —— 顶层 trip-transports 共用这一份。
-// 所有字段都可空：票常常晚于行程定下来，UI 会为缺的字段留「待填」空位。
-function readTransport(bag: DiagnosticBag, line: number, frec: Rec): Transport | null {
-  checkKeys(bag, frec, TRANSPORT_KEYS, line, 'transport')
-  const modeRaw = str(frec['mode'])
-  let mode = modeRaw ? resolveTransport(modeRaw) : null
-  if (modeRaw && !mode) {
-    const guess = suggestEnum(modeRaw, TRANSPORT_MODES, TRANSPORT_ALIASES)
+function readTransport(bag: DiagnosticBag, at: Cursor, rec: Rec, where: string): Transport {
+  const v = readRecord(bag, at, rec, TRANSPORT, where)
+  const stops: Transport['stops'] = []
+  eachRecord(bag, v.stops, `${where}的 stops `, (r, a, j) => {
+    const s = readRecord(bag, a, r, STOP, `${where}第 ${j + 1} 个经停`)
+    stops.push({
+      airport: s.airport,
+      depAirport: s.dep_airport,
+      arrTime: s.arr_time,
+      depTime: s.dep_time,
+      arrDate: s.arr_date,
+      depDate: s.dep_date,
+      legMin: s.leg ?? null,
+      waitMin: s.wait ?? null,
+    })
+  })
+  const legs: Transport['legs'] = []
+  eachRecord(bag, v.legs, `${where}的 legs `, (r, a, j) => {
+    const l = readRecord(bag, a, r, LEG, `${where}第 ${j + 1} 段`)
+    legs.push({ number: l.number, cabin: l.cabin, seat: l.seat })
+  })
+  // 分段信息与行进段一一对应，对不上就大声说
+  if (legs.length > 0 && legs.length !== stops.length + 1) {
     bag.warn(
-      line,
-      `transport 的 mode "${modeRaw}" 无法识别，按 flight 处理`,
-      guess ? `是否想写 \`${guess}\`？` : undefined,
-    )
-    mode = 'flight'
-  }
-  // 单个中转写成 map 而非列表也接受 —— 与紧邻的 transport 字段同样的宽容度，
-  // 否则 `stops: {airport: SEA}` 会静默丢掉整个中转段
-  const stopsField = frec['stops']
-  const stopsRaw = Array.isArray(stopsField) ? stopsField : stopsField ? [stopsField] : []
-  for (const sr of stopsRaw) {
-    const rec = asRecord(sr)
-    if (rec) checkKeys(bag, rec, STOP_KEYS, line, 'stops')
-  }
-  // 分段信息同样宽容单条 map；数量必须与行进段一一对应，对不上就大声说
-  const legsField = frec['legs']
-  const legsRaw = Array.isArray(legsField) ? legsField : legsField ? [legsField] : []
-  for (const lr of legsRaw) {
-    const rec = asRecord(lr)
-    if (rec) checkKeys(bag, rec, LEG_KEYS, line, 'legs')
-  }
-  if (legsRaw.length > 0 && legsRaw.length !== stopsRaw.length + 1) {
-    bag.warn(
-      line,
-      `legs 有 ${legsRaw.length} 段，但按 stops 应是 ${stopsRaw.length + 1} 段（stops + 1）`,
+      v.legs?.cursor.line ?? at.line,
+      `${where}：legs 有 ${legs.length} 段，但按 stops 应是 ${stops.length + 1} 段（stops + 1）`,
       '每个行进段一条 legs 记录，顺序与时间轴一致',
     )
   }
   return {
-    traveler: str(frec['traveler']) ?? str(frec['who']),
-    mode: mode ?? 'flight',
-    carrier: str(frec['carrier']) ?? str(frec['airline']),
-    number: str(frec['number']) ?? str(frec['flight_no']) ?? str(frec['flightNo']) ?? str(frec['no']),
-    from: str(frec['from']),
-    to: str(frec['to']),
-    hide: readHide(bag, line, frec['hide']),
-    depDate: str(frec['dep_date']) ?? str(frec['depDate']),
-    depTime: str(frec['dep_time']) ?? str(frec['depTime']) ?? str(frec['dep']),
-    arrTime: str(frec['arr_time']) ?? str(frec['arrTime']) ?? str(frec['arr']),
-    arrDate: str(frec['arr_date']) ?? str(frec['arrDate']),
-    arrDayOffset: num(frec['arr_day_offset']) ?? num(frec['arrDayOffset']) ?? 0,
-    price: str(frec['price']) ?? str(frec['fare']),
-    durationMin: parseDurationMin(frec['duration']),
-    cabin: str(frec['cabin']) ?? str(frec['class']),
-    seat: str(frec['seat']),
-    baggage: str(frec['baggage']),
-    refund: str(frec['refund']) ?? str(frec['change_policy']) ?? str(frec['change']),
-    stops: stopsRaw
-      .map((sr) => asRecord(sr))
-      .filter((sr): sr is Rec => sr !== null)
-      .map((sr) => ({
-        airport: str(sr['airport']) ?? str(sr['station']) ?? str(sr['place']),
-        depAirport:
-          str(sr['dep_airport']) ?? str(sr['dep_station']) ?? str(sr['dep_place']),
-        arrTime: str(sr['arr_time']) ?? str(sr['arr']),
-        depTime: str(sr['dep_time']) ?? str(sr['dep']),
-        arrDate: str(sr['arr_date']),
-        depDate: str(sr['dep_date']),
-        legMin: parseDurationMin(sr['leg']),
-        waitMin: parseDurationMin(sr['wait']),
-      })),
-    legs: legsRaw
-      .map((lr) => asRecord(lr))
-      .filter((lr): lr is Rec => lr !== null)
-      .map((lr) => ({
-        number: str(lr['number']) ?? str(lr['flight_no']) ?? str(lr['flightNo']) ?? str(lr['no']),
-        cabin: str(lr['cabin']) ?? str(lr['class']),
-        seat: str(lr['seat']),
-      })),
-    note: str(frec['note']),
+    traveler: v.traveler,
+    mode: v.mode ?? 'flight',
+    carrier: v.carrier,
+    number: v.number,
+    from: v.from,
+    to: v.to,
+    hide: TRANSPORT_ENDS.filter((e) => v.hide?.includes(e)),
+    depDate: v.dep_date,
+    depTime: v.dep_time,
+    arrTime: v.arr_time,
+    arrDate: v.arr_date,
+    arrDayOffset: v.arr_day_offset ?? null,
+    price: v.price,
+    durationMin: v.duration ?? null,
+    cabin: v.cabin,
+    seat: v.seat,
+    baggage: v.baggage,
+    refund: v.refund,
+    stops,
+    legs,
+    note: v.note,
   }
-}
-
-/** `transport:` 接受单个 map 或列表；owner 用于报错时说明是谁的 */
-function readTransportList(
-  bag: DiagnosticBag,
-  line: number,
-  raw: unknown,
-  owner: string,
-): Transport[] {
-  const out: Transport[] = []
-  for (const item of Array.isArray(raw) ? raw : raw ? [raw] : []) {
-    const rec = asRecord(item)
-    if (!rec) {
-      bag.warn(line, `${owner}的 transport 列表里有一项不是对象，已忽略`)
-      continue
-    }
-    const t = readTransport(bag, line, rec)
-    if (t) out.push(t)
-  }
-  return out
 }
 
 // ── 预订（住宿 / 长租）──
-//
-// 两者是同一种东西：有起止时刻的资产占用。骨架（what/platform/from/to/退改/备注）
-// 走同一个解析器，各自只读自己特有的字段 —— 校验口径也因此只有一份。
 interface ReservationBase {
   what: string
   platform?: string
@@ -340,6 +344,8 @@ export interface FrontBlocks {
   rentals: Trip['rentals']
   /** detail: 引用的名字空间（what → 声明它的块名），三个前置块共享 */
   detailNames: Map<string, string>
+  /** 每条前置记录在文件里的行（what → 行号）—— 「没人引用」的提醒指到它自己 */
+  detailLines: Map<string, number>
 }
 
 export function readFrontBlocks(
@@ -352,140 +358,79 @@ export function readFrontBlocks(
     raw ? parseCost(raw, ctx.travelers, ctx.currency) : undefined
 
   const reservationOf = (
-    rec: Rec,
-    line: number,
-    block: string,
-    /** 只写日期时两端各自的保底时刻 */
-    defFrom: number,
-    defTo: number,
+    v: Values<ReturnType<typeof reservationFields>>,
+    at: Cursor,
+    where: string,
   ): ReservationBase | null => {
-    const what = str(rec['what']) ?? str(rec['item']) ?? str(rec['name'])
-    if (!what) {
-      bag.error(line, `\`${block}\` 里有一项缺少 \`what\``, '写成 `- what: Astra Hotel`')
-      return null
-    }
-    const fromRaw = str(rec['from']) ?? ''
-    const toRaw = str(rec['to']) ?? ''
-    const from = parseDateTime(fromRaw, defFrom)
-    const to = parseDateTime(toRaw, defTo)
-    if (!from || !to) {
-      bag.error(
-        line,
-        `「${what}」的 ${!from ? 'from' : 'to'} "${!from ? fromRaw : toRaw}" 无法解析`,
-        '格式为 `2026-10-02 11:30`，只写 `2026-10-02` 则按保底时刻算',
-      )
-      return null
-    }
+    if (!v.what || !v.from || !v.to) return null
+    const { from, to } = v
     if (to.date < from.date || (to.date === from.date && to.minute <= from.minute)) {
-      bag.error(line, `「${what}」的结束时刻不晚于开始时刻`)
+      bag.error(at.lineOf('to'), `${where}的结束时刻不晚于开始时刻`)
       return null
     }
-    return {
-      what,
-      platform: str(rec['platform']) ?? str(rec['brand']) ?? str(rec['company']),
-      from: { raw: fromRaw, ...from },
-      to: { raw: toRaw, ...to },
-      cost: cost(str(rec['cost'])),
-      refund: str(rec['refund']) ?? str(rec['cancellation']),
-      note: str(rec['note']),
-    }
-  }
-
-  /** 每个块都是「- 开头的一串记录」，列表形状校验也只写一遍 */
-  const eachItem = (
-    fences_: Fence[],
-    block: string,
-    fn: (rec: Rec, line: number) => void,
-  ): void => {
-    for (const fence of fences_) {
-      if (fence.value === null) continue
-      if (!Array.isArray(fence.value)) {
-        bag.error(fence.line, `\`${block}\` 必须是一个列表`, '每项以 `- what: ...` 开头')
-        continue
-      }
-      for (const item of fence.value) {
-        const rec = asRecord(item)
-        if (rec) {
-          fn(rec, fence.line)
-        } else {
-          // `- Astra Hotel`（漏写 what:）这种项静默丢掉 = 整条住宿消失，必须吭声
-          bag.error(fence.line, `\`${block}\` 里有一项不是键值对`, '每项以 `- what: ...` 开头')
-        }
-      }
-    }
+    return { what: v.what, platform: v.platform, from, to, cost: cost(v.cost), refund: v.refund, note: v.note }
   }
 
   // 事件 detail: 引用的名字空间 —— 三个前置块共享。
-  // 撞名会让引用分不清指谁，所以注册时就报，带着行号。
+  // 撞名会让引用分不清指谁，所以注册时就报，带着两处行号。
   const detailNames = new Map<string, string>()
+  const detailLines = new Map<string, number>()
   const registerDetailName = (what: string, block: string, line: number): boolean => {
     const existing = detailNames.get(what)
     if (existing) {
       bag.error(
         line,
-        `「${what}」在 ${existing} 里已经声明过`,
+        `「${what}」在 ${existing} 里已经声明过（第 ${detailLines.get(what)} 行）`,
         '事件的 `detail:` 按名字引用，长途/住宿/长租之间名字必须唯一',
       )
       return false
     }
     detailNames.set(what, block)
+    detailLines.set(what, line)
     return true
   }
 
   const journeys: Trip['journeys'] = []
-  eachItem(fences.journeyFences, 'trip-transports', (rec, line) => {
-    const what = str(rec['what']) ?? str(rec['name'])
-    if (!what) {
-      bag.error(line, '`trip-transports` 里有一项缺少 `what`（这段长途叫什么）')
-      return
-    }
-    if (!registerDetailName(what, 'trip-transports', line)) return
-    checkKeys(bag, rec, JOURNEY_KEYS, line, 'trip-transports')
-    journeys.push({
-      what,
-      cost: cost(str(rec['cost'])),
-      transports: readTransportList(bag, line, rec['transport'] ?? rec['transports'], `长途「${what}」`),
+  eachItem(bag, fences.journeyFences, 'trip-transports', (rec, at, i) => {
+    const where = whereOf('长途', rec, WHAT_KEYS, i)
+    const v = readRecord(bag, at, rec, JOURNEY, where)
+    if (!v.what || !registerDetailName(v.what, 'trip-transports', at.line)) return
+    const transports: Transport[] = []
+    eachRecord(bag, v.transport, `${where}的 transport `, (r, a, j) => {
+      transports.push(readTransport(bag, a, r, `${where}第 ${j + 1} 条交通`))
     })
+    journeys.push({ what: v.what, cost: cost(v.cost), transports })
   })
 
   const stays: Trip['stays'] = []
-  eachItem(fences.stayFences, 'trip-stays', (rec, line) => {
-    const base = reservationOf(rec, line, 'trip-stays', DEFAULT_CHECK_IN, DEFAULT_CHECK_OUT)
-    if (!base) return
-    if (!registerDetailName(base.what, 'trip-stays', line)) return
-    checkKeys(bag, rec, STAY_KEYS, line, 'trip-stays')
-    // stars 写歪不该让整趟行程解析失败（zod 只会抛裸英文），也不该静默消失
-    const starsRaw = rec['stars'] ?? rec['star']
-    let stars = num(starsRaw)
-    if (starsRaw !== undefined && (stars === undefined || !Number.isInteger(stars) || stars <= 0)) {
-      bag.warn(line, `「${base.what}」的 stars "${String(starsRaw)}" 不是正整数，已忽略`, '写成 stars: 4')
-      stars = undefined
-    }
+  eachItem(bag, fences.stayFences, 'trip-stays', (rec, at, i) => {
+    const where = whereOf('住宿', rec, WHAT_KEYS, i)
+    const v = readRecord(bag, at, rec, STAY, where)
+    const base = reservationOf(v, at, where)
+    if (!base || !registerDetailName(base.what, 'trip-stays', at.line)) return
     stays.push({
       ...base,
       // 酒店名通常就是地点名，省掉 `place:` 这行重复
-      placeId: resolvePlaceRef(str(rec['place']) ?? base.what, line, 'hotel'),
-      stars,
-      room: str(rec['room']),
-      parking: str(rec['parking']),
-      breakfast: str(rec['breakfast']),
+      placeId: resolvePlaceRef(v.place ?? base.what, at.lineOf('place'), 'hotel'),
+      stars: v.stars,
+      room: v.room,
+      parking: v.parking,
+      breakfast: v.breakfast,
     })
   })
 
   const rentals: Trip['rentals'] = []
-  eachItem(fences.rentalFences, 'trip-rentals', (rec, line) => {
-    const base = reservationOf(rec, line, 'trip-rentals', 0, 0)
-    if (!base) return
-    if (!registerDetailName(base.what, 'trip-rentals', line)) return
-    checkKeys(bag, rec, RENTAL_KEYS, line, 'trip-rentals')
-    const pickup = str(rec['pickup'])
-    const dropoff = str(rec['dropoff'])
+  eachItem(bag, fences.rentalFences, 'trip-rentals', (rec, at, i) => {
+    const where = whereOf('长租', rec, WHAT_KEYS, i)
+    const v = readRecord(bag, at, rec, RENTAL, where)
+    const base = reservationOf(v, at, where)
+    if (!base || !registerDetailName(base.what, 'trip-rentals', at.line)) return
     rentals.push({
       ...base,
-      mileage: str(rec['mileage']) ?? str(rec['miles']),
-      insurance: str(rec['insurance']),
-      pickupPlaceId: pickup ? resolvePlaceRef(pickup, line, 'logistics') : null,
-      dropoffPlaceId: dropoff ? resolvePlaceRef(dropoff, line, 'logistics') : null,
+      mileage: v.mileage,
+      insurance: v.insurance,
+      pickupPlaceId: v.pickup ? resolvePlaceRef(v.pickup, at.lineOf('pickup'), 'logistics') : null,
+      dropoffPlaceId: v.dropoff ? resolvePlaceRef(v.dropoff, at.lineOf('dropoff'), 'logistics') : null,
     })
   })
 
@@ -495,5 +440,5 @@ export function readFrontBlocks(
   stays.sort(byStart)
   rentals.sort(byStart)
 
-  return { journeys, stays, rentals, detailNames }
+  return { journeys, stays, rentals, detailNames, detailLines }
 }

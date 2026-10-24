@@ -58,7 +58,7 @@ describe('sanitize · 长途按 hide 藏端', () => {
     expect(f.stops).toEqual([])
     expect(f.legs).toEqual([])
     expect(f.durationMin).toBeNull()
-    expect(f.arrDayOffset).toBe(0)
+    expect(f.arrDayOffset).toBeNull()
     expect(journey(sanitize(t).trip, '去程').cost).toBeUndefined()
     expect(secretValues(t)).toContain('LAX T2')
   })

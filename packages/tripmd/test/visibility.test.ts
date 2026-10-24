@@ -37,7 +37,8 @@ describe('visibility', () => {
     expect(trip!.visibility).toBe('private')
     const w = diagnostics.find((d) => d.message.includes('visibility'))
     expect(w?.severity).toBe('warning')
-    expect(w?.hint).toContain('public / private')
+    expect(w?.message).toContain('按 private 处理')
+    expect(w?.hint).toContain('`public`')
   })
 
   it('frontmatter 里认不出的键要警告（拼错的 visibilty 不能悄悄消失）', () => {

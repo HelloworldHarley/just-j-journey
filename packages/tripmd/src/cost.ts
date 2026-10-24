@@ -1,5 +1,5 @@
 import type { Cost } from '@jjj/schema'
-import { normalizeText } from './values.ts'
+import { normalizeText } from './text.ts'
 
 /**
  * 从自由文本里抽取金额。

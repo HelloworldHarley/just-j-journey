@@ -9,10 +9,27 @@
 export type Token =
   | { kind: 'frontmatter'; line: number; yaml: string }
   | { kind: 'heading'; line: number; level: number; text: string }
-  | { kind: 'fence'; line: number; info: string; content: string; raw: string }
+  /**
+   * closed = false：一直到文件尾都没有闭合围栏，后面的内容全进了这个块。
+   * swallowed：块里出现了同一种、不短于开头的 `trip-*` 开围栏 —— 那不可能是有意的嵌套（里层的闭合会先把外层关掉），
+   * 是前面少了一行闭合、把后面的结构块吞了进来。两种都由解析器报出来
+   */
+  | {
+      kind: 'fence'
+      line: number
+      info: string
+      content: string
+      raw: string
+      closed: boolean
+      swallowed: { line: number; info: string } | null
+    }
   | { kind: 'line'; line: number; text: string }
 
-const FENCE_RE = /^(\s*)(`{3,}|~{3,})\s*(.*)$/
+/**
+ * 围栏按 CommonMark：最多缩进 3 个空格（4 个就是缩进代码块），反引号围栏的信息串里不能有反引号，
+ * 闭合围栏用同一种字符、不短于开头、后面只许空白。正文行剥掉开围栏那么多的缩进
+ */
+const FENCE_RE = /^( {0,3})(?:(`{3,})([^`]*)|(~{3,})(.*))$/
 
 export function lex(src: string): Token[] {
   // 统一换行符；BOM 会让 frontmatter 的 --- 匹配失败，先剥掉
@@ -41,12 +58,14 @@ export function lex(src: string): Token[] {
 
     const fence = FENCE_RE.exec(text)
     if (fence) {
-      const indent = fence[1] ?? ''
-      const marker = fence[2] ?? '```'
-      const info = (fence[3] ?? '').trim()
-      const closeRe = new RegExp(`^\\s*${marker[0] === '`' ? '`' : '~'}{${marker.length},}\\s*$`)
+      const indent = (fence[1] ?? '').length
+      const marker = fence[2] ?? fence[4] ?? '```'
+      const info = (fence[3] ?? fence[5] ?? '').trim()
+      const closeRe = new RegExp(`^ {0,3}${marker[0] === '`' ? '`' : '~'}{${marker.length},}[ \\t]*$`)
+      const dedent = new RegExp(`^ {0,${indent}}`)
       const body: string[] = []
       let closed = false
+      let swallowed: { line: number; info: string } | null = null
       let j = i + 1
       for (; j < lines.length; j++) {
         const cur = lines[j] ?? ''
@@ -54,14 +73,19 @@ export function lex(src: string): Token[] {
           closed = true
           break
         }
-        body.push(cur)
+        const inner: RegExpExecArray | null = swallowed ? null : FENCE_RE.exec(cur)
+        const innerMarker = inner?.[2] ?? inner?.[4]
+        const innerInfo: string = (inner?.[3] ?? inner?.[5] ?? '').trim()
+        if (innerMarker && innerMarker[0] === marker[0] && innerMarker.length >= marker.length && /^trip-/i.test(innerInfo)) {
+          swallowed = { line: j + 1, info: innerInfo }
+        }
+        body.push(cur.replace(dedent, ''))
       }
       const raw = closed
         ? lines.slice(i, j + 1).join('\n')
         : lines.slice(i).join('\n')
-      tokens.push({ kind: 'fence', line: lineNo, info, content: body.join('\n'), raw })
+      tokens.push({ kind: 'fence', line: lineNo, info, content: body.join('\n'), raw, closed, swallowed })
       i = closed ? j : lines.length
-      void indent
       continue
     }
 

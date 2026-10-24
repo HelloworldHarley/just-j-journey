@@ -102,7 +102,7 @@ describe('update_event', () => {
     expect(r.ok).toBe(false)
     expect(r.trip).toBe(trip)
     const err = r.diagnostics.find((d) => d.severity === 'error')
-    expect(err?.message).toContain('无法解析')
+    expect(err?.message).toContain('`time` 写的是 "下午三点半"')
     expect(err?.line).toBeGreaterThan(0) // 行号指向 serialize 产物中的位置
   })
 

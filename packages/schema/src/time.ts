@@ -31,21 +31,6 @@ export const PERIOD_ZH: Record<PeriodKey, string> = {
   night: '夜间',
 }
 
-export const PERIOD_ALIASES: Record<string, PeriodKey> = {
-  am: 'morning',
-  forenoon: 'morning',
-  pm: 'afternoon',
-  noon: 'afternoon',
-  eve: 'evening',
-  dusk: 'evening',
-  late: 'night',
-  上午: 'morning',
-  下午: 'afternoon',
-  傍晚: 'evening',
-  晚上: 'evening',
-  夜间: 'night',
-  夜里: 'night',
-}
 
-// 归一化（resolvePeriod / parseClock）与格式化（formatMinutes）住在
-// @jjj/tripmd 的 values.ts —— schema 只描述形状、不做决定。
+// 怎么认（时段别名、resolvePeriod）住在 @jjj/tripmd 的 vocab.ts，时刻的解析与格式化在 values.ts ——
+// schema 只描述形状、不做决定。

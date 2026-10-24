@@ -94,6 +94,42 @@ const LOCKS: Lock[] = [
     home: ['apps/web/vite/dev-server.ts'],
   },
   {
+    rule: '枚举怎么认（别名、中文名、退役的写法）只在词表里',
+    pattern: /\b[A-Z]+_ALIASES\b/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/vocab.ts'],
+  },
+  {
+    rule: 'YAML 只在读取层解析（带行号的 yamlOf）',
+    pattern: /from\s*['"]yaml['"]/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/read.ts'],
+  },
+  {
+    rule: '允许哪些键、拼错的键怎么报，只在字段表的 readRecord 里',
+    pattern: /无法识别，已忽略/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/read.ts'],
+  },
+  {
+    rule: 'schema 兜底关口只有 schemaGate 一个',
+    pattern: /\.safeParse\(/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/read.ts'],
+  },
+  {
+    rule: '全角转半角只定义一次',
+    pattern: /\bfunction\s+normalizeText\b/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/text.ts'],
+  },
+  {
+    rule: '只写日期时补的时刻只定义一次',
+    pattern: /\bDEFAULT_MINUTE\s*=|\bDEFAULT_CHECK_(IN|OUT)\b/,
+    scope: ALL_CODE,
+    home: ['packages/tripmd/src/values.ts'],
+  },
+  {
     rule: '「是不是自带的数据目录」按真实路径比（isDefaultDataDir），不拿字符串比',
     pattern: /[!=]==\s*DEFAULT_DATA_DIR|DEFAULT_DATA_DIR\s*[!=]==/,
     scope: ALL_CODE,

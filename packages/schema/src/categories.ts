@@ -168,130 +168,6 @@ export function groupKeyOf(category: CategoryKey): GroupKey {
   return k === 'play' || k === 'food' ? k : 'other'
 }
 
-/**
- * 别名表 —— LLM 不会永远吐出规范枚举值。
- * 与其让它们报错，不如接住常见同义词。规范里明确写出接受哪些。
- */
-export const CATEGORY_ALIASES: Record<string, CategoryKey> = {
-  // → sight
-  attraction: 'sight',
-  sightseeing: 'sight',
-  museum: 'sight',
-  landmark: 'sight',
-  culture: 'sight',
-  temple: 'sight',
-  shrine: 'sight',
-  // → outdoor
-  hike: 'outdoor',
-  hiking: 'outdoor',
-  trail: 'outdoor',
-  nature: 'outdoor',
-  park: 'outdoor',
-  garden: 'outdoor',
-  beach: 'outdoor',
-  // → viewpoint
-  view: 'viewpoint',
-  scenic: 'viewpoint',
-  sunset: 'viewpoint',
-  sunrise: 'viewpoint',
-  overlook: 'viewpoint',
-  scenicdrive: 'viewpoint', // 风景自驾路段本身就是观景；通勤性质的自驾用 drive
-  // → experience
-  tour: 'experience',
-  activity: 'experience',
-  show: 'experience',
-  entertainment: 'experience',
-  spa: 'experience',
-  // → food
-  restaurant: 'food',
-  meal: 'food',
-  dining: 'food',
-  breakfast: 'food',
-  lunch: 'food',
-  dinner: 'food',
-  market: 'food',
-  // → cafe
-  coffee: 'cafe',
-  bakery: 'cafe',
-  teahouse: 'cafe',
-  brunch: 'cafe',
-  // → snack
-  dessert: 'snack',
-  streetfood: 'snack',
-  icecream: 'snack',
-  boba: 'snack',
-  // → bar
-  drinks: 'bar',
-  pub: 'bar',
-  lounge: 'bar',
-  nightlife: 'bar',
-  // → hotel
-  lodging: 'hotel',
-  accommodation: 'hotel',
-  stay: 'hotel',
-  checkin: 'hotel',
-  checkout: 'hotel',
-  resort: 'hotel',
-  inn: 'hotel',
-  motel: 'hotel',
-  // → homestay
-  airbnb: 'homestay',
-  bnb: 'homestay',
-  guesthouse: 'homestay',
-  cabin: 'homestay',
-  hostel: 'homestay',
-  ryokan: 'homestay',
-  minshuku: 'homestay',
-  // → flight
-  plane: 'flight',
-  air: 'flight',
-  airplane: 'flight',
-  // → rail
-  train: 'rail',
-  railway: 'rail',
-  amtrak: 'rail',
-  // → hsr
-  highspeedrail: 'hsr',
-  bullettrain: 'hsr',
-  bullet: 'hsr',
-  shinkansen: 'hsr',
-  // → ferry
-  boat: 'ferry',
-  ship: 'ferry',
-  cruise: 'ferry',
-  // → drive
-  selfdrive: 'drive',
-  car: 'drive',
-  roadtrip: 'drive',
-  rental: 'drive',
-  carrental: 'drive',
-  // → bus
-  coach: 'bus',
-  shuttle: 'bus',
-  // → transit
-  transport: 'transit',
-  transportation: 'transit',
-  commute: 'transit',
-  subway: 'transit',
-  metro: 'transit',
-  lightrail: 'transit',
-  monorail: 'transit',
-  tram: 'transit',
-  // → logistics
-  admin: 'logistics',
-  errand: 'logistics',
-  shopping: 'logistics',
-  packing: 'logistics',
-  laundry: 'logistics',
-}
-
-/** 解析用户/LLM 写的类别值。返回 null 表示无法识别。 */
-export function resolveCategory(raw: string): CategoryKey | null {
-  const k = raw.trim().toLowerCase().replace(/[\s_-]+/g, '')
-  if ((CATEGORY_KEYS as readonly string[]).includes(k)) return k as CategoryKey
-  return CATEGORY_ALIASES[k] ?? null
-}
-
 // ── 正交层：状态 ────────────────────────────────────────────────
 
 /**
@@ -301,34 +177,16 @@ export function resolveCategory(raw: string): CategoryKey | null {
  * 不由作者预先指定 —— 否则 Agent 读回来的"用户收藏"其实是它上次自己写的建议，
  * 这个信号就失去意义了。收藏单独存，见 web 端的 useFavorites。
  */
-export const FLAG_KEYS = ['warning', 'tentative', 'optional', 'needs-booking'] as const
+export const FLAG_KEYS = ['tentative', 'optional', 'needs-booking'] as const
 
 export type FlagKey = (typeof FLAG_KEYS)[number]
 
 export const FLAGS: Record<FlagKey, { zh: string; hint: string }> = {
-  warning: { zh: '注意', hint: '有坑，读正文' },
   tentative: { zh: '待定', hint: '还没定下来' },
   optional: { zh: '可砍', hint: '赶不上可砍' },
   'needs-booking': { zh: '待订', hint: '出发前必办' },
 }
 
-export const FLAG_ALIASES: Record<string, FlagKey> = {
-  warn: 'warning',
-  caution: 'warning',
-  tbd: 'tentative',
-  unconfirmed: 'tentative',
-  booking: 'needs-booking',
-  needsbooking: 'needs-booking',
-  reserve: 'needs-booking',
-}
-
-export function resolveFlag(raw: string): FlagKey | null {
-  const k = raw.trim().toLowerCase().replace(/[\s_]+/g, '')
-  const dashed = k.replace(/([a-z])(booking)/, '$1-$2')
-  if ((FLAG_KEYS as readonly string[]).includes(dashed)) return dashed as FlagKey
-  if ((FLAG_KEYS as readonly string[]).includes(k)) return k as FlagKey
-  return FLAG_ALIASES[k.replace(/-/g, '')] ?? null
-}
 
 // ── 交通方式 ────────────────────────────────────────────────────
 
@@ -371,41 +229,6 @@ export const TRANSPORTS: Record<TransportMode, TransportDef> = {
   bike: { zh: '骑行', icon: 'Bike', routable: true, gmaps: 'bicycling', apple: 'w' },
 }
 
-export const TRANSPORT_ALIASES: Record<string, TransportMode> = {
-  walking: 'walk',
-  foot: 'walk',
-  onfoot: 'walk',
-  car: 'drive',
-  driving: 'drive',
-  selfdrive: 'drive',
-  taxi: 'rideshare',
-  uber: 'rideshare',
-  lyft: 'rideshare',
-  didi: 'rideshare',
-  cab: 'rideshare',
-  subway: 'rail',
-  metro: 'rail',
-  train: 'rail',
-  lightrail: 'rail',
-  link: 'rail',
-  shinkansen: 'hsr',
-  bullettrain: 'hsr',
-  highspeedrail: 'hsr',
-  tram: 'streetcar',
-  trolley: 'streetcar',
-  boat: 'ferry',
-  fly: 'flight',
-  plane: 'flight',
-  air: 'flight',
-  cycling: 'bike',
-  bicycle: 'bike',
-}
-
-export function resolveTransport(raw: string): TransportMode | null {
-  const k = raw.trim().toLowerCase().replace(/[\s_-]+/g, '')
-  if ((TRANSPORT_MODES as readonly string[]).includes(k)) return k as TransportMode
-  return TRANSPORT_ALIASES[k] ?? null
-}
 
 // ── 硬约束 ──────────────────────────────────────────────────────
 

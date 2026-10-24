@@ -1,22 +1,33 @@
 import type { Variant } from '@jjj/schema'
-import { DiagnosticBag } from './diagnostics.ts'
-import { asRecord, yamlOf, type Rec } from './read.ts'
+import { DiagnosticBag, suggest } from './diagnostics.ts'
+import { asRecord, yamlOf, type Cursor, type Located, type Rec } from './read.ts'
 import { proseOf, type Token } from './lexer.ts'
-import { extractDate } from './values.ts'
+import { headingDate } from './values.ts'
 
 /**
  * 分区扫描 —— token 流到中间表示的状态机。
  *
  * 只认结构（标题层级 + 围栏块类型），不读任何字段语义：
  * 产出 RawDay / RawRef 与五组前置块围栏，语义解析交给 blocks / days。
+ * 每个围栏都带着它的 YAML 位置（Cursor），诊断才能指到具体那一项、那个字段。
  * 状态机是解析器里唯一关心「现在读到哪儿」的地方，切出来之后
  * 其余模块都是纯的「数据进、数据出」。
  */
 
+/** 一个读成单条记录的结构块（`trip-day` / `trip-event` / `trip-ref`）：键值对、它的 YAML 位置、开围栏那一行 */
+export interface MetaBlock {
+  rec: Rec
+  at: Cursor
+  line: number
+  /** YAML 语法错误（已报）—— 不再按字段表读，免得再报一串「缺少必需字段」 */
+  broken: boolean
+}
+
 export interface RawEvent {
   line: number
   title: string
-  meta: Rec
+  /** null = 没写 ```trip-event 块 */
+  meta: MetaBlock | null
   body: string
   variants: Variant[]
 }
@@ -24,9 +35,10 @@ export interface RawEvent {
 export interface RawDay {
   line: number
   index: number
-  dateHint: string | null
+  /** 标题上写的日期；写了但不存在时 iso 为 null（见 values.ts 的 headingDate） */
+  date: { written: string; iso: string | null } | null
   headingText: string
-  meta: Rec
+  meta: MetaBlock | null
   intro: string
   events: RawEvent[]
 }
@@ -34,13 +46,13 @@ export interface RawDay {
 export interface RawRef {
   line: number
   title: string
-  meta: Rec
+  meta: MetaBlock | null
   markdown: string
 }
 
-export interface Fence {
+/** 前置块的一个围栏：YAML 值 + 位置；`line` 是开围栏那一行 */
+export interface Fence extends Located {
   line: number
-  value: unknown
 }
 
 export interface ScanResult {
@@ -52,6 +64,9 @@ export interface ScanResult {
   rentalFences: Fence[]
   placeFences: Fence[]
 }
+
+/** TripMD 认的结构块 —— 别的 `trip-*` 是拼错了，不能当成普通代码块吞进正文 */
+const FENCES = ['trip-constraints', 'trip-transports', 'trip-stays', 'trip-rentals', 'trip-places', 'trip-day', 'trip-event', 'trip-ref'] as const
 
 const DAY_HEADING = /^(?:day\s*(\d+)|第\s*(\d+)\s*天)/i
 const APPENDIX_HEADING = /^(?:附录|资料|appendix)\s*[·:：|\-—]\s*(.+)$/i
@@ -75,6 +90,28 @@ export function scanSections(bag: DiagnosticBag, tokens: Token[]): ScanResult {
 
   let ctx: Ctx = { mode: 'top', buf: [], line: 1, heading: '' }
 
+  type FenceToken = Extract<Token, { kind: 'fence' }>
+  const fenceOf = (t: FenceToken): Fence => ({ line: t.line, ...yamlOf(bag, t.line, t.content, t.info) })
+  /**
+   * 结构块读成一条记录。同一个事件 / 天 / 附录写了两个同类块是错误，两处行号都报出来 ——
+   * 后一个若悄悄覆盖前一个，前一个里写的就全丢了
+   */
+  const metaOf = (t: FenceToken, prev: MetaBlock | null, owner: string): MetaBlock => {
+    if (prev) {
+      bag.error(t.line, `${owner}有两个 \`${t.info}\` 块（第 ${prev.line} 行与第 ${t.line} 行）`, '合并成一个；后一个已忽略')
+      return prev
+    }
+    const { value, cursor, broken = false } = yamlOf(bag, t.line, t.content, t.info)
+    const rec = asRecord(value)
+    if (value !== null && !rec) bag.error(t.line, `\`${t.info}\` 块应为键值对`, '每行写成 `键: 值`')
+    return { rec: rec ?? {}, at: cursor, line: t.line, broken }
+  }
+  /** 认不出的 `trip-*` 围栏：整块会被当成正文，里面写的全丢 */
+  const unknownFence = (t: FenceToken): void => {
+    const guess = suggest(t.info, FENCES)
+    bag.error(t.line, `\`${t.info}\` 不是 TripMD 的结构块，整块被当成了正文`, guess ? `是否想写 \`${guess}\`？` : `结构块有：${FENCES.join(' / ')}`)
+  }
+
   const flush = (): void => {
     const text = proseOf(ctx.buf)
     switch (ctx.mode) {
@@ -93,12 +130,12 @@ export function scanSections(bag: DiagnosticBag, tokens: Token[]): ScanResult {
         rawRefs.push(ctx.ref)
         break
       case 'top':
-        // 顶层散文不会进入任何视图。少量前言无所谓，大段则是静默丢数据，必须提醒。
-        if (text.replace(/\s/g, '').length > 120) {
+        // 顶层散文不会进入任何视图 —— 写了却看不见就是静默丢数据，一句也要提醒
+        if (text.trim()) {
           bag.warn(
             ctx.line,
             `「${ctx.heading || '文档开头'}」下有约 ${text.replace(/\s/g, '').length} 字正文不会出现在任何视图里`,
-            '要展示的话，放进 `## 附录 · 标题` 分区',
+            '要展示的话，放进 `## 附录 · 标题` 分区；Day 分区之前的说明可以写进 Day 1 标题下',
           )
         }
         break
@@ -109,11 +146,29 @@ export function scanSections(bag: DiagnosticBag, tokens: Token[]): ScanResult {
   for (const t of tokens) {
     if (t.kind === 'frontmatter') continue
 
-    // 附录内部一切照单全收，包括 ### / #### 和代码块
+    // 少了一行闭合的代码块会吞掉后面的天、附录 —— 吞到文件尾，或者吞进下一个结构块，都要报
+    if (t.kind === 'fence' && t.swallowed) {
+      bag.error(
+        t.line,
+        `第 ${t.line} 行开始的代码块把第 ${t.swallowed.line} 行的 \`${t.swallowed.info}\` 也吞了进去，中间的内容全被当成了代码`,
+        '多半是这个代码块少了一行闭合的 ```；要在里面展示 TripMD 示例的话，外层改用四个反引号 ````',
+      )
+    } else if (t.kind === 'fence' && !t.closed) {
+      bag.error(t.line, `第 ${t.line} 行开始的代码块一直没有闭合，之后的全部内容都被当成了代码`, '在代码块结束处补上一行 ```')
+    }
+
+    // 附录内部一切照单全收，包括 ### / #### 和代码块 —— 但 TripMD 的结构块不收：写在这里不会被读取
     if (ctx.mode === 'ref' && !(t.kind === 'heading' && t.level <= 2)) {
       if (t.kind === 'fence' && t.info === 'trip-ref') {
-        ctx.ref.meta = asRecord(yamlOf(bag, t.line, t.content, 'trip-ref')) ?? {}
+        ctx.ref.meta = metaOf(t, ctx.ref.meta, `附录「${ctx.ref.title}」`)
         continue
+      }
+      if (t.kind === 'fence' && /^trip-/i.test(t.info)) {
+        if ((FENCES as readonly string[]).includes(t.info)) {
+          bag.error(t.line, `\`${t.info}\` 块写在了附录「${ctx.ref.title}」里，不会被读取`, '附录的内容原样进资料页；把这个块移到第一个 `## 附录` 之前')
+        } else {
+          unknownFence(t)
+        }
       }
       ctx.buf.push(t)
       continue
@@ -122,36 +177,33 @@ export function scanSections(bag: DiagnosticBag, tokens: Token[]): ScanResult {
     if (t.kind === 'fence') {
       switch (t.info) {
         case 'trip-constraints':
-          constraintFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-constraints') })
+          constraintFences.push(fenceOf(t))
           continue
         case 'trip-transports':
-          journeyFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-transports') })
+          journeyFences.push(fenceOf(t))
           continue
         case 'trip-stays':
-          stayFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-stays') })
+          stayFences.push(fenceOf(t))
           continue
         case 'trip-rentals':
-          rentalFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-rentals') })
+          rentalFences.push(fenceOf(t))
           continue
         case 'trip-places':
-          placeFences.push({ line: t.line, value: yamlOf(bag, t.line, t.content, 'trip-places') })
+          placeFences.push(fenceOf(t))
           continue
-        case 'trip-day': {
-          const v = asRecord(yamlOf(bag, t.line, t.content, 'trip-day'))
-          if (ctx.mode === 'day') ctx.day.meta = v ?? {}
-          else bag.error(t.line, '`trip-day` 块出现在 Day 分区之外', '它必须紧跟在 `## Day N` 标题之后')
+        case 'trip-day':
+          if (ctx.mode === 'day') ctx.day.meta = metaOf(t, ctx.day.meta, `Day ${ctx.day.index} `)
+          else bag.error(t.line, '`trip-day` 块出现在 Day 分区之外', '它必须紧跟在 `## Day N` 标题之后、第一个事件之前')
           continue
-        }
-        case 'trip-event': {
-          const v = asRecord(yamlOf(bag, t.line, t.content, 'trip-event'))
-          if (ctx.mode === 'event') ctx.ev.meta = v ?? {}
+        case 'trip-event':
+          if (ctx.mode === 'event') ctx.ev.meta = metaOf(t, ctx.ev.meta, `事件「${ctx.ev.title}」`)
           else bag.error(t.line, '`trip-event` 块出现在事件之外', '它必须紧跟在 Day 分区内的 `### 事件标题` 之后')
           continue
-        }
         case 'trip-ref':
           bag.error(t.line, '`trip-ref` 块出现在附录分区之外', '它必须紧跟在 `## 附录 · 标题` 之后')
           continue
         default:
+          if (/^trip-/i.test(t.info)) unknownFence(t)
           ctx.buf.push(t)
           continue
       }
@@ -175,7 +227,7 @@ export function scanSections(bag: DiagnosticBag, tokens: Token[]): ScanResult {
       if (appendix) {
         ctx = {
           mode: 'ref',
-          ref: { line: t.line, title: (appendix[1] ?? '').trim(), meta: {}, markdown: '' },
+          ref: { line: t.line, title: (appendix[1] ?? '').trim(), meta: null, markdown: '' },
           buf: [],
         }
         continue
@@ -186,9 +238,9 @@ export function scanSections(bag: DiagnosticBag, tokens: Token[]): ScanResult {
         const day: RawDay = {
           line: t.line,
           index: idx,
-          dateHint: extractDate(t.text),
+          date: headingDate(t.text),
           headingText: t.text,
-          meta: {},
+          meta: null,
           intro: '',
           events: [],
         }
@@ -206,7 +258,7 @@ export function scanSections(bag: DiagnosticBag, tokens: Token[]): ScanResult {
         // 不标注的话 TS 的控制流推断会绕成一个环（TS7022）
         const day: RawDay = ctx.day
         flush()
-        const ev: RawEvent = { line: t.line, title: t.text, meta: {}, body: '', variants: [] }
+        const ev: RawEvent = { line: t.line, title: t.text, meta: null, body: '', variants: [] }
         day.events.push(ev)
         ctx = { mode: 'event', day, ev, buf: [] }
       } else {

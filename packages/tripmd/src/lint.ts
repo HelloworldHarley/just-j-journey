@@ -91,17 +91,18 @@ export function lintDayOpening(bag: DiagnosticBag, flows: DayFlow[]): void {
   }
 }
 
-/** 没人引用的前置记录：信息模块不会出现在行程里，大概率是漏了 detail: */
+/** 没人引用的前置记录：信息模块不会出现在行程里，大概率是漏了 detail: —— 提醒指到那条记录自己 */
 export function lintUnreferenced(
   bag: DiagnosticBag,
   blocks: { journeys: Trip['journeys']; stays: Trip['stays']; rentals: Trip['rentals'] },
   referenced: ReadonlySet<string> | Map<string, unknown>,
+  lines: ReadonlyMap<string, number>,
 ): void {
   for (const list of [blocks.journeys, blocks.stays, blocks.rentals] as const) {
     for (const item of list) {
       if (!referenced.has(item.what)) {
         bag.warn(
-          1,
+          lines.get(item.what) ?? 1,
           `前置记录「${item.what}」没有任何事件用 \`detail:\` 引用`,
           '它的信息模块不会出现在行程里；在对应事件上加 `detail: ' + item.what + '`',
         )
@@ -110,46 +111,85 @@ export function lintUnreferenced(
   }
 }
 
+/** 一趟旅行里，离最近的地点超过这么多度（纬度或经度，≈1100km）就值得看一眼 */
+const OUTLIER_DEG = 10
+
+type Located = Place & { coord: [number, number] }
+
+/** 两点在纬度、经度上差得较多的那一维（度）—— 只用来判「远不远」，不是距离 */
+const degreesApart = (a: readonly [number, number], b: readonly [number, number]): number =>
+  Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]))
+
+/** 大圆距离（km），只用在提示文字里 */
+function kmApart(a: readonly [number, number], b: readonly [number, number]): number {
+  const rad = Math.PI / 180
+  const dLat = (b[1] - a[1]) * rad
+  const dLng = (b[0] - a[0]) * rad
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * rad) * Math.cos(b[1] * rad) * Math.sin(dLng / 2) ** 2
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)))
+}
+
 /**
  * 坐标离群检测（无需联网）。
- * 西经漏负号会把西雅图画到中国境内，而且完全静默。
- * 不做 geocoding 也能抓到它：所有坐标本该聚成一团，离群的那个就是错的。
+ * 西经漏负号会把西雅图画到中国境内，而且完全静默。不做 geocoding 也能抓到它：
+ * 地点按「彼此相距不超过 10 度」连成几团，最大的那团是行程的主体，其余每一团试三种常见手误 ——
+ * 经度符号、纬度符号、经纬写反：改完整团都落进主体了，那几乎肯定是手误，逐个报错误并给出改法。
+ *
+ * 按「团」而不是按单个点判：两个点犯了同样的错会互为邻居，只看最近邻就放过了它们；
+ * 也不按全体中位数判：两座城市各占一半的行程（东京两处 + 檀香山两处）会被整半边报错。
+ * 怎么改都落不进主体的：单独一个点只提醒（可能真是远处的一站），成团的是另一座城市，不报
  */
 export function checkCoordOutliers(
   bag: DiagnosticBag,
   places: Place[],
   lines: Map<string, number>,
 ): void {
-  const withCoord = places.filter((p): p is Place & { coord: [number, number] } => p.coord !== null)
+  const withCoord = places.filter((p): p is Located => p.coord !== null)
+  // 两个点分不出谁错了
   if (withCoord.length < 3) return
 
-  const median = (xs: number[]): number => {
-    const s = [...xs].sort((a, b) => a - b)
-    return s[Math.floor(s.length / 2)] ?? 0
-  }
-  const mLng = median(withCoord.map((p) => p.coord[0]))
-  const mLat = median(withCoord.map((p) => p.coord[1]))
+  const near = (a: readonly [number, number], b: readonly [number, number]): boolean => degreesApart(a, b) <= OUTLIER_DEG
 
-  // 一趟旅行的地点通常在几度之内。10 度 ≈ 1100km，超出必是录入错误而非真的跑那么远。
-  const LIMIT = 10
-
-  for (const p of withCoord) {
-    const [lng, lat] = p.coord
-    const dLng = Math.abs(lng - mLng)
-    const dLat = Math.abs(lat - mLat)
-    if (dLng <= LIMIT && dLat <= LIMIT) continue
-
-    const line = lines.get(placeKey(p.name)) ?? 1
-    let hint = `其余地点集中在 ${mLat.toFixed(2)}, ${mLng.toFixed(2)} 附近`
-
-    if (Math.abs(-lng - mLng) <= LIMIT && dLat <= LIMIT) {
-      hint = `经度符号反了 —— 应为 ${(-lng).toFixed(4)}（西经是负数）`
-    } else if (Math.abs(-lat - mLat) <= LIMIT && dLng <= LIMIT) {
-      hint = `纬度符号反了 —— 应为 ${(-lat).toFixed(4)}（南纬是负数）`
-    } else if (Math.abs(lat - mLng) <= LIMIT && Math.abs(lng - mLat) <= LIMIT) {
-      hint = `纬度和经度写反了 —— 应为 \`coord: ${lng}, ${lat}\`（纬度在前）`
+  // 单链接聚团：挨着的点归同一团
+  const groups: Located[][] = []
+  const seen = new Set<Located>()
+  for (const start of withCoord) {
+    if (seen.has(start)) continue
+    const group = [start]
+    seen.add(start)
+    for (let i = 0; i < group.length; i++) {
+      for (const other of withCoord) {
+        if (!seen.has(other) && near(group[i]!.coord, other.coord)) {
+          seen.add(other)
+          group.push(other)
+        }
+      }
     }
+    groups.push(group)
+  }
+  const main = groups.reduce((a, b) => (b.length > a.length ? b : a))
 
-    bag.error(line, `地点 "${p.name}" 的坐标 ${formatLatLng(p.coord)} 离其余地点太远`, hint)
+  const fixes: { apply: (c: [number, number]) => [number, number]; hint: (c: [number, number]) => string }[] = [
+    { apply: ([lng, lat]) => [-lng, lat], hint: ([lng]) => `经度符号反了 —— 应为 ${(-lng).toFixed(4)}（西经是负数）` },
+    { apply: ([lng, lat]) => [lng, -lat], hint: ([, lat]) => `纬度符号反了 —— 应为 ${(-lat).toFixed(4)}（南纬是负数）` },
+    { apply: ([lng, lat]) => [lat, lng], hint: ([lng, lat]) => `纬度和经度写反了 —— 应为 \`coord: ${lng}, ${lat}\`（纬度在前）` },
+  ]
+  const intoMain = (c: [number, number]): boolean => Math.abs(c[1]) <= 90 && main.some((m) => near(c, m.coord))
+
+  for (const group of groups) {
+    if (group === main) continue
+    const fix = fixes.find((f) => group.every((p) => intoMain(f.apply(p.coord))))
+    if (!fix && group.length > 1) continue
+    for (const p of group) {
+      const line = lines.get(placeKey(p.name)) ?? 1
+      const message = `地点 "${p.name}" 的坐标 ${formatLatLng(p.coord)} 离其余地点都很远`
+      if (fix) {
+        bag.error(line, message, fix.hint(p.coord))
+      } else {
+        const closest = withCoord.filter((o) => o !== p).reduce((a, b) => (degreesApart(p.coord, b.coord) < degreesApart(p.coord, a.coord) ? b : a))
+        const km = Math.round(kmApart(p.coord, closest.coord))
+        bag.warn(line, message, `最近的「${closest.name}」也在约 ${km} km 外；确实要去那么远的话忽略此条`)
+      }
+    }
   }
 }

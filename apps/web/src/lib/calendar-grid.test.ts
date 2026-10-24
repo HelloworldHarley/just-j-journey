@@ -111,7 +111,7 @@ describe('tripCalendarRange', () => {
 
 describe('reservationToTimed', () => {
   it('住和租车走同一个函数，结果同构', () => {
-    // 保底时刻在**解析时**就填好了（DEFAULT_CHECK_IN / OUT），
+    // 保底时刻在**解析时**就填好了（DEFAULT_MINUTE），
     // 所以这里只是投影：两端恒有值，不需要判空
     const stay = reservationToTimed(res('2026-10-01', 960, '2026-10-03', 585))
     const rental = reservationToTimed(res('2026-10-02', 690, '2026-10-05', 680))

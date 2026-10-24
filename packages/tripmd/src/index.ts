@@ -36,6 +36,7 @@ export {
 export { lex, proseOf, type Token } from './lexer.ts'
 export { toIcs, type IcsOptions } from './ics.ts'
 export * from './values.ts'
+export { resolvePeriod } from './vocab.ts'
 export {
   buildManifest,
   devHomeEntries,
@@ -49,7 +50,7 @@ export {
   type ManifestEntry,
 } from './manifest.ts'
 export * from './layout.ts'
-export { isAbsoluteUrl, parseSpace, serializeSpace, spaceAssets, SPACE_KEYS, type SpaceParseResult } from './space.ts'
+export { isAbsoluteUrl, parseSpace, serializeSpace, spaceAssets, type SpaceParseResult } from './space.ts'
 export { blurCoord, hideReminders, isPrivatePlace, sanitize, type Sanitized, type Secret } from './sanitize.ts'
 export { publicNotices, publicPlan, type PublicPlan } from './public.ts'
 export { findLeaks, PROSE_FIELDS, scanForm, type Leak } from './leaks.ts'

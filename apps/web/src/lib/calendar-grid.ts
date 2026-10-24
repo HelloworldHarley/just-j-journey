@@ -21,7 +21,7 @@ export function mondayOfWeek(iso: string): string {
  * 带子格精度的区间。
  *
  * `frac` = 当天分钟数 / 1440，**恒有值** —— 解析器已经用
- * `DEFAULT_CHECK_IN` / `DEFAULT_CHECK_OUT` 把只写日期的那端补齐了，
+ * `DEFAULT_MINUTE`（入住 / 退房） 把只写日期的那端补齐了，
  * 所以这里不存在「不知道画到哪」的情形，也就不需要渐隐端。
  */
 export interface TimedSpan {
