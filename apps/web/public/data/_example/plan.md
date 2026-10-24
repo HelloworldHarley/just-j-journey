@@ -175,7 +175,6 @@ to_next: {mode: walk, minutes: 25, label: 走二年坂三年坂下山}
 time: "15:30"
 category: logistics
 place: 京都站
-flags: [warning]
 notes:
   - "16:00 必须上车。HARUKA 每 30 分钟一班，错过一班就只剩 2.5 小时缓冲"
 to_next: {mode: rail, minutes: 80, label: HARUKA 回关西机场}

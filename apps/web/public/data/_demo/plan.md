@@ -309,7 +309,6 @@ to_next: {mode: drive, minutes: 10, label: 沿国道 1 号上山}
 time: 11:00–12:30
 category: outdoor
 place: 大涌谷
-flags: [warning]
 cost: 黑蛋 ¥500（可选）
 notes:
   - 硫磺味重，呼吸道敏感慎入
@@ -409,7 +408,6 @@ to_next: {mode: bus, minutes: 20, label: 206 路到五条坂}
 time: 15:00–16:30
 category: sight
 place: 清水寺
-flags: [warning]
 notes:
   - 三年坂石阶陡，雨天很滑，穿好走的鞋
 to_next: {mode: walk, minutes: 20, label: 顺产宁坂下山}

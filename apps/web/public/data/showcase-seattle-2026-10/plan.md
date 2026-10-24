@@ -239,7 +239,6 @@ Turo 车主在轻轨站交车，一个人办手续最快。提完车开回航站
 time: "11:45–12:15"
 category: logistics
 place: SEA 机场
-flags: [warning]
 to_next: {mode: drive, minutes: 10, label: 出机场上 WA-518 转南下}
 ```
 
@@ -265,7 +264,6 @@ to_next: {mode: drive, minutes: 15, label: 去 Kent 的大华}
 time: "13:45–14:30"
 category: logistics
 place: "99 Ranch 大华"
-flags: [warning]
 notes:
   - 别跳过这一站：Ashford 晚上没有可靠补给，明天雷尼尔全线更是没有任何吃饭的地方
   - 买：水、零食、明早的咖啡面包、今晚的晚餐食材（木屋有灶台）
@@ -360,7 +358,6 @@ to_next: {mode: drive}
 time: "09:00–12:00"
 category: outdoor
 place: Paradise
-flags: [warning]
 cost: 雷尼尔门票 $30/车（7 天有效）
 notes:
   - 昨天进过 Longmire 的话门票已买，直接刷
@@ -725,7 +722,6 @@ to_next: {mode: drive, minutes: 70, label: "101 东行 30 分钟回 Port Angeles
 time: "16:10–17:30"
 category: viewpoint
 place: 飓风岭
-flags: [warning]
 notes:
   - "山顶 5,242 英尺，比山下低 10°C 以上、风大 —— 防风外套、帽子；十月可能已有初雪"
   - 游客中心 2023 年烧毁，山顶只有移动厕所和临时设施，可能按厕所容量限流 —— 下午上山人少，通常没事
@@ -799,7 +795,6 @@ to_next: {mode: drive, minutes: 8, label: 开回 AC Hotel 停地库}
 time: "22:35"
 category: logistics
 place: AC Hotel
-flags: [warning]
 notes:
   - 两个人的登机牌都在线办掉（DL 和 CX）
   - 行李今晚收完，明早不留任何决策
@@ -847,7 +842,6 @@ to_next: {mode: drive, minutes: 5, label: Strander Blvd 开到 Tukwila 轻轨站
 time: "08:05–08:25"
 category: drive
 place: Tukwila 轻轨站
-flags: [warning]
 notes:
   - "08:25 前还完 —— 合同 09:00 截止，但再晚压缩的是她的国际航班缓冲"
   - 拍全车视频 / 清空车内 / 截图交车时的电量和里程
