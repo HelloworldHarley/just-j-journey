@@ -64,13 +64,13 @@ frontmatter（必需）
 id: seattle-2026-10          # 必需 · slug，作 URL 和输出文件名
 title: 西雅图 5 天 4 夜        # 必需
 destination: Seattle, WA, USA # 必需 · 城市, 地区, 国家 —— 首页卡片展示用
-timezone: America/Los_Angeles # 必需 · IANA 时区，决定「今天」是哪天
+timezone: America/Los_Angeles # 必需 · IANA 时区名，决定「今天」是哪天；认不出的、或 `-07:00` 这种偏移是错误
 start: 2026-10-01            # 必需 · YYYY-MM-DD
 end: 2026-10-05              # 必需 · YYYY-MM-DD
 subtitle: 2026/10/01–10/05 · 最终版   # 副标题，页头小字
 travelers: 2                 # 人数 —— cost 里的「/人」按它乘成总额
 currency: USD                # 预算主币种的兜底（cost 文本没带货币符号时用它）
-visibility: public           # public 进公开版（抹过敏感信息）；private 只进完整版；缺省 private
+visibility: public           # public（公开）进公开版（抹过敏感信息）；private（私有）只进完整版；缺省 private，认不出也按 private 并警告
 ---
 ```
 
@@ -91,7 +91,7 @@ visibility: public           # public 进公开版（抹过敏感信息）；pri
   note: 倒推链 12:40 到航站楼 ← 12:25 SEA 轻轨站 ← 11:45 上车 ← 11:20 还车
 ```
 
-`kind`：`arrive` `depart` `deadline` `checkin` `checkout` `reservation`
+`kind`：`arrive` `depart` `deadline` `checkin` `checkout` `reservation`，也认中文名（`抵达` `离开` `截止` `入住` `退房` `预订`）
 
 ---
 
@@ -131,7 +131,7 @@ visibility: public           # public 进公开版（抹过敏感信息）；pri
       hide: from                   # 公开版藏起哪一端：去程写 from、返程写 to（见下「hide」）
       dep_time: "10:15"            # 出发当地时间
       arr_time: "13:11"            # 到达当地时间
-      arr_day_offset: 0            # 次日到达写 1（跨日期变更线，见下）
+      arr_day_offset: 0            # 到达在出发后第几天：同日写 0、次日写 1；不写才按钟点回卷推（跨日期变更线，见下）
       duration: 11h55m             # 全程含中转
       cabin: 经济舱                 # 客舱/座席，如 经济舱 / 指定席（联程一致时写这里）
       seat: 48J                    # 座位号（联程一致或单段时写这里）
@@ -172,7 +172,8 @@ UI 渲染成机票式时间轴：左出发、右到达、实线行进、虚线�
 
 - 除 `what` 外都可空。票常常晚于行程定下来，UI 会画完整骨架、缺的字段留「待填」空位（`category: flight` 的事件没写记录也画空骨架）。
 - 多目的地行程中间的长途移动（如西雅图 → 波特兰的火车）同样是一条记录 + 一个引用它的事件。
-- `duration` / `wait` / `leg` 接受 `11h55m`、`2h`、`45m`、`11 小时 55 分`、`"11:55"`、纯数字（分钟）。
+- `duration` / `wait` / `leg` 接受 `11h55m`、`2h`、`45m`、`1h30`、`11 小时 55 分`、`2 小时`、`"11:55"`、纯数字（分钟）。**整串都得认得出来**：`20 min 4 km` 这种是错误，不会只抠出 20 了事。
+- 日期（`dep_date` / `arr_date`，含中转的）必须是真实存在的 `YYYY-MM-DD`，`2026-02-30` 是错误。时刻最晚 `24:00`。
 - `leg` 不写则按「全程 − Σ停留 − Σ已填段」均分，各段与停留之和恒等于全程。
 - 事件本身的 `time` 仍按 TripMD 通用规则写（抵达事件写到达时刻、出发事件写出发时刻），记录里的时间是给票面时间轴用的。
 
@@ -187,7 +188,7 @@ UI 渲染成机票式时间轴：左出发、右到达、实线行进、虚线�
 | `hide: [from, to]` | 两端都去掉 |
 
 - **不写 = 两端都公开。** 旅伴晚一天到、单程、往返写成一条，按日期去猜的话，猜错的都是家门口的机场 —— 所以只认你写的。
-- 写错值（`hide: form`）是**错误**，不当没写：当没写，这一端就进了公开版。
+- 写错值（`hide: form`）是**错误**，不当没写：当没写，这一端就进了公开版。也认中文：`出发` = from、`到达` = to。
 - 多人汇合时每条交通各写各的。
 - 带 `hide` 的长途，`cost` 与票价也不进公开版：从哪出发、买的什么票，每个人都不一样。行程中间的长途、住宿、租车的钱照常公开。
 - 引用了带 `hide` 的长途的事件卡（接驳卡），公开版里正文、注意条目、变体和前后两段路的说明一并清掉。
@@ -206,8 +207,7 @@ UI 渲染成机票式时间轴：左出发、右到达、实线行进、虚线�
 
 | 字段 | 什么时候必须写 |
 |---|---|
-| `arr_day_offset` | 跨日期变更线的航班。次日到达写 1 |
-| `arr_date` | **西行跨日界线「同日到达」**（PVG 11:10 → SEA 10:40 当天）：到达钟点比出发小，缺省的钟点回卷会误推 +1，而 offset 的缺省 0 表达不了「显式 0」—— 只能写 `arr_date` 钉死 |
+| `arr_day_offset` | 跨日期变更线的航班。次日到达写 1；**跨日界线「同日到达」**（PVG 11:10 → SEA 10:40 当天，到达钟点比出发小）写 0 —— 写了 0 就是当天，不再按钟点回卷误推 +1 |
 | `dep_date` / `arr_date` | 直接照票面抄日期时；抵达型事件的航班其实前一天起飞时写 `dep_date` |
 | 中转的 `arr_date` / `dep_date` | 中转本身跨了日期变更线，且没写 `wait` |
 
@@ -293,7 +293,9 @@ UI 渲染成机票式时间轴：左出发、右到达、实线行进、虚线�
 
 - **坐标不确定就别写。** `enrich` 脚本会补，人工核对后进 `overrides.json`。瞎写的坐标比没有坐标糟得多。
 - 同一地点全文用**完全一致**的名称。相似但不同的名字会得到一条警告和「是否指 X？」的建议。
-- 接受 `coord: [47.62, -122.34]` 和 `coord: {lat: 47.62, lng: -122.34}`。
+- 接受 `coord: [47.62, -122.34]`、`coord: {lat: 47.62, lng: -122.34}`、带半球字母的 `47.62°N, 122.34°W`，以及度分秒 `47°37'13.8"N 122°20'24.0"W`。
+- **必须恰好两个数。** `47.6205, -122.3400 附近 3 号门` 是错误 —— 不取前两个数凑合；空着的 `[~, ~]` 也是错误，不会变成 0, 0。
+- 带半球字母时按字母认纬度：`2.3376° E, 48.8606° N` 先写的是经度，照样读对。
 
 ---
 
@@ -345,9 +347,9 @@ from_stay: {mode: walk, minutes: 22, km: 1.7, label: 顺 Westlake Ave 南行下�
 | `time` | ✓ | 见下方「时间」 |
 | `category` | ✓ | 18 个枚举值之一，见下方「类别」 |
 | `place` | | 地点名。须与地点表一致。缺省则该事件不上地图 |
-| `flags` | | `warning` `tentative` `optional` `needs-booking` |
+| `flags` | | `tentative` `optional` `needs-booking`（`warning` 已废弃，见下方「状态」） |
 | `cost` | | 自由文本，如 `约 $70/人`。解析器自动抽金额进预算统计：`/人` 乘人数、`× 2` 认乘法、`$250–400` 取中值、带「可选」不计入总额 |
-| `booking` | | `{status: required\|booked\|none, deadline: YYYY-MM-DD, note: ...}` |
+| `booking` | | `{status: required\|booked\|none, deadline: YYYY-MM-DD, note: ...}`。`status` 也认 `需预订`/`待订`、`已预订`/`已订`、`无需预订`/`不用订`；缺省 `required`；`deadline` 必须是真实日期 |
 | `notes` | | **注意条目**，字符串列表。截止、防盗、必带装备、营业时间坑…… 一条一个坑，UI 渲染成与「如果」同款的红色「注意」条目行。有坑写这里，不要埋在正文散文里 |
 | `detail` | | **前置记录引用**：写顶层 `trip-transports` / `trip-stays` / `trip-rentals` 里某条记录的 `what`。首次引用（按日期序）的卡片长出信息模块/票面时间轴，之后的引用是简单提及（住/行视图里去重隐藏）。引用不存在或跨块重名都会报错。事件上**不再**写 `transport:` 内联明细 |
 | `to_next` | | `{mode, minutes, km, label, note}` —— 到**下一个事件**怎么走 |
@@ -450,7 +452,7 @@ UI 把它们渲染成红色「注意」条目行，和 `#### 变体` 的「如�
 > 写进上一个事件的 `to_next` —— 它们是行程的黏合剂，不是行程本身。
 > 如果一段乘车本身就是体验（观景列车、跨海渡轮看日落），按「玩」分类（`viewpoint`/`experience`）。
 
-大小写不敏感。接受别名：`lodging`/`hotel` 旧写法→`hotel`、`cabin`/`airbnb`→`homestay`、`train`→`rail`、`shinkansen`/`bullet`→`hsr`、`boat`/`cruise`→`ferry`、`car`/`rental`→`drive`、`subway`/`metro`/`monorail`→`transit`、`restaurant`→`food`、`dessert`→`snack`、`attraction`/`museum`→`sight`、`tour`/`activity`→`experience`、`hike`/`trail`/`park`→`outdoor`、`scenic`/`sunset`→`viewpoint`、`shopping`→`logistics`。
+大小写、全角半角、空格 / 下划线 / 连字符都不敏感（`Needs Booking`、`needs_booking` 是同一个），也认上表的中文类型名（`景点`、`餐厅`……）。这条对所有枚举都一样：类别、交通方式、`flags`、约束 `kind`、预订 `status`、`visibility`、`hide`。接受别名：`lodging`/`hotel` 旧写法→`hotel`、`cabin`/`airbnb`→`homestay`、`train`→`rail`、`shinkansen`/`bullet`→`hsr`、`boat`/`cruise`→`ferry`、`car`/`rental`→`drive`、`subway`/`metro`/`monorail`→`transit`、`restaurant`→`food`、`dessert`→`snack`、`attraction`/`museum`→`sight`、`tour`/`activity`→`experience`、`hike`/`trail`/`park`→`outdoor`、`scenic`/`sunset`→`viewpoint`、`shopping`→`logistics`。
 
 > 住/行的颜色（中性/蓝）与玩/吃一样走可覆盖的 CSS 变量，将来用户可自定义；`logistics` 透明底 —— 杂务不该抢眼。
 
@@ -458,7 +460,12 @@ UI 把它们渲染成红色「注意」条目行，和 `#### 变体` 的「如�
 
 `walk` `drive` `rideshare` `rail` `hsr` `bus` `monorail` `streetcar` `ferry` `flight` `bike`
 
-别名：`taxi`/`uber`→`rideshare`、`subway`/`metro`/`lightrail`→`rail`、`shinkansen`/`bullet`→`hsr`、`tram`→`streetcar`、`car`→`drive`、`foot`→`walk`。
+别名：`taxi`/`uber`→`rideshare`、`subway`/`metro`/`lightrail`→`rail`、`shinkansen`/`bullet`→`hsr`、`tram`→`streetcar`、`car`→`drive`、`foot`→`walk`；也认中文名（`步行` `自驾` `打车` `轨道` `高铁` `公交` `单轨` `电车` `轮渡` `飞行` `骑行`）。
+
+> **同一个词在类别和交通方式里含义不同，是有意的。** 类别回答「这张卡是哪种事」：`subway` / `metro` / `tram` 都是市内通勤 → `transit`；
+> 交通方式回答「坐的是什么车」：`subway` / `metro` → `rail`、`tram` → `streetcar`。两张表在 `packages/tripmd/src/vocab.ts` 里挨着写。
+
+`minutes` 接受的写法与长途的 `duration` 相同（`20`、`1h30`、`25 分钟`……），认不出是错误。
 
 `walk` `drive` `rideshare` `bike` 可由 OSRM 算出真实路网轨迹；其余在地图上画虚线弧。
 
@@ -468,11 +475,12 @@ UI 把它们渲染成红色「注意」条目行，和 `#### 变体` 的「如�
 
 | flag | 含义 | UI |
 |---|---|---|
-| `warning` | 有坑（具体的坑写进 `notes`） | 标题旁红色警示角 |
 | `tentative` | 还没定下来 | 标题旁「待定」角标 |
 | `optional` | 赶不上可砍 | 卡片左边条变虚线，**不写文字** |
 | `needs-booking` | 出发前必办 | 琥珀「待订」/ 预订模块 |
 
+> **`warning` 已废弃**（2026-10）：它不画任何东西，坑写进 `notes` 才看得见。旧文件里写了会得到一条警告，解析时去掉，日历导出也不再为它加提醒。
+>
 > 没有 `starred`：「收藏」由用户在界面上点，不由作者预先指定 ——
 > 否则 Agent 读回的"用户收藏"只是它自己上次的建议。
 
@@ -553,22 +561,35 @@ tips:                       # 可选 · 打赏入口，有一项就在名片上�
 `pnpm data:check` 输出带行号的诊断。**错误**阻止生成，**警告**不阻止。
 
 ```
-seattle/plan.md:44  错误  category "sightseing" 无效
+seattle/plan.md:48  错误  事件「类别拼错了」：`category` 写的是 "sightseing"，应为有效的 category
                                是否想写 `sight`？
-seattle/plan.md:64  警告  地点 "Kery Park" 未在 `trip-places` 中声明
+seattle/plan.md:80  警告  地点 "Kery Park" 未在 `trip-places` 中声明
                                是否指 "Kerry Park"？名称需完全一致
 ```
 
+行号指到出问题的那一项、那个字段，而不是块的第一行。字段校验的规矩：
+
+- **写了但读不出来的值一律报出来**，绝不静默当没写。影响时间、日期、钱、结构的字段（`time`、日期、时长、`cost`、`category`、`hide`……）是**错误**；只影响显示的字段（备注、星级、座位……）是**警告**并说明已忽略。
+- 拼错的键给出「是否想写 X」；X 是错误级字段时这一条也是**错误**（`hidden: to` 只警告的话，想藏的那一端照样进公开版），否则是警告。键和它的别名同时写了（`what` 与 `name`）警告。
+- 文字字段照原文收：`room: 0812` 是「0812」，不会被 YAML 读成 812。
+- 每一层子记录（中转、分段、预订、`to_next`、附录的 `trip-ref`）都查键。
+- 一个事件 / 天 / 附录写了两个同类块是错误，两处行号都报。
+- 认不出的 `trip-*` 块（`trip-days`）是错误；结构块写进附录里不会被读取，也是错误。
+- 代码块少了闭合的 ``` 是错误：一直吞到文件尾，或者把后面的 `trip-*` 块吞进去（要在附录里展示 TripMD 示例，外层用四个反引号）。
+- 一个 YAML 语法错误只报它自己，不连带报一串「缺少必需字段」。
+- 两个 Day 落在同一天是错误；标题上的日期不存在（`2026-10-32`、没补零的 `2026-10-2`）是错误；天号和标题上的日期对不上是警告（以标题日期为准）。
+- 不在任何 Day、附录里的正文不会出现在任何视图里 —— 有一句也警告。
+
 除了字段校验，解析器还会做四项语义检查：
 
-**1. 坐标离群** —— 一趟旅行的坐标本该聚成一团。离群超过 10 度的会被拦下，并识别常见错因：
+**1. 坐标离群** —— 地点按「彼此相距不超过 10 度」连成几团，最大的一团是行程主体。其余每一团试一下常见手误（经度符号、纬度符号、经纬写反），改完整团都落进主体的是错误，逐个给出改法：
 
 ```
-错误  地点 "Kerry Park" 的坐标 47.6295, 122.3599 离其余地点太远
+错误  地点 "Kerry Park" 的坐标 47.6295, 122.3599 离其余地点都很远
       经度符号反了 —— 应为 -122.3599（西经是负数）
 ```
 
-也能识别纬度符号反了、经纬度写反了。**不需要联网。**
+怎么改都落不进主体的：单独一个点只警告（可能真是远处的一站），成团的是另一座城市、不报 —— 两座城市各占一半的行程不会被整半边报错，两个点犯了同样的错也不会因为互为邻居而漏掉。**不需要联网。**
 
 **2. 时间冲突** —— 两个事件之间的空档装不下中间那段路：
 
